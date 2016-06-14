@@ -21,11 +21,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	SERVICE_ORG  = "labdev"
-	SERVICE_NAME = "currency_exchange"
-)
-
 func main() {
 
 	// Set up logging for errors and other details
