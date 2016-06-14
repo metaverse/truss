@@ -1,28 +1,12 @@
 package controller
 
 import (
-	stdlog "log"
-	"os"
-
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/to-generate/entityhelper"
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/to-generate/pb"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/levels"
 )
 
 type Controller struct {
 	EntityHelper *entityhelper.EntityHelper
-}
-
-var (
-	logger levels.Levels
-)
-
-func init() {
-	klogger := log.NewJSONLogger(os.Stdout)
-	logger = levels.New(klogger)
-	stdlog.SetFlags(0)                              // flags are handled by Go kit's logger
-	stdlog.SetOutput(log.NewStdlibAdapter(klogger)) // redirect anything using stdlib log to us
 }
 
 func (c *Controller) GetEntityHelper() *entityhelper.EntityHelper {
