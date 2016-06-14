@@ -27,7 +27,22 @@ import (
 var (
 	_        = descriptor.MethodDescriptorProto{}
 	response = string("")
+	indent   = string("    ")
 )
+
+// A logging utility function
+func logf(format string, args ...interface{}) {
+	response += fmt.Sprintf(format, args...)
+	fmt.Fprintf(os.Stderr, format, args...)
+}
+
+// Logging utility function printing indentation of the specified depth
+func logfd(depth int, format string, args ...interface{}) {
+	for i := 0; i < depth; i++ {
+		logf(indent)
+	}
+	logf(format, args...)
+}
 
 // Attempt to parse the incoming CodeGeneratorRequest being written by `protoc` to our stdin
 func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
@@ -47,13 +62,32 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 	return req, nil
 }
 
+// Parses a protobuf string to return the label of the field, if it exists.
+func protoFieldLabel(proto_tag string) string {
+	comma_split := strings.Split(proto_tag, ",")
+	if len(comma_split) > 3 {
+		eq_split := strings.Split(comma_split[3], "=")
+		if len(eq_split) > 1 {
+			return eq_split[1]
+		}
+	}
+	return ""
+}
+
 // Returns the requested protobuf message field
-func getProtobufField(proto_field int, proto_msg reflect.Value) (reflect.Value, int, error) {
+func getProtobufField(proto_field int, proto_msg reflect.Value, depth int) (reflect.Value, string, error) {
+	// 'marker' used as the representation of the input value for this
+	// function, helps keep things consistent in logs
+	//marker := proto_msg.Type().String()
+	//logfd(depth-1, "Getting the protobuf field '%v' from '%v'\n", proto_field, marker)
+
 	// if this message/field isn't a struct, then it's got to be an
 	// array-indexable collection (by convention of protoc)
 	if proto_msg.Kind() != reflect.Struct {
-		response += fmt.Sprintf("\tField: %v %v\n", proto_field, proto_msg.Type())
-		return proto_msg.Index(proto_field), proto_field, nil
+		marker := proto_msg.Index(proto_field).Type().String()
+		logfd(depth, "The passed in value to search is a not a struct, assuming it is an indexable type.\n")
+		logfd(depth, "Index: %v %v\n", proto_field, marker)
+		return proto_msg.Index(proto_field), string(proto_field), nil
 	}
 	// Iterate through the fields of the struct, finding the field with the
 	// struct tag indicating the protobuf field we're looking for.
@@ -64,26 +98,63 @@ func getProtobufField(proto_field int, proto_msg reflect.Value) (reflect.Value, 
 		// the one we're looking for.
 		pfield_n := -1
 		tag := typeField.Tag.Get("protobuf")
-
-		response += fmt.Sprintf("Tag: %v\n", tag)
+		field_label := protoFieldLabel(tag)
 
 		if len(tag) != 0 {
 			pfield_n, _ = strconv.Atoi(strings.Split(tag, ",")[1])
 		}
 		if pfield_n != -1 && pfield_n == proto_field {
-			response += fmt.Sprintf("\tField: %v %v %v\n", n, proto_field, proto_msg.Type().Field(n).Name)
-			return proto_msg.Field(n), n, nil
+			// Found the correct field, return it and it's label
+			logfd(depth, "Field '%02d, %02d' named '%v' is correct\n", n, pfield_n, field_label)
+			return proto_msg.Field(n), field_label, nil
+		} else {
+			logfd(depth, "Field '%02d, %02d' named '%v' is NOT the correct field\n", n, pfield_n, field_label)
 		}
 	}
 	// Couldn't find a proto field with the given index
-	return proto_msg, -1, fmt.Errorf("Couldn't find a proto field with the given index '%v'", proto_field)
+	return proto_msg, "", fmt.Errorf("Couldn't find a proto field with the given index '%v'", proto_field)
+}
+
+func getCollectionIndex(node reflect.Value, index int) reflect.Value {
+	return node.Index(index)
+}
+
+func walkNextStruct(path []int32, node reflect.Value, depth int) {
+	if node.Kind() != reflect.Struct {
+		panic("Walk next struct can only take a value of a struct!")
+	}
+	st_name := *node.FieldByName("Name").Interface().(*string)
+
+	// Derive special information about this location, since it is the terminus
+	// of the path
+	if len(path) == 0 {
+		logfd(depth, "Name of terminus struct: '%v'\n\n", st_name)
+		return
+	}
+	logfd(depth, "Name of current struct: '%v'\n", st_name)
+
+	// Field will almost definitely point to an array
+	field, _, err := getProtobufField(int(path[0]), node, depth+1)
+	if err != nil {
+		panic(err)
+	}
+
+	next_node := getCollectionIndex(field, int(path[1]))
+
+	// Dereference the returned field, if it exists
+	var clean_next reflect.Value
+	if next_node.Kind() == reflect.Ptr {
+		clean_next = next_node.Elem()
+	} else {
+		clean_next = next_node
+	}
+
+	walkNextStruct(path[2:], clean_next, depth+1)
 }
 
 // Walk the given path, from the root file descriptor to the field/index which
 // is the destination of the path.
-func walkPath(path []int32, node interface{}) {
-
-	//line := string("")
+func walkPath(path []int32, node interface{}, depth int) {
 
 	// Iterate over the fields via reflection
 	val := reflect.ValueOf(node)
@@ -101,20 +172,19 @@ func walkPath(path []int32, node interface{}) {
 	// Derive special information about this location, since it is the terminus
 	// of the path
 	if len(path) == 0 {
-		response += fmt.Sprintf("\tName of method: %v\n\n", *elm.FieldByName("Name").Interface().(*string))
+		logfd(depth, "Name of method: %v\n\n", *elm.FieldByName("Name").Interface().(*string))
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "Path: %v\n", path)
+	logfd(depth, "Path: %v\n", path)
 
 	// Get the field for this portion of the path
-	temp_field, _, _ := getProtobufField(int(path[0]), elm)
+	temp_field, _, _ := getProtobufField(int(path[0]), elm, depth+1)
 
-	response += fmt.Sprintf("\tField for path %v: %v\n", path[0], temp_field.Type())
-	fmt.Fprintf(os.Stderr, "\tField for path %v: %v\n", path[0], temp_field.Type())
+	logfd(depth, "Field for path %v: %v\n", path[0], temp_field.Type())
 
 	// Recurse!
-	walkPath(path[1:], temp_field.Interface())
+	walkPath(path[1:], temp_field.Interface(), depth+1)
 
 	return
 
@@ -130,26 +200,23 @@ func main() {
 		glog.Fatal(err)
 	}
 
+	depth := 0
+
 	// Print a ton of fields
 	for _, name := range request.FileToGenerate {
-		line := fmt.Sprintf("File to generate: %v\n", name)
-		response += line
+		logf("File to generate: %v\n", name)
 	}
 	for _, file := range request.GetProtoFile() {
-		line := fmt.Sprintf("Proto file: %v\n", file.GetName())
-		response += line
+		logfd(depth, "Proto file: %v\n", file.GetName())
 
 		for _, msg := range file.MessageType {
-			line = fmt.Sprintf("\tMsg: %v\n", msg.GetName())
-			response += line
+			logfd(depth+1, "Msg: %v\n", msg.GetName())
 		}
 
 		for _, srvc := range file.Service {
-			line = fmt.Sprintf("\tService: %v\n", srvc.GetName())
-			response += line
+			logfd(depth+1, "Service: %v\n", srvc.GetName())
 			for _, meth := range srvc.GetMethod() {
-				line = fmt.Sprintf("\t\tMethod: %v\n", meth.GetName())
-				response += line
+				logfd(depth+2, "Method: %v\n", meth.GetName())
 			}
 		}
 
@@ -169,10 +236,9 @@ func main() {
 		for _, location := range info.GetLocation() {
 			lead := location.GetLeadingComments()
 			if len(lead) > 1 {
-				line = fmt.Sprintf("\tLeading Comments: '%v' %v\n", lead, location.Path)
-				response += line
+				logfd(depth+1, "Leading Comments: '%v' %v\n", strings.TrimSpace(lead), location.Path)
 				// Print path information for this source code location
-				walkPath(location.Path, file)
+				walkNextStruct(location.Path, reflect.ValueOf(*file), depth+1)
 			}
 		}
 	}
