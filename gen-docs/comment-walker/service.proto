@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package currencyexchangepb;
+/*import "exchange_rate.proto";*/
+
+import "google/api/annotations.proto";
+
+message ExchangeRateEntities {
+  repeated ExchangeRateEntity Results = 1;
+}
+
+message ExchangeRateEntity {
+  int64 id = 1;
+  string currency_code = 2;
+  float rate = 3;
+  string date = 4;
+  string created = 5;
+  string modified = 6;
+}
+
+//
+message ExchangeRateGetRateRequest {
+  /// Input currency type
+  /// Must be ISO 4217 3 letter currency code
+  string from_currency = 1;
+  /// Output currency type
+  /// Must be ISO 4217 3 letter currency code
+  string to_currency = 2;
+  /// The date on which to sample the exchange rate
+  /// YYYY-MM-DD format
+  string date = 3;
+}
+
+message ExchangeRateGetRateResponse {
+  /// Same value as in ExchangeRateGetRateRequest
+  string from_currency = 1;
+  /// Same value as in ExchangeRateGetRateRequest
+  string to_currency = 2;
+  /// Same value as in ExchangeRateGetRateRequest
+  string date = 3;
+  /// Currency exchange rate response from request
+  float rate = 4;
+}
+
+message ExchangeRateConvertRequest {
+  string from_currency = 1;
+  string to_currency = 2;
+  string date = 3;
+  float rate = 4;
+  float amount = 5;
+}
+
+message ExchangeRateConvertResponse {
+  string from_currency = 1;
+  string to_currency = 2;
+  string date = 3;
+  float rate = 4;
+  float amount = 5;
+  float result = 6;
+}
+
+service CurrencyExchangeService {
+
+  /// Return a particuar exchange rate for a currency
+  rpc ExchangeRateGetRate(ExchangeRateGetRateRequest) returns (ExchangeRateGetRateResponse) {
+    option (google.api.http) = {
+      get: "/ExchangeRateGetRate"
+    };
+  }
+
+  /// Convert an amount in one currency to another at an exchage rate
+  rpc ExchangeRateConvert(ExchangeRateConvertRequest) returns (ExchangeRateConvertResponse) {
+    option (google.api.http) = {
+      get: "/ExchangeRateConvert"
+    };
+  }
+
+  /// Get the status of the service
+  rpc Status(StatusRequest) returns (StatusResponse) {
+    option (google.api.http) = {
+      get: "/Status"
+    };
+  }
+
+  /// Ping the server
+  rpc Ping(PingRequest) returns (PingResponse) {
+    option (google.api.http) = {
+      get: "/Ping"
+    };
+  }
+}
+
+
+enum ServiceStatus {
+  FAIL = 0;
+  OK = 1;
+}
+
+message StatusRequest {
+  bool full = 1;
+}
+
+message StatusResponse {
+  ServiceStatus status = 1;
+}
+
+message PingRequest {}
+
+message PingResponse {
+  ServiceStatus status = 1;
+}
