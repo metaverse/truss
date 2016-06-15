@@ -76,21 +76,10 @@ func protoFieldLabel(proto_tag string) string {
 
 // Returns the requested protobuf message field
 func getProtobufField(proto_field int, proto_msg reflect.Value, depth int) (reflect.Value, string, error) {
-	// 'marker' used as the representation of the input value for this
-	// function, helps keep things consistent in logs
-	//marker := proto_msg.Type().String()
-	//logfd(depth-1, "Getting the protobuf field '%v' from '%v'\n", proto_field, marker)
 
-	// if this message/field isn't a struct, then it's got to be an
-	// array-indexable collection (by convention of protoc)
-	if proto_msg.Kind() != reflect.Struct {
-		marker := proto_msg.Index(proto_field).Type().String()
-		logfd(depth, "The passed in value to search is a not a struct, assuming it is an indexable type.\n")
-		logfd(depth, "Index: %v %v\n", proto_field, marker)
-		return proto_msg.Index(proto_field), string(proto_field), nil
-	}
 	// Iterate through the fields of the struct, finding the field with the
-	// struct tag indicating the protobuf field we're looking for.
+	// struct tag indicating that that field correlates to the protobuf field
+	// we're looking for.
 	for n := 0; n < proto_msg.Type().NumField(); n++ {
 		var typeField reflect.StructField = proto_msg.Type().Field(n)
 
@@ -99,16 +88,16 @@ func getProtobufField(proto_field int, proto_msg reflect.Value, depth int) (refl
 		pfield_n := -1
 		tag := typeField.Tag.Get("protobuf")
 		field_label := protoFieldLabel(tag)
-
 		if len(tag) != 0 {
 			pfield_n, _ = strconv.Atoi(strings.Split(tag, ",")[1])
 		}
+
 		if pfield_n != -1 && pfield_n == proto_field {
 			// Found the correct field, return it and it's label
-			logfd(depth, "Field '%02d, %02d' named '%v' is correct\n", n, pfield_n, field_label)
+			logfd(depth, "Field '%02d, %02d' labeled '%v' with type '%v' is correct\n", n, pfield_n, field_label, proto_msg.Field(n).Type())
 			return proto_msg.Field(n), field_label, nil
 		} else {
-			logfd(depth, "Field '%02d, %02d' named '%v' is NOT the correct field\n", n, pfield_n, field_label)
+			logfd(depth, "Field '%02d, %02d' labeled '%v' is NOT the correct field\n", n, pfield_n, field_label)
 		}
 	}
 	// Couldn't find a proto field with the given index
@@ -116,14 +105,26 @@ func getProtobufField(proto_field int, proto_msg reflect.Value, depth int) (refl
 }
 
 func getCollectionIndex(node reflect.Value, index int) reflect.Value {
+	if index >= node.Len() {
+		panic(fmt.Sprintf("The node '%v' is of length '%v', cannot access index '%v'", node, node.Len(), index))
+	}
 	return node.Index(index)
 }
 
 func walkNextStruct(path []int32, node reflect.Value, depth int) {
-	if node.Kind() != reflect.Struct {
-		panic("Walk next struct can only take a value of a struct!")
+	var st_name string
+	switch node.Kind() {
+	case reflect.String:
+		st_name = node.Interface().(string)
+	case reflect.Ptr:
+		node = node.Elem()
+	default:
+		if node.Kind() != reflect.Struct {
+			panic(fmt.Sprintf("walkNextStruct expected struct, found '%v'", node.Kind()))
+		} else {
+			st_name = *node.FieldByName("Name").Interface().(*string)
+		}
 	}
-	st_name := *node.FieldByName("Name").Interface().(*string)
 
 	// Derive special information about this location, since it is the terminus
 	// of the path
@@ -131,14 +132,31 @@ func walkNextStruct(path []int32, node reflect.Value, depth int) {
 		logfd(depth, "Name of terminus struct: '%v'\n\n", st_name)
 		return
 	}
-	logfd(depth, "Name of current struct: '%v'\n", st_name)
+	logfd(depth, "Name of current struct: '%v' %v\n", st_name, path)
 
-	// Field will almost definitely point to an array
-	field, _, err := getProtobufField(int(path[0]), node, depth+1)
+	field, field_label, err := getProtobufField(int(path[0]), node, depth+1)
 	if err != nil {
 		panic(err)
 	}
 
+	// If the path ends here, then the path is indicating this field, and not
+	// anything more specific
+	if len(path) == 1 {
+		logfd(depth, "Label of terminus struct field: '%v'\n\n", field_label)
+		return
+	}
+
+	// Since everything after this point is assuming that field is a slice, if
+	// it's not we recurse
+	if field.Kind() != reflect.Slice {
+		walkNextStruct(path[1:], field, depth+1)
+		return
+	}
+
+	if int(path[1]) >= field.Len() {
+		logfd(depth, "WARNING: Encountered field '%v' with length '%v' not matching path '%v' currently being walked. Returning.", field_label, field.Len(), path)
+		return
+	}
 	next_node := getCollectionIndex(field, int(path[1]))
 
 	// Dereference the returned field, if it exists
@@ -150,44 +168,6 @@ func walkNextStruct(path []int32, node reflect.Value, depth int) {
 	}
 
 	walkNextStruct(path[2:], clean_next, depth+1)
-}
-
-// Walk the given path, from the root file descriptor to the field/index which
-// is the destination of the path.
-func walkPath(path []int32, node interface{}, depth int) {
-
-	// Iterate over the fields via reflection
-	val := reflect.ValueOf(node)
-
-	var elm reflect.Value
-
-	// If the given node is a pointer, dereference that pointer, otherwise use
-	// that value as our element
-	if val.Kind() == reflect.Ptr {
-		elm = val.Elem()
-	} else {
-		elm = val
-	}
-
-	// Derive special information about this location, since it is the terminus
-	// of the path
-	if len(path) == 0 {
-		logfd(depth, "Name of method: %v\n\n", *elm.FieldByName("Name").Interface().(*string))
-		return
-	}
-
-	logfd(depth, "Path: %v\n", path)
-
-	// Get the field for this portion of the path
-	temp_field, _, _ := getProtobufField(int(path[0]), elm, depth+1)
-
-	logfd(depth, "Field for path %v: %v\n", path[0], temp_field.Type())
-
-	// Recurse!
-	walkPath(path[1:], temp_field.Interface(), depth+1)
-
-	return
-
 }
 
 func main() {
@@ -234,10 +214,21 @@ func main() {
 		// Print source code in the files
 		info := file.GetSourceCodeInfo()
 		for _, location := range info.GetLocation() {
+			logfd(depth+1, "Source location: %v\n", location.Path)
 			lead := location.GetLeadingComments()
 			if len(lead) > 1 {
-				logfd(depth+1, "Leading Comments: '%v' %v\n", strings.TrimSpace(lead), location.Path)
-				// Print path information for this source code location
+				logfd(depth+2, "Leading Comments: '%v' %v\n", strings.TrimSpace(lead), location.Path)
+			}
+			logfd(depth+2, "Trailing comment: %v\n", location.GetTrailingComments())
+			for _, v := range location.GetLeadingDetachedComments() {
+				logfd(depth+2, "Leading detached comment: '%v\n'", strings.TrimSpace(v))
+			}
+			// Only walk the tree if this source code location has a comment
+			// located with it. Not all source locations have valid paths, but
+			// all sourcelocations with comments must point to concrete things,
+			// so only recurse on those.
+			if len(lead) > 1 || len(location.LeadingDetachedComments) > 1 {
+				logfd(depth+1, "Begin walking tree for source location\n")
 				walkNextStruct(location.Path, reflect.ValueOf(*file), depth+1)
 			}
 		}
