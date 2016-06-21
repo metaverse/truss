@@ -9,6 +9,8 @@ message ExchangeRateEntities {
   repeated ExchangeRateEntity Results = 1;
 }
 
+// This is a comment block which should register as being detached.
+
 message ExchangeRateEntity {
   int64 id = 1;
   string currency_code = 2;
@@ -18,7 +20,7 @@ message ExchangeRateEntity {
   string modified = 6;
 }
 
-//
+/// Message for request getting an exchange rate
 message ExchangeRateGetRateRequest {
   /// Input currency type
   /// Must be ISO 4217 3 letter currency code
@@ -64,6 +66,7 @@ service CurrencyExchangeService {
   /// Return a particuar exchange rate for a currency
   rpc ExchangeRateGetRate(ExchangeRateGetRateRequest) returns (ExchangeRateGetRateResponse) {
     option (google.api.http) = {
+      // Does this break everything?
       get: "/ExchangeRateGetRate"
     };
   }
