@@ -7,7 +7,7 @@ package pb
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import _ "github.com/gengo/grpc-gateway/third_party/googleapis/google/api"
+import _ "github.com/google/api"
 
 import (
 	context "golang.org/x/net/context"
@@ -89,7 +89,7 @@ var _ grpc.ClientConn
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion2
+const _ = grpc.SupportPackageIsVersion3
 
 // Client API for CurrencyExchangeService service
 
@@ -258,7 +258,8 @@ var _CurrencyExchangeService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _CurrencyExchangeService_Ping_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: fileDescriptor1,
 }
 
 func init() { proto.RegisterFile("service.proto", fileDescriptor1) }
