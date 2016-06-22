@@ -2,12 +2,15 @@ package doctree
 
 import (
 	"fmt"
+	"os"
+
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
 var (
 	_ = descriptor.MethodDescriptorProto{}
+	_ = os.Stderr
 )
 
 func prindent(depth int, format string, args ...interface{}) string {
@@ -18,26 +21,59 @@ func prindent(depth int, format string, args ...interface{}) string {
 	return s + fmt.Sprintf(format, args...)
 }
 
-// Used to give other structs a name and description, as well as a nice way of
-// generating string representations of nested structures
-type Describable struct {
+type Describable interface {
+	GetName() string
+	SetName(string)
+	GetDescription() string
+	SetDescription(string)
+	describe(int) string
+	GetByName(string) Describable
+}
+
+// The concrete implementation of the Interface, to allow for nice convenient
+// inheritance
+type describable struct {
 	Name        string
 	Description string
 }
 
-func (x Describable) describe(depth int) string {
-	rv := prindent(depth, "Name: %v\n", x.Name)
-	rv += prindent(depth, "Desc: %v\n", x.Description)
+func (self describable) GetName() string {
+	return self.Name
+}
+
+func (self describable) SetName(s string) {
+	self.Name = s
+}
+
+func (self describable) describe(depth int) string {
+	rv := prindent(depth, "Name: %v\n", self.Name)
+	rv += prindent(depth, "Desc: %v\n", self.Description)
 	return rv
 }
 
+func (self describable) GetDescription() string {
+	return self.Description
+}
+
+func (self *describable) SetDescription(d string) {
+	self.Description = d
+}
+
+func (self describable) GetByName(s string) Describable {
+	return nil
+}
+
+func NewDescribable() Describable {
+	return &describable{}
+}
+
 type MicroserviceDefinition struct {
-	Describable
+	describable
 	Files []*ProtoFile
 }
 
 func (x MicroserviceDefinition) describe(depth int) string {
-	rv := x.Describable.describe(depth)
+	rv := x.describable.describe(depth)
 	for idx, file := range x.Files {
 		rv += prindent(depth, "File %v:\n", idx)
 		rv += file.describe(depth + 1)
@@ -45,22 +81,47 @@ func (x MicroserviceDefinition) describe(depth int) string {
 	return rv
 }
 
-// Used to allow for idiomatic 'pkg.New()' functionality
-type Doctree MicroserviceDefinition
+func (x MicroserviceDefinition) GetByName(name string) Describable {
+	for _, file := range x.Files {
+		if file.Name == name {
+			return file
+		}
+	}
+	return nil
+}
+
+// Set the node at the given 'name-path' to have a description of `comment_body`
+func (self *MicroserviceDefinition) SetComment(namepath []string, comment_body string) {
+	fmt.Fprintf(os.Stderr, "%v\n", comment_body)
+	var cur_node Describable
+	cur_node = self
+	for _, name := range namepath {
+		new_node := cur_node.GetByName(name)
+		if new_node == nil {
+			//panic("The new node is nil, this is bad!")
+			panic(fmt.Sprintf("New node is nil, namepath: '%v' cur_node: '%v'\n", namepath, cur_node))
+		}
+		//fmt.Fprintf(os.Stderr, "Name: '%v', Cur_node: '%v', new_node: '%v'\n", name, cur_node.GetName(), new_node.GetName())
+		cur_node = new_node
+	}
+	cur_node.SetDescription(comment_body)
+	//fmt.Fprintf(os.Stderr, "%v\n", self.String())
+}
 
 func (x MicroserviceDefinition) String() string {
 	return x.describe(0)
 }
 
 type ProtoFile struct {
-	Describable
+	//Describable
+	describable
 	Messages []*ProtoMessage
 	Enums    []*ProtoEnum
 	Services []*ProtoService
 }
 
 func (x ProtoFile) describe(depth int) string {
-	rv := x.Describable.describe(depth)
+	rv := x.describable.describe(depth)
 	for idx, msg := range x.Messages {
 		rv += prindent(depth, "Message %v:\n", idx)
 		rv += msg.describe(depth + 1)
@@ -76,13 +137,32 @@ func (x ProtoFile) describe(depth int) string {
 	return rv
 }
 
+func (self ProtoFile) GetByName(name string) Describable {
+	for _, msg := range self.Messages {
+		if msg.GetName() == name {
+			return msg
+		}
+	}
+	for _, enum := range self.Enums {
+		if enum.GetName() == name {
+			return enum
+		}
+	}
+	for _, svc := range self.Services {
+		if svc.GetName() == name {
+			return svc
+		}
+	}
+	return nil
+}
+
 type ProtoMessage struct {
-	Describable
+	describable
 	Fields []*MessageField
 }
 
 func (x ProtoMessage) describe(depth int) string {
-	rv := x.Describable.describe(depth)
+	rv := x.describable.describe(depth)
 	for idx, field := range x.Fields {
 		rv += prindent(depth, "Field %v:\n", idx)
 		rv += field.describe(depth + 1)
@@ -90,49 +170,86 @@ func (x ProtoMessage) describe(depth int) string {
 	return rv
 }
 
+func (self ProtoMessage) GetByName(name string) Describable {
+	for _, field := range self.Fields {
+		if field.GetName() == name {
+			return field
+		}
+	}
+	return nil
+}
+
 type MessageField struct {
-	Describable
+	describable
 	Type FieldType
 }
 
 func (x MessageField) describe(depth int) string {
-	rv := x.Describable.describe(depth)
+	rv := x.describable.describe(depth)
 	rv += prindent(depth, "Type:\n")
 	rv += x.Type.describe(depth + 1)
 	return rv
 }
 
 type ProtoEnum struct {
-	Describable
+	describable
 	Values []*EnumValue
 }
 
 type EnumValue struct {
-	Describable
+	describable
 	Number int
 }
 
 type FieldType struct {
-	Describable
+	describable
 	Enum *ProtoEnum
 }
 
 type ProtoService struct {
-	Describable
+	describable
 	Methods []*ServiceMethod
 }
 
+func (self ProtoService) describe(depth int) string {
+	rv := self.describable.describe(depth)
+	for idx, meth := range self.Methods {
+		rv += prindent(depth, "Method %v:\n", idx)
+		rv += meth.describe(depth + 1)
+	}
+	return rv
+}
+
+func (self ProtoService) GetByName(name string) Describable {
+	for _, meth := range self.Methods {
+		if meth.GetName() == name {
+			return meth
+		}
+	}
+	return nil
+}
+
 type ServiceMethod struct {
-	Describable
-	RequestType  string
-	ResponseType string
+	describable
+	RequestType  ProtoMessage
+	ResponseType ProtoMessage
 }
 
 func (x ServiceMethod) describe(depth int) string {
-	rv := x.Describable.describe(depth)
-	rv += prindent(depth, "RequestType: %v\n", x.RequestType)
-	rv += prindent(depth, "ResponseType: %v\n", x.ResponseType)
+	rv := x.describable.describe(depth)
+	rv += prindent(depth, "RequestType: %v\n", x.RequestType.GetName())
+	rv += prindent(depth, "ResponseType: %v\n", x.ResponseType.GetName())
 	return rv
+}
+
+func (self ServiceMethod) GetByName(name string) Describable {
+	if name == self.RequestType.GetName() {
+		return &self.RequestType
+	}
+	if name == self.ResponseType.GetName() {
+		return &self.ResponseType
+	}
+	return nil
 }
 
 func New(req *plugin.CodeGeneratorRequest) (MicroserviceDefinition, error) {
@@ -154,6 +271,14 @@ func New(req *plugin.CodeGeneratorRequest) (MicroserviceDefinition, error) {
 		// creation in the Doctree
 		new_file := ProtoFile{}
 		new_file.Name = file.GetName()
+
+		if dt.Name == "" {
+			dt.Name = *file.Package
+		} else {
+			if dt.Name != *file.Package {
+				panic("Package name of specified protobuf definitions differ.")
+			}
+		}
 
 		for _, msg := range file.MessageType {
 			new_msg := ProtoMessage{}
@@ -179,8 +304,8 @@ func New(req *plugin.CodeGeneratorRequest) (MicroserviceDefinition, error) {
 			for _, meth := range srvc.Method {
 				n_meth := ServiceMethod{}
 				n_meth.Name = *meth.Name
-				n_meth.RequestType = *meth.InputType
-				n_meth.ResponseType = *meth.OutputType
+				n_meth.RequestType.SetName(*meth.InputType)
+				n_meth.ResponseType.SetName(*meth.OutputType)
 				n_svc.Methods = append(n_svc.Methods, &n_meth)
 			}
 
