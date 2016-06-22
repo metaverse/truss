@@ -165,7 +165,7 @@ func walkNextStruct(path []int32, node reflect.Value, depth int) []string {
 	return append([]string{st_name}, rv...)
 }
 
-func associate_comments(dt *doctree.MicroserviceDefinition, req *plugin.CodeGeneratorRequest) {
+func associate_comments(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 	for _, file := range req.GetProtoFile() {
 		// Skip comments for files outside the main one being considered
 		skip := true
@@ -210,8 +210,7 @@ func main() {
 	}
 
 	doc, _ := doctree.New(request)
-	//response := spew.Sdump(doc)
-	associate_comments(&doc, request)
+	associate_comments(doc, request)
 
 	response := doc.String()
 	response_file := str_to_response(response, "ast.log")
