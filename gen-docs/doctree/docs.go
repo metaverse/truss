@@ -7,6 +7,10 @@
 // The main entrypoint for the Doctree package is the `New` function, which
 // takes a Protobuf `CodeGeneratorRequest` struct and creates a Doctree
 // representing all the documentation from the `CodeGeneratorRequest`.
+//
+// For a larger explanation of how and why Doctree is structured the way it is,
+// see the comment for the 'associateComments' function in the source code of
+// the 'associate_comments.go' file.
 package doctree
 
 import (
@@ -126,7 +130,6 @@ func (self *MicroserviceDefinition) GetByName(name string) Describable {
 // Once the final Describable object is found, the `description` field of that
 // struct is set to `comment_body`.
 func (self *MicroserviceDefinition) SetComment(namepath []string, comment_body string) {
-	fmt.Fprintf(os.Stderr, "%v\n", comment_body)
 	var cur_node Describable
 	cur_node = self
 	for _, name := range namepath {
@@ -387,6 +390,10 @@ func New(req *plugin.CodeGeneratorRequest) (Doctree, error) {
 		}
 		dt.Files = append(dt.Files, &new_file)
 	}
+
+	// Do the association of comments to units code. The implementation of this
+	// function is in `associate_comments.go`
+	associateComments(&dt, req)
 
 	return &dt, nil
 }
