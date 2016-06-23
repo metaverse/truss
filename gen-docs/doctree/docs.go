@@ -1,8 +1,8 @@
 // Doctree, which stands for "documentation tree", creates a tree of nodes
-// representing the components of a serviced defined through Protobuf
-// definition files. The tree is composed of nodes fulfilling the `Describable`
-// interface, with the root node fulfilling the `Doctree` interface. The
-// `Doctree` interface is a superset of the `Describable` interface.
+// representing the components of a service defined through Protobuf definition
+// files. The tree is composed of nodes fulfilling the `Describable` interface,
+// with the root node fulfilling the `Doctree` interface. The `Doctree`
+// interface is a superset of the `Describable` interface.
 //
 // The main entrypoint for the Doctree package is the `New` function, which
 // takes a Protobuf `CodeGeneratorRequest` struct and creates a Doctree
@@ -36,6 +36,16 @@ func prindent(depth int, format string, args ...interface{}) string {
 	return s + fmt.Sprintf(format, args...)
 }
 
+// strRepeat takes a string and an int `n` and returns a string representing
+// the input repeated `n` times.
+func strRepeat(in string, count int) string {
+	rv := ""
+	for ; count > 0; count-- {
+		rv += in
+	}
+	return rv
+}
+
 // Describable offers an interface for traversing a Doctree and finding
 // information from the nodes within it.
 type Describable interface {
@@ -51,6 +61,7 @@ type Describable interface {
 	// information with proper indentation. If called recursively, allows for
 	// printing of a structured tree-style view of a tree of Describables.
 	describe(int) string
+	describeMarkdown(int) string
 	// GetByName allows one to query a Describable to see if it has a child
 	// Describable in any of it's collections.
 	GetByName(string) Describable
@@ -63,6 +74,7 @@ type Doctree interface {
 	Describable
 	SetComment([]string, string)
 	String() string
+	Markdown() string
 }
 
 // describable is a  concrete implementation of the `Describable` interface, to
@@ -83,6 +95,14 @@ func (self *describable) SetName(s string) {
 func (self *describable) describe(depth int) string {
 	rv := prindent(depth, "Name: %v\n", self.Name)
 	rv += prindent(depth, "Desc: %v\n", self.Description)
+	return rv
+}
+
+func (self *describable) describeMarkdown(depth int) string {
+	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
+	if len(self.Description) > 1 {
+		rv += prindent(0, "%v\n\n", self.Description)
+	}
 	return rv
 }
 
@@ -109,6 +129,15 @@ func (self *MicroserviceDefinition) describe(depth int) string {
 	for idx, file := range self.Files {
 		rv += prindent(depth, "File %v:\n", idx)
 		rv += file.describe(depth + 1)
+	}
+	return rv
+}
+
+func (self *MicroserviceDefinition) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth), "Files")
+	for _, file := range self.Files {
+		rv += file.describeMarkdown(depth + 1)
 	}
 	return rv
 }
@@ -148,6 +177,10 @@ func (self *MicroserviceDefinition) String() string {
 	return self.describe(0)
 }
 
+func (self *MicroserviceDefinition) Markdown() string {
+	return self.describeMarkdown(1)
+}
+
 type ProtoFile struct {
 	describable
 	Messages []*ProtoMessage
@@ -168,6 +201,26 @@ func (self *ProtoFile) describe(depth int) string {
 	for idx, svc := range self.Services {
 		rv += prindent(depth, "Service %v:\n", idx)
 		rv += svc.describe(depth + 1)
+	}
+	return rv
+}
+
+func (self *ProtoFile) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+
+	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Messages")
+	for _, msg := range self.Messages {
+		rv += msg.describeMarkdown(depth + 2)
+	}
+
+	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Enums")
+	for _, enum := range self.Enums {
+		rv += enum.describeMarkdown(depth + 2)
+	}
+
+	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Services")
+	for _, svc := range self.Services {
+		rv += svc.describeMarkdown(depth + 2)
 	}
 	return rv
 }
@@ -205,6 +258,16 @@ func (self *ProtoMessage) describe(depth int) string {
 	return rv
 }
 
+func (self *ProtoMessage) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Fields")
+	for _, field := range self.Fields {
+		rv += field.describeMarkdown(depth + 1)
+	}
+	return rv
+
+}
+
 func (self *ProtoMessage) GetByName(name string) Describable {
 	for _, field := range self.Fields {
 		if field.GetName() == name {
@@ -228,6 +291,14 @@ func (self *MessageField) describe(depth int) string {
 	return rv
 }
 
+func (self *MessageField) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+	rv += prindent(0, "*Protobuf Field Number:*  %v\n\n", self.Number)
+	rv += prindent(0, "*Type:*  %v\n\n", self.Type.Name)
+	return rv
+
+}
+
 type ProtoEnum struct {
 	describable
 	Values []*EnumValue
@@ -238,6 +309,14 @@ func (self *ProtoEnum) describe(depth int) string {
 	for idx, val := range self.Values {
 		rv += prindent(depth, "Value %v:\n", idx)
 		rv += val.describe(depth + 1)
+	}
+	return rv
+}
+
+func (self *ProtoEnum) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+	for _, val := range self.Values {
+		rv += prindent(0, "%v. %v\n\n", val.Number, val.Name)
 	}
 	return rv
 }
@@ -272,6 +351,15 @@ func (self *ProtoService) describe(depth int) string {
 	return rv
 }
 
+func (self *ProtoService) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Methods")
+	for _, meth := range self.Methods {
+		rv += meth.describeMarkdown(depth + 2)
+	}
+	return rv
+}
+
 func (self *ProtoService) GetByName(name string) Describable {
 	for _, meth := range self.Methods {
 		if meth.GetName() == name {
@@ -291,6 +379,14 @@ func (self *ServiceMethod) describe(depth int) string {
 	rv := self.describable.describe(depth)
 	rv += prindent(depth, "RequestType: %v\n", self.RequestType.GetName())
 	rv += prindent(depth, "ResponseType: %v\n", self.ResponseType.GetName())
+	return rv
+}
+
+func (self *ServiceMethod) describeMarkdown(depth int) string {
+	rv := self.describable.describeMarkdown(depth)
+
+	rv += prindent(0, "RequestType: %v\n\n", self.RequestType.GetName())
+	rv += prindent(0, "ResponseType: %v\n\n", self.ResponseType.GetName())
 	return rv
 }
 

@@ -3,6 +3,7 @@ package doctree
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -169,6 +170,23 @@ func buildNamePath(path []int32, node reflect.Value) []string {
 	return append([]string{st_name}, rv...)
 }
 
+// Takes a comment and scrubs it of any extraneous artifacts (newlines, extra
+// slashes, extra asterisks, etc)
+func scrubComments(comment string) string {
+	comment = strings.Replace(comment, "\n/ ", "\n", -1)
+	comment = strings.Replace(comment, "\n/", "\n", -1)
+
+	beginning_slash := regexp.MustCompile("^/*\\s*")
+	trailing_whitespace := regexp.MustCompile("\\s*$")
+	line_trail_ws := regexp.MustCompile("\\s+\n")
+
+	comment = beginning_slash.ReplaceAllString(comment, "")
+	comment = trailing_whitespace.ReplaceAllString(comment, "")
+	comment = line_trail_ws.ReplaceAllString(comment, "\n")
+
+	return comment
+}
+
 func associateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 	for _, file := range req.GetProtoFile() {
 		// Skip comments for files outside the main one being considered
@@ -190,7 +208,7 @@ func associateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 			// so only recurse on those.
 			if len(lead) > 1 || len(location.LeadingDetachedComments) > 1 {
 				name_path := buildNamePath(location.Path, reflect.ValueOf(*file))
-				dt.SetComment(name_path, lead)
+				dt.SetComment(name_path, scrubComments(lead))
 			}
 		}
 	}

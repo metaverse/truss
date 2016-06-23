@@ -57,7 +57,7 @@ func main() {
 
 	doc, _ := doctree.New(request)
 
-	response := doc.String()
+	response := doc.Markdown()
 	response_file := str_to_response(response, "ast.log")
 	output_struct := &plugin.CodeGeneratorResponse{File: []*plugin.CodeGeneratorResponse_File{response_file}}
 
