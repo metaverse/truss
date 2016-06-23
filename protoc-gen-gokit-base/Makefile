@@ -5,17 +5,22 @@ PLUGIN=protoc-gen-$(NAME)
 
 OUTPUT=./generate
 
-all: output
+GENERATED_OUT_PATH=./generate/gokit-base-cmd
+
+all: build-generated-code
 
 gobindata:
-	$(MAKE) -C template gobindataexecute
+	go-bindata -o template.go template/...
 
 $(PLUGIN): gobindata
 	go build
 
-output: $(PLUGIN)
+code-generation: $(PLUGIN)
 	mkdir ./generate
 	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --plugin=$(PLUGIN) --$(NAME)_out=logtostderr=true:$(OUTPUT) service.proto
+
+build-generated-code: code-generation
+	go build $(GENERATED_OUT_PATH)
 
 clean:
 	rm -f $(PLUGIN)

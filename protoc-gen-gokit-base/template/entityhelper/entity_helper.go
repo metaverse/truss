@@ -1,7 +1,7 @@
 package entityhelper
 
 import (
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/to-generate/mv-shared/mysql"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/mv-shared/mysql"
 )
 
 type EntityHelper struct {
