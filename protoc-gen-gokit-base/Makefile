@@ -10,10 +10,10 @@ GENERATED_OUT_PATH=./generate/gokit-base-cmd
 all: build-generated-code
 
 gobindata:
-	go-bindata -o template.go template/...
+	go-bindata -pkg template -o ./template/template.go template_files/...
 
 $(PLUGIN): gobindata
-	go build
+	go build ./cmd/protoc-gen-gokit-base
 
 code-generation: $(PLUGIN)
 	mkdir ./generate

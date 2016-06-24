@@ -13,6 +13,7 @@ import (
 	"strings"
 	"text/template"
 
+	templateFiles "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	_ "github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/generator"
 	"github.com/golang/glog"
@@ -84,15 +85,15 @@ func main() {
 	glog.V(1).Info("Building Output")
 
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
-	for _, file := range AssetNames() {
+	for _, file := range templateFiles.AssetNames() {
 		//logf("%v\n", paths)
 		curResponseFile := plugin.CodeGeneratorResponse_File{}
 
 		// Remove "template/" so that generated files do not include that directory
-		d := strings.TrimPrefix(file, "template/")
+		d := strings.TrimPrefix(file, "template_files/")
 		curResponseFile.Name = &d
 
-		bytesOfFile, _ := Asset(file)
+		bytesOfFile, _ := templateFiles.Asset(file)
 		stringFile := string(bytesOfFile)
 		if path.Base(file) == "main.go" {
 			headerTemplate, _ = template.New("main.go").Parse(stringFile)
@@ -126,15 +127,6 @@ type generator struct {
 func New(reg *descriptor.Registry) *generator {
 	var imports []descriptor.GoPackage
 	for _, pkgpath := range []string{
-		//"io",
-		//"net/http",
-		//"github.com/gengo/grpc-gateway/runtime",
-		//"github.com/gengo/grpc-gateway/utilities",
-		//"github.com/golang/protobuf/proto",
-		//"golang.org/x/net/context",
-		//"google.golang.org/grpc",
-		//"google.golang.org/grpc/codes",
-		//"google.golang.org/grpc/grpclog",
 		"fmt",
 		"log",
 		"math/rand",
@@ -150,7 +142,6 @@ func New(reg *descriptor.Registry) *generator {
 		"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/controller",
 		"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb",
 		"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/server",
-
 		"google.golang.org/grpc",
 	} {
 		pkg := descriptor.GoPackage{
