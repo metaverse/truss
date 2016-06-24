@@ -2,12 +2,7 @@
 // source: {{.GetName}}
 // DO NOT EDIT!
 
-/*
-Package {{.GoPkg.Name}} is a reverse proxy.
-
-It translates gRPC into RESTful JSON APIs.
-*/
-package {{.GoPkg.Name}}
+package main
 import (
 	{{range $i := .Imports}}{{if $i.Standard}}{{$i | printf "%s\n"}}{{end}}{{end}}
 
@@ -16,7 +11,7 @@ import (
 
 //import (
 	//"fmt"
-	//stdlog "log"
+	//"log"
 	//"math/rand"
 	//"net"
 	//"os"
@@ -25,7 +20,7 @@ import (
 	//"syscall"
 	//"time"
 
-	//"github.com/go-kit/kit/log"
+	//log_0 "github.com/go-kit/kit/log"
 	//"github.com/go-kit/kit/log/levels"
 
 	//"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/controller"
@@ -41,11 +36,11 @@ func main() {
 	var logger levels.Levels
 	{
 		// Log to Stdout
-		klogger := log.NewJSONLogger(os.Stdout)
+		klogger := log_0.NewJSONLogger(os.Stdout)
 		logger = levels.New(klogger)
 		// Take normal logs and put them into logger
-		stdlog.SetFlags(0)                              // flags are handled by Go kit's logger
-		stdlog.SetOutput(log.NewStdlibAdapter(klogger)) // redirect anything using stdlib log to us
+		log.SetFlags(0)                              // flags are handled by Go kit's logger
+		log.SetOutput(log_0.NewStdlibAdapter(klogger)) // redirect anything using stdlib log to us
 	}
 
 	// All fatal errors go on this channel

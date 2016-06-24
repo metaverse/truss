@@ -126,15 +126,32 @@ type generator struct {
 func New(reg *descriptor.Registry) *generator {
 	var imports []descriptor.GoPackage
 	for _, pkgpath := range []string{
-		"io",
-		"net/http",
-		"github.com/gengo/grpc-gateway/runtime",
-		"github.com/gengo/grpc-gateway/utilities",
-		"github.com/golang/protobuf/proto",
-		"golang.org/x/net/context",
+		//"io",
+		//"net/http",
+		//"github.com/gengo/grpc-gateway/runtime",
+		//"github.com/gengo/grpc-gateway/utilities",
+		//"github.com/golang/protobuf/proto",
+		//"golang.org/x/net/context",
+		//"google.golang.org/grpc",
+		//"google.golang.org/grpc/codes",
+		//"google.golang.org/grpc/grpclog",
+		"fmt",
+		"log",
+		"math/rand",
+		"net",
+		"os",
+		"os/signal",
+		"strconv",
+		"syscall",
+		"time",
+
+		"github.com/go-kit/kit/log",
+		"github.com/go-kit/kit/log/levels",
+		"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/controller",
+		"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb",
+		"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/server",
+
 		"google.golang.org/grpc",
-		"google.golang.org/grpc/codes",
-		"google.golang.org/grpc/grpclog",
 	} {
 		pkg := descriptor.GoPackage{
 			Path: pkgpath,
