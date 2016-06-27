@@ -5,11 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"strings"
 
 	generator "github.com/TuneLab/gob/protoc-gen-gokit-base/generator"
-	templateFiles "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/golang/glog"
 	"github.com/golang/protobuf/proto"
@@ -83,28 +81,7 @@ func main() {
 	importPath = importPath + "/generate/"
 	logf("%s\n", importPath)
 
-	var codeGenFiles []*plugin.CodeGeneratorResponse_File
-	for _, file := range templateFiles.AssetNames() {
-		//logf("%v\n", paths)
-		curResponseFile := plugin.CodeGeneratorResponse_File{}
-
-		// Remove "template/" so that generated files do not include that directory
-		d := strings.TrimPrefix(file, "template_files/")
-		curResponseFile.Name = &d
-
-		// Get the bytes from the file we are working on
-		// then turn it into a string to build a template out of it
-		bytesOfFile, _ := templateFiles.Asset(file)
-		stringFile := string(bytesOfFile)
-
-		// Currently only templating main.go
-		if path.Base(file) == "main.go" {
-			stringFile, _ = g.MyGenerate(targets, file, bytesOfFile)
-		}
-		curResponseFile.Content = &stringFile
-
-		codeGenFiles = append(codeGenFiles, &curResponseFile)
-	}
+	codeGenFiles, _ := g.GenerateResponseFiles(targets)
 
 	output := &plugin.CodeGeneratorResponse{
 		File: codeGenFiles,
