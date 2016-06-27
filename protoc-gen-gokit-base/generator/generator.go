@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	templateFiles "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
+	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
@@ -24,8 +24,10 @@ var (
 )
 
 type generator struct {
-	reg         *descriptor.Registry
-	baseImports []descriptor.GoPackage
+	reg               *descriptor.Registry
+	baseImports       []descriptor.GoPackage
+	templateFileNames func() []string
+	templateFile      func(string) ([]byte, error)
 }
 
 var (
@@ -77,22 +79,27 @@ func New(reg *descriptor.Registry) *generator {
 		}
 		imports = append(imports, pkg)
 	}
-	return &generator{reg: reg, baseImports: imports}
+	return &generator{
+		reg:               reg,
+		baseImports:       imports,
+		templateFileNames: templateFileAssets.AssetNames,
+		templateFile:      templateFileAssets.Asset,
+	}
 }
 
 func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
-	for _, file := range templateFiles.AssetNames() {
+	for _, file := range g.templateFileNames() {
 		//logf("%v\n", paths)
 		curResponseFile := plugin.CodeGeneratorResponse_File{}
 
-		// Remove "template/" so that generated files do not include that directory
+		// Remove "template_files/" so that generated files do not include that directory
 		d := strings.TrimPrefix(file, "template_files/")
 		curResponseFile.Name = &d
 
 		// Get the bytes from the file we are working on
 		// then turn it into a string to build a template out of it
-		bytesOfFile, _ := templateFiles.Asset(file)
+		bytesOfFile, _ := g.templateFile(file)
 		stringFile := string(bytesOfFile)
 
 		// Currently only templating main.go
@@ -105,7 +112,6 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	}
 
 	return codeGenFiles, nil
-
 }
 
 func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, templateBytes []byte) (string, error) {
@@ -131,37 +137,6 @@ func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, 
 		return string(formatted), err
 	}
 	return "", nil
-}
-
-// Move all generation to this function
-func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
-	var files []*plugin.CodeGeneratorResponse_File
-	for _, file := range targets {
-		glog.V(1).Infof("Processing %s", file.GetName())
-		code, err := g.generate(file)
-		if err == errNoTargetService {
-			glog.V(1).Infof("%s: %v", file.GetName(), err)
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		formatted, err := format.Source([]byte(code))
-		if err != nil {
-			glog.Errorf("%v: %s", err, code)
-			return nil, err
-		}
-		name := file.GetName()
-		ext := filepath.Ext(name)
-		base := strings.TrimSuffix(name, ext)
-		output := fmt.Sprintf("%s.pb.gw.go", base)
-		files = append(files, &plugin.CodeGeneratorResponse_File{
-			Name:    proto.String(output),
-			Content: proto.String(string(formatted)),
-		})
-		glog.V(1).Infof("Will emit %s", output)
-	}
-	return files, nil
 }
 
 func (g *generator) generate(file *descriptor.File) (string, error) {
@@ -223,4 +198,34 @@ func applyTemplate(p param) (string, error) {
 
 type binding struct {
 	*descriptor.Binding
+}
+
+func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
+	var files []*plugin.CodeGeneratorResponse_File
+	for _, file := range targets {
+		glog.V(1).Infof("Processing %s", file.GetName())
+		code, err := g.generate(file)
+		if err == errNoTargetService {
+			glog.V(1).Infof("%s: %v", file.GetName(), err)
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		formatted, err := format.Source([]byte(code))
+		if err != nil {
+			glog.Errorf("%v: %s", err, code)
+			return nil, err
+		}
+		name := file.GetName()
+		ext := filepath.Ext(name)
+		base := strings.TrimSuffix(name, ext)
+		output := fmt.Sprintf("%s.pb.gw.go", base)
+		files = append(files, &plugin.CodeGeneratorResponse_File{
+			Name:    proto.String(output),
+			Content: proto.String(string(formatted)),
+		})
+		glog.V(1).Infof("Will emit %s", output)
+	}
+	return files, nil
 }
