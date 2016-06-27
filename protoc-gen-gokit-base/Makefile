@@ -1,11 +1,21 @@
+NO_COLOR=\e[0m
+OK_COLOR=\e[38;5;118m
+
+RUN_MSG=\n$(OK_COLOR)PLUGIN BUILT... GENERATING SERVICE:$(NO_COLOR)\n
+
+BUILD_GENERATE_MSG=\n$(OK_COLOR)SERVICED GENERATED... BUILDING:$(NO_COLOR)\n
 
 NAME=gokit-base
 
 PLUGIN=protoc-gen-$(NAME)
 
+PLUGIN_CMD_DIR=./cmd/$(PLUGIN)
+
 OUTPUT=./generate
 
-GENERATED_OUT_PATH=./generate/gokit-base-cmd
+GENERATED_SERVICE=gokit-base-cmd
+
+GENERATED_OUT_DIR=$(OUTPUT)/$(GENERATED_SERVICE)
 
 all: build-generated-code
 
@@ -16,12 +26,15 @@ $(PLUGIN): gobindata
 	go build ./cmd/protoc-gen-gokit-base
 
 code-generation: $(PLUGIN)
-	mkdir ./generate
+	mkdir -p ./generate
+	@echo -e '$(RUN_MSG)'
 	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --plugin=$(PLUGIN) --$(NAME)_out=logtostderr=true:$(OUTPUT) service.proto
 
 build-generated-code: code-generation
-	go build $(GENERATED_OUT_PATH)
+	@echo -e '$(BUILD_GENERATE_MSG)'
+	go build $(GENERATED_OUT_DIR)
 
 clean:
 	rm -f $(PLUGIN)
 	rm -rf $(OUTPUT)
+	rm -f $(GENERATED_SERVICE)
