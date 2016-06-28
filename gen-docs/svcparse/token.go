@@ -1,0 +1,21 @@
+package svcparse
+
+type Token int
+
+const (
+	ILLEGAL Token = iota
+	EOF
+	WHITESPACE
+	COMMENT
+	SYMBOL
+
+	IDENT
+
+	STRING_LITERAL
+
+	OPEN_PAREN
+	CLOSE_PAREN
+
+	OPEN_BRACE
+	CLOSE_BRACE
+)

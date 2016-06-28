@@ -7,16 +7,21 @@ import (
 )
 
 func TestScanReadUnit(t *testing.T) {
+
 	r := strings.NewReader("what\nservice service Test{}")
 	scn := NewSvcScanner(r)
-	for i := 0; i < 10; i++ {
-		out, err := scn.ReadUnit()
+	for _, good := range []string{"what", "\n", "service",
+		" ", "service", " ", "Test", "{", "}"} {
+		group, err := scn.ReadUnit()
 		if err != nil {
-			break
+			t.Fatalf("ReadUnit returned err: %v\n", err)
 		}
-		t.Logf("%v unit: '%v'\n", i, string(out))
+		if string(group) != good {
+			t.Fatalf("Returned unit '%v' differs from expected unit '%v'\n", string(group), good)
+		}
 	}
 }
+
 func TestScanFastForward(t *testing.T) {
 	r := strings.NewReader("foo bar service baz")
 	scn := NewSvcScanner(r)
@@ -32,5 +37,82 @@ func TestScanFastForward(t *testing.T) {
 	}
 	if got, want := string(buf), "service"; got != want {
 		t.Fatalf("scn.ReadUnit() = '%v'; want '%v'\n", got, want)
+	}
+
+	buf, err = scn.ReadUnit()
+	if err != nil {
+		t.Fatalf("Error on ReadUnit: '%v'\n", err)
+	}
+	if got, want := string(buf), " "; got != want {
+		t.Fatalf("scn.ReadUnit() = '%v'; want '%v'\n", got, want)
+	}
+
+	buf, err = scn.ReadUnit()
+	if err != nil {
+		t.Fatalf("Error on ReadUnit: '%v'\n", err)
+	}
+	if got, want := string(buf), "baz"; got != want {
+		t.Fatalf("scn.ReadUnit() = '%v'; want '%v'\n", got, want)
+	}
+}
+
+func TestBraceLevel(t *testing.T) {
+	r := strings.NewReader("a{ c { }}")
+	scn := NewSvcScanner(r)
+
+	for i, good_lvl := range []int{0, 1, 1, 1, 1, 2, 2, 1, 0} {
+		_, err := scn.ReadUnit()
+		if err != nil {
+			t.Logf("ReadUnit returned error: '%v'\n", err)
+			t.Fail()
+		}
+		if good_lvl != scn.BraceLevel {
+			t.Logf("Unexpected brace level on unit %v: Expected '%v', found '%v'\n", i, good_lvl, scn.BraceLevel)
+			t.Fail()
+		}
+	}
+
+	// Test bracelevel is correctly handled for quote escapes
+	r = strings.NewReader("{ \"{\" }")
+	scn = NewSvcScanner(r)
+
+	for i, good_lvl := range []int{1, 1, 1, 1, 0} {
+		_, err := scn.ReadUnit()
+		if err != nil {
+			t.Logf("ReadUnit returned error: '%v'\n", err)
+			t.Fail()
+		}
+		if good_lvl != scn.BraceLevel {
+			t.Logf("Unexpected brace level on unit %v: Expected '%v', found '%v'\n", i, good_lvl, scn.BraceLevel)
+			t.Fail()
+		}
+	}
+}
+
+func TestLinNos(t *testing.T) {
+	r := strings.NewReader("f\n\nj\nw\n\\n\nwhat")
+	scn := NewSvcScanner(r)
+	for i, good_linno := range []int{1, 3, 3, 4, 4, 5, 5, 5, 6, 6} {
+		_, err := scn.ReadUnit()
+		if err != nil {
+			t.Logf("ReadUnit returned error: '%v'\n", err)
+			t.Fail()
+		}
+		if good_linno != scn.R.LineNo {
+			t.Logf("Unexpected line number on unit %v: Expected '%v', found '%v'\n", i, good_linno, scn.R.LineNo)
+			t.Fail()
+		}
+	}
+}
+
+func TestLexComments(t *testing.T) {
+	r := strings.NewReader("testing\n // comment1\n//comment2\n\n//comment 3 \n what")
+	lex := NewSvcLexer(r)
+	for {
+		tk, str := lex.GetToken()
+		t.Logf("Token: '%v'\n", str)
+		if tk == EOF || tk == ILLEGAL {
+			break
+		}
 	}
 }

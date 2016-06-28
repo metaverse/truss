@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 type RuneReader struct {
@@ -18,7 +19,6 @@ type RuneReader struct {
 	ContentLen int
 	RunePos    int
 	LineNo     int
-	BraceLevel int
 }
 
 func (self *RuneReader) ReadRune() (rune, error) {
@@ -45,10 +45,6 @@ func (self *RuneReader) UnreadRune() error {
 	switch self.Contents[self.RunePos] {
 	case '\n':
 		self.LineNo -= 1
-	case '{':
-		self.BraceLevel -= 1
-	case '}':
-		self.BraceLevel += 1
 	}
 	return nil
 }
@@ -78,6 +74,7 @@ type SvcScanner struct {
 	R            *RuneReader
 	InDefinition bool
 	InBody       bool
+	BraceLevel   int
 }
 
 func NewSvcScanner(r io.Reader) *SvcScanner {
@@ -85,10 +82,17 @@ func NewSvcScanner(r io.Reader) *SvcScanner {
 		R:            NewRuneReader(r),
 		InDefinition: false,
 		InBody:       false,
+		BraceLevel:   0,
 	}
 }
 
+// FastForward will move the current position of the internal RuneReader to the
+// beginning of the next service definition. If the scanner is in the middle of
+// an existing service definition, this method will do nothing.
 func (self *SvcScanner) FastForward() error {
+	if self.InBody || self.InDefinition {
+		return nil
+	}
 	search_str := string("service")
 	for {
 		buf, err := self.ReadUnit()
@@ -109,23 +113,24 @@ func (self *SvcScanner) FastForward() error {
 	return nil
 }
 
-// Reads in a rough "syntactical unit" of a Protobuf file. Returns strings
+// Returns one rough "syntactical unit" of a Protobuf file. Returns strings
 // containing groups of letters, groups of whitespace, and entire comments.
 // Every other type of unit is returned one character at a time.
 func (self *SvcScanner) ReadUnit() ([]rune, error) {
 	var ch rune
 	buf := make([]rune, 0)
 
-	// Shorthand function for reading a rune into the `ch` variable
+	// Populate the buffer with at least one rune so even if it's an unknown
+	// character it will at least return this
 	ch, err := self.R.ReadRune()
 	if err != nil {
-		//fmt.Fprintf(os.Stderr, "Error reading rune at beginning of ReadUnit: '%v'\n", err)
 		return buf, err
 	}
 	buf = append(buf, ch)
 
-	if ch == '/' {
-		buf = append(buf, ch)
+	switch {
+	case ch == '/':
+		// Searching for comments beginning with '/'
 		ch, err = self.R.ReadRune()
 		if err != nil {
 			return buf, err
@@ -140,6 +145,7 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 					buf = append(buf, ch)
 					return buf, nil
 				}
+				buf = append(buf, ch)
 			}
 		} else if ch == '*' {
 			// Handle (potentially) multi-line comments of the form '/**/'
@@ -164,7 +170,7 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 			self.R.UnreadRune()
 			return buf, nil
 		}
-	} else if ch == '"' {
+	case ch == '"':
 		// Handle strings
 		buf = append(buf, ch)
 		for {
@@ -186,11 +192,17 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 				return buf, nil
 			}
 		}
-	} else if unicode.IsSpace(ch) {
-		// Group consecutive spaces
+	case unicode.IsSpace(ch):
+		// Group consecutive white space characters
 		for {
 			ch, err = self.R.ReadRune()
 			if err != nil {
+				// Don't pass along this EOF since we did find a valid 'Unit'
+				// to return. This way, the next call of this function will
+				// return EOF and nothing else, a more clear behavior.
+				if err == io.EOF {
+					return buf, nil
+				}
 				return buf, err
 			} else if !unicode.IsSpace(ch) {
 				self.R.UnreadRune()
@@ -198,19 +210,37 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 			}
 			buf = append(buf, ch)
 		}
-	} else if unicode.IsLetter(ch) {
+	case unicode.IsLetter(ch):
 		// Group consecutive letters
 		for {
 			ch, err = self.R.ReadRune()
 			if err != nil {
+				if err == io.EOF {
+					return buf, nil
+				}
 				return buf, err
 			} else if !unicode.IsLetter(ch) {
 				self.R.UnreadRune()
+				if string(buf) == "service" {
+					self.InDefinition = true
+				}
 				break
 			}
 			buf = append(buf, ch)
 		}
+	case ch == '{':
+		self.BraceLevel += 1
+		if self.InDefinition == true {
+			self.InDefinition = false
+			self.InBody = true
+		}
+	case ch == '}':
+		self.BraceLevel -= 1
+		if self.InBody == true && self.BraceLevel == 0 {
+			self.InBody = false
+		}
 	}
+
 	// Implicitly, everything that's not a group of letters, not a group of
 	// whitespace, not a comment, and not a string-literal, (common examples of
 	// runes in this category are numbers and symbols like '&' or '9') will be
@@ -219,18 +249,97 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 	return buf, nil
 }
 
-func main() {
-	r := strings.NewReader("what\nservice service Test{}")
-	scn := NewSvcScanner(r)
-	//scn.FastForward()
-	//out, _ := scn.R.Peek(9)
-	for i := 0; i < 10; i++ {
-		out, err := scn.ReadUnit()
-		if err != nil {
-			break
-		}
-		fmt.Printf("%v unit: '%v'\n", i, string(out))
-	}
-	//fmt.Printf("Last %v bytes of output: %v\n", len(out), string(out))
+type SvcLexer struct {
+	Scn *SvcScanner
+}
 
+func NewSvcLexer(r io.Reader) *SvcLexer {
+	return &SvcLexer{
+		Scn: NewSvcScanner(r),
+	}
+}
+
+func (self *SvcLexer) GetToken() (Token, string) {
+	// Since FastForward won't take us out of a service definition we're
+	// already within, we can safely call it every time we attempt to get a
+	// token
+	unit, err := self.Scn.ReadUnit()
+
+	if err != nil {
+		if err == io.EOF {
+			return EOF, string(unit)
+		} else {
+			panic(err)
+		}
+	}
+	switch {
+	case len(unit) == 0:
+		return ILLEGAL, ""
+	case unicode.IsSpace(unit[0]):
+		return WHITESPACE, string(unit)
+	case unicode.IsLetter(unit[0]):
+		return IDENT, string(unit)
+	case unit[0] == '"':
+		return STRING_LITERAL, string(unit)
+	case unit[0] == '(':
+		return OPEN_PAREN, string(unit)
+	case unit[0] == ')':
+		return CLOSE_PAREN, string(unit)
+	case unit[0] == '{':
+		return OPEN_BRACE, string(unit)
+	case unit[0] == '}':
+		return CLOSE_BRACE, string(unit)
+	case len(unit) > 1 && unit[0] == '/':
+		tk, addit_comment := self.buildCommentToken()
+		if tk != ILLEGAL {
+			return COMMENT, string(unit) + addit_comment
+		} else {
+			return COMMENT, string(unit)
+		}
+	case len(unit) == 1:
+		return SYMBOL, string(unit)
+	default:
+		return ILLEGAL, string(unit)
+	}
+}
+
+// Since a multi-line comment could be composed of many single line comments,
+// this method exists to handle such cases.
+func (self *SvcLexer) buildCommentToken() (Token, string) {
+	one_tk, one_str := self.GetToken()
+	// Since the newline at the end of each single-line comment is included
+	// within that comment, if there's whitespace between the last comment and
+	// the next, but they're on consecutive lines, then there should be 0
+	// newlines in the whitespace between them.
+	if one_tk == WHITESPACE && strings.Count(one_str, "\n") == 0 {
+		two_tk, two_str := self.GetToken()
+		if two_tk == COMMENT {
+			return COMMENT, one_str + two_str
+		} else {
+			for i := 0; i < utf8.RuneCountInString(one_str+two_str); i++ {
+				self.Scn.R.UnreadRune()
+			}
+			return ILLEGAL, ""
+		}
+	} else if one_tk == COMMENT {
+		return COMMENT, one_str
+	} else {
+		for i := 0; i < utf8.RuneCountInString(one_str); i++ {
+			self.Scn.R.UnreadRune()
+		}
+		return ILLEGAL, ""
+	}
+}
+
+func (self *SvcLexer) GetTokenIgnoreWhitespace() (Token, string) {
+	return self.getTokenIgnore(WHITESPACE)
+}
+
+func (self *SvcLexer) getTokenIgnore(to_ignore Token) (Token, string) {
+	for {
+		t, s := self.GetToken()
+		if t != to_ignore {
+			return t, s
+		}
+	}
 }
