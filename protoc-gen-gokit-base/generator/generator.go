@@ -25,6 +25,7 @@ type generator struct {
 	baseImports       []descriptor.GoPackage
 	templateFileNames func() []string
 	templateFile      func(string) ([]byte, error)
+	templateExec      templateExecutor
 }
 
 type templateExecutor struct {
@@ -59,11 +60,13 @@ func New(reg *descriptor.Registry) *generator {
 		baseImports:       imports,
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
+		templateExec:      templateExecutor{},
 	}
 }
 
 func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
+
 	for _, file := range g.templateFileNames() {
 		logf("%v\n", file)
 		curResponseFile := plugin.CodeGeneratorResponse_File{}
@@ -78,7 +81,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		stringFile := string(bytesOfFile)
 
 		// Currently only templating main.go
-		stringFile, _ = g.MyGenerate(targets, file, bytesOfFile)
+		stringFile, _ = myGenerate(targets, file, bytesOfFile)
 		curResponseFile.Content = &stringFile
 
 		codeGenFiles = append(codeGenFiles, &curResponseFile)
@@ -87,19 +90,16 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	return codeGenFiles, nil
 }
 
-func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, templateBytes []byte) (string, error) {
-	templateString := string(templateBytes)
-	headerTemplate = template.Must(template.New(templateName).Parse(templateString))
-	//var files []*plugin.CodeGeneratorResponse_File
+func myGenerate(targets []*descriptor.File, templateName string, templateBytes []byte) (string, error) {
 
-	//logf("%v\n", len(targets))
+	templateString := string(templateBytes)
+
+	headerTemplate = template.Must(template.New(templateName).Parse(templateString))
 
 	for _, file := range targets {
 		glog.V(1).Infof("Processing %s", file.GetName())
 		code, err := applyTemplate(file)
-		//logf("%v\n", code)
 		if err == errNoTargetService {
-			//glog.V(1).Infof("%s: %v", file.GetName(), err)
 			continue
 		}
 		if err != nil {
@@ -114,8 +114,6 @@ func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, 
 
 func applyTemplate(file *descriptor.File) (string, error) {
 	w := bytes.NewBuffer(nil)
-	//logf("%v\n", p.GetSourceCodeInfo())
-	//logf("%v\n", p)
 	if err := headerTemplate.Execute(w, templateExecutor{}); err != nil {
 		return "FAIL", err
 	}
