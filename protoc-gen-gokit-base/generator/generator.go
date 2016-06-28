@@ -2,26 +2,20 @@ package generator
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
 	"go/format"
 	"os"
 	"strings"
 	"text/template"
 
 	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/util"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	"github.com/golang/glog"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-)
-
-var (
-	headerTemplate     *template.Template
-	errNoTargetService = errors.New("no target service defined in the file")
 )
 
 type generator struct {
 	reg               *descriptor.Registry
+	files             []*descriptor.File
 	baseImports       []descriptor.GoPackage
 	templateFileNames func() []string
 	templateFile      func(string) ([]byte, error)
@@ -42,21 +36,12 @@ func (t templateExecutor) AbsoluteRelativeImportPath() string {
 	return importPath
 }
 
-var (
-	response = string("")
-)
-
-// Leland Batey's log to os.Stderr
-func logf(format string, args ...interface{}) {
-	response += fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, format, args...)
-}
-
 // New returns a new generator which generates grpc gateway files.
-func New(reg *descriptor.Registry) *generator {
+func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	var imports []descriptor.GoPackage
 	return &generator{
 		reg:               reg,
+		files:             files,
 		baseImports:       imports,
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
@@ -68,7 +53,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
 
 	for _, file := range g.templateFileNames() {
-		logf("%v\n", file)
+		util.Logf("%v\n", file)
 		curResponseFile := plugin.CodeGeneratorResponse_File{}
 
 		// Remove "template_files/" so that generated files do not include that directory
@@ -81,7 +66,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		stringFile := string(bytesOfFile)
 
 		// Currently only templating main.go
-		stringFile, _ = myGenerate(targets, file, bytesOfFile)
+		stringFile, _ = generate(targets, file, bytesOfFile)
 		curResponseFile.Content = &stringFile
 
 		codeGenFiles = append(codeGenFiles, &curResponseFile)
@@ -90,36 +75,19 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	return codeGenFiles, nil
 }
 
-func myGenerate(targets []*descriptor.File, templateName string, templateBytes []byte) (string, error) {
+func generate(targets []*descriptor.File, templateName string, templateBytes []byte) (string, error) {
 
 	templateString := string(templateBytes)
 
-	headerTemplate = template.Must(template.New(templateName).Parse(templateString))
+	codeTemplate := template.Must(template.New(templateName).Parse(templateString))
 
-	for _, file := range targets {
-		glog.V(1).Infof("Processing %s", file.GetName())
-		code, err := applyTemplate(file)
-		if err == errNoTargetService {
-			continue
-		}
-		if err != nil {
-			return "", err
-		}
-		formatted, err := format.Source([]byte(code))
-		// MY RETURN SHORT CIRCUT
-		return string(formatted), err
-	}
-	return "", nil
-}
-
-func applyTemplate(file *descriptor.File) (string, error) {
 	w := bytes.NewBuffer(nil)
-	if err := headerTemplate.Execute(w, templateExecutor{}); err != nil {
-		return "FAIL", err
+	err := codeTemplate.Execute(w, templateExecutor{})
+	if err != nil {
+		return "", err
 	}
-	return w.String(), nil
-}
+	code := w.String()
+	formatted, err := format.Source([]byte(code))
 
-type binding struct {
-	*descriptor.Binding
+	return string(formatted), err
 }
