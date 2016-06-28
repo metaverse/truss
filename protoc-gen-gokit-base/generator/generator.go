@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"go/format"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/template"
 
 	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
-	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
@@ -98,7 +96,7 @@ func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, 
 
 	for _, file := range targets {
 		glog.V(1).Infof("Processing %s", file.GetName())
-		code, err := g.generate(file)
+		code, err := applyTemplate(file)
 		//logf("%v\n", code)
 		if err == errNoTargetService {
 			//glog.V(1).Infof("%s: %v", file.GetName(), err)
@@ -108,101 +106,22 @@ func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, 
 			return "", err
 		}
 		formatted, err := format.Source([]byte(code))
-		//logf("%v\n", formatted)
 		// MY RETURN SHORT CIRCUT
 		return string(formatted), err
 	}
 	return "", nil
 }
 
-func (g *generator) generate(file *descriptor.File) (string, error) {
-	pkgSeen := make(map[string]bool)
-	var imports []descriptor.GoPackage
-	for _, pkg := range g.baseImports {
-		pkgSeen[pkg.Path] = true
-		imports = append(imports, pkg)
-	}
-	for _, svc := range file.Services {
-		for _, m := range svc.Methods {
-			pkg := m.RequestType.File.GoPkg
-			if pkg == file.GoPkg {
-				continue
-			}
-			if pkgSeen[pkg.Path] {
-				continue
-			}
-			pkgSeen[pkg.Path] = true
-			imports = append(imports, pkg)
-		}
-	}
-	return applyTemplate(param{File: file, Imports: imports})
-}
-
-type param struct {
-	*descriptor.File
-	Imports []descriptor.GoPackage
-}
-
-func applyTemplate(p param) (string, error) {
+func applyTemplate(file *descriptor.File) (string, error) {
 	w := bytes.NewBuffer(nil)
 	//logf("%v\n", p.GetSourceCodeInfo())
 	//logf("%v\n", p)
-	_ = p
 	if err := headerTemplate.Execute(w, templateExecutor{}); err != nil {
 		return "FAIL", err
 	}
-	//logf("%v\n", w.String())
-	//var methodSeen bool
-	//for _, svc := range p.Services {
-	//for _, meth := range svc.Methods {
-	//glog.V(2).Infof("Processing %s.%s", svc.GetName(), meth.GetName())
-	//methodSeen = true
-	//for _, b := range meth.Bindings {
-	//if err := handlerTemplate.Execute(w, binding{Binding: b}); err != nil {
-	//return "", err
-	//}
-	//}
-	//}
-	//}
-	//if !methodSeen {
-	//return "", errNoTargetService
-	//}
-	//if err := trailerTemplate.Execute(w, p.Services); err != nil {
-	//return "", err
-	//}
 	return w.String(), nil
 }
 
 type binding struct {
 	*descriptor.Binding
-}
-
-func (g *generator) Generate(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
-	var files []*plugin.CodeGeneratorResponse_File
-	for _, file := range targets {
-		glog.V(1).Infof("Processing %s", file.GetName())
-		code, err := g.generate(file)
-		if err == errNoTargetService {
-			glog.V(1).Infof("%s: %v", file.GetName(), err)
-			continue
-		}
-		if err != nil {
-			return nil, err
-		}
-		formatted, err := format.Source([]byte(code))
-		if err != nil {
-			glog.Errorf("%v: %s", err, code)
-			return nil, err
-		}
-		name := file.GetName()
-		ext := filepath.Ext(name)
-		base := strings.TrimSuffix(name, ext)
-		output := fmt.Sprintf("%s.pb.gw.go", base)
-		files = append(files, &plugin.CodeGeneratorResponse_File{
-			Name:    proto.String(output),
-			Content: proto.String(string(formatted)),
-		})
-		glog.V(1).Infof("Will emit %s", output)
-	}
-	return files, nil
 }
