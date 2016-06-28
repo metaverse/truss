@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/controller"
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
+	"{{.AbsoluteRelativeImportPath}}controller"
+	"{{.AbsoluteRelativeImportPath}}pb"
 )
 
 type pureCurrencyExchangeService struct {

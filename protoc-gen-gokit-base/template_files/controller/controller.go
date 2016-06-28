@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/entityhelper"
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
+	"{{.AbsoluteRelativeImportPath}}entityhelper"
+	"{{.AbsoluteRelativeImportPath}}pb"
 )
 
 type Controller struct {

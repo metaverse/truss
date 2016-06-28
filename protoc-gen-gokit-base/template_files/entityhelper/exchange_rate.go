@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/mv-shared/mysql"
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
+	"{{.AbsoluteRelativeImportPath}}mv-shared/mysql"
+	"{{.AbsoluteRelativeImportPath}}pb"
 )
 
 func (c *EntityHelper) FindExchangeRates(whereQstr string, args []interface{}, resetCache bool) (*pb.ExchangeRateEntities, error) {

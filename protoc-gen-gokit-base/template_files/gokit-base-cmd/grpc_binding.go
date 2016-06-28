@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/server"
+	"{{.AbsoluteRelativeImportPath}}pb"
+	"{{.AbsoluteRelativeImportPath}}server"
 	"golang.org/x/net/context"
 )
 

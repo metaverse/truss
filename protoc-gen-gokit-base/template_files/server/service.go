@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
+	"{{.AbsoluteRelativeImportPath}}pb"
 )
 
 type CurrencyExchangeService interface {

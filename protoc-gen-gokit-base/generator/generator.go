@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go/format"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -33,6 +32,8 @@ type generator struct {
 type templateExecutor struct {
 }
 
+// Get working directory, trim off GOPATH, add generate.
+// This should be the absolute path for the relative package dependencies
 func (t templateExecutor) AbsoluteRelativeImportPath() string {
 	wd, _ := os.Getwd()
 	goPath := os.Getenv("GOPATH")
@@ -55,42 +56,6 @@ func logf(format string, args ...interface{}) {
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry) *generator {
 	var imports []descriptor.GoPackage
-	// Loop through base golang imports and add them to the generator
-	// If there are conflicts, use Alias function of registry
-	//for _, pkgpath := range []string{
-	//"fmt",
-	//"log",
-	//"math/rand",
-	//"net",
-	//"os",
-	//"os/signal",
-	//"strconv",
-	//"syscall",
-	//"time",
-
-	//"github.com/go-kit/kit/log",
-	//"github.com/go-kit/kit/log/levels",
-	//"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/controller",
-	//"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb",
-	//"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/server",
-	//"google.golang.org/grpc",
-	//} {
-	//pkg := descriptor.GoPackage{
-	//Path: pkgpath,
-	//Name: path.Base(pkgpath),
-	//}
-	//if err := reg.ReserveGoPackageAlias(pkg.Name, pkg.Path); err != nil {
-	//for i := 0; ; i++ {
-	//alias := fmt.Sprintf("%s_%d", pkg.Name, i)
-	//if err := reg.ReserveGoPackageAlias(alias, pkg.Path); err != nil {
-	//continue
-	//}
-	//pkg.Alias = alias
-	//break
-	//}
-	//}
-	//imports = append(imports, pkg)
-	//}
 	return &generator{
 		reg:               reg,
 		baseImports:       imports,
@@ -115,10 +80,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		stringFile := string(bytesOfFile)
 
 		// Currently only templating main.go
-		if path.Base(file) == "main.go" {
-			logf("%v\n", "entering main.go")
-			stringFile, _ = g.MyGenerate(targets, file, bytesOfFile)
-		}
+		stringFile, _ = g.MyGenerate(targets, file, bytesOfFile)
 		curResponseFile.Content = &stringFile
 
 		codeGenFiles = append(codeGenFiles, &curResponseFile)
@@ -132,14 +94,14 @@ func (g *generator) MyGenerate(targets []*descriptor.File, templateName string, 
 	headerTemplate = template.Must(template.New(templateName).Parse(templateString))
 	//var files []*plugin.CodeGeneratorResponse_File
 
-	logf("%v\n", len(targets))
+	//logf("%v\n", len(targets))
 
 	for _, file := range targets {
 		glog.V(1).Infof("Processing %s", file.GetName())
 		code, err := g.generate(file)
-		logf("%v\n", code)
+		//logf("%v\n", code)
 		if err == errNoTargetService {
-			glog.V(1).Infof("%s: %v", file.GetName(), err)
+			//glog.V(1).Infof("%s: %v", file.GetName(), err)
 			continue
 		}
 		if err != nil {
