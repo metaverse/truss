@@ -56,6 +56,29 @@ func TestScanFastForward(t *testing.T) {
 	}
 }
 
+func TestScanStringLiterals(t *testing.T) {
+	r := strings.NewReader(`ident"strlit"identStr "secstrlit" morestr`)
+	scn := NewSvcScanner(r)
+
+	for i, good_str := range []string{
+		"ident",
+		`"strlit"`,
+		"identStr",
+		" ",
+		`"secstrlit"`,
+		" ",
+		"morestr",
+	} {
+		group, err := scn.ReadUnit()
+		if err != nil {
+			t.Fatalf("ReadUnit returned err: '%v'\n", err)
+		}
+		if string(group) != good_str {
+			t.Fatalf("%v returned group '%v' differs from expected unit '%v'\n", i, string(group), good_str)
+		}
+	}
+}
+
 func TestBraceLevel(t *testing.T) {
 	r := strings.NewReader("a{ c { }}")
 	scn := NewSvcScanner(r)
@@ -105,12 +128,30 @@ func TestLinNos(t *testing.T) {
 	}
 }
 
-func TestLexComments(t *testing.T) {
-	r := strings.NewReader("testing\n // comment1\n//comment2\n\n//comment 3 \n what")
+func TestLexSingleLineComments(t *testing.T) {
+	r := strings.NewReader("service testing\n // comment1\n//comment2\n\n//comment 3 \n what")
 	lex := NewSvcLexer(r)
-	for {
+	for i, good_str := range []string{
+		"service",
+		" ",
+		"testing",
+		"\n ",
+		"// comment1\n//comment2\n",
+		"\n",
+		"//comment 3 \n",
+		" ",
+		"what",
+		"",
+	} {
 		tk, str := lex.GetToken()
-		t.Logf("Token: '%v'\n", str)
+		if tk == ILLEGAL {
+			t.Fatalf("Recieved ILLEGAL token on '%v' call to GetToken\n", i)
+		}
+
+		if str != good_str {
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, good_str)
+		}
+		//t.Logf("Token: '%15v', str: '%v'\n", tk, str)
 		if tk == EOF || tk == ILLEGAL {
 			break
 		}

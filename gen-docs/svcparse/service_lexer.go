@@ -1,7 +1,5 @@
 package svcparse
 
-//package main
-
 import (
 	"bufio"
 	"bytes"
@@ -172,7 +170,6 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 		}
 	case ch == '"':
 		// Handle strings
-		buf = append(buf, ch)
 		for {
 			ch, err = self.R.ReadRune()
 			if err != nil {
@@ -190,6 +187,8 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 				// Closing quotation
 				buf = append(buf, ch)
 				return buf, nil
+			} else {
+				buf = append(buf, ch)
 			}
 		}
 	case unicode.IsSpace(ch):
@@ -263,6 +262,14 @@ func (self *SvcLexer) GetToken() (Token, string) {
 	// Since FastForward won't take us out of a service definition we're
 	// already within, we can safely call it every time we attempt to get a
 	// token
+	err := self.Scn.FastForward()
+	if err != nil {
+		if err == io.EOF {
+			return EOF, ""
+		} else {
+			panic(err)
+		}
+	}
 	unit, err := self.Scn.ReadUnit()
 
 	if err != nil {

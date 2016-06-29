@@ -373,12 +373,15 @@ type ServiceMethod struct {
 	describable
 	RequestType  ProtoMessage
 	ResponseType ProtoMessage
+	HttpOption   *ServiceHttpOption
 }
 
 func (self *ServiceMethod) describe(depth int) string {
 	rv := self.describable.describe(depth)
 	rv += prindent(depth, "RequestType: %v\n", self.RequestType.GetName())
 	rv += prindent(depth, "ResponseType: %v\n", self.ResponseType.GetName())
+	rv += prindent(depth, "ServiceHttpOption:\n")
+	rv += self.HttpOption.describe(depth + 1)
 	return rv
 }
 
@@ -398,6 +401,32 @@ func (self *ServiceMethod) GetByName(name string) Describable {
 		return &self.ResponseType
 	}
 	return nil
+}
+
+type ServiceHttpOption struct {
+	describable
+	Fields []*OptionField
+}
+
+func (self *ServiceHttpOption) describe(depth int) string {
+	rv := self.describable.describe(depth)
+	for _, field := range self.Fields {
+		rv += field.describe(depth + 1)
+	}
+	return rv
+}
+
+type OptionField struct {
+	describable
+	Kind  string
+	Value string
+}
+
+func (self *OptionField) describe(depth int) string {
+	rv := self.describable.describe(depth)
+	rv += prindent(depth, "Kind: %v\n", self.Kind)
+	rv += prindent(depth, "Value: %v\n", self.Value)
+	return rv
 }
 
 // New accepts a Protobuf CodeGeneratorRequest and returns a Doctree struct
