@@ -16,7 +16,6 @@ import (
 type generator struct {
 	reg               *descriptor.Registry
 	files             []*descriptor.File
-	baseImports       []descriptor.GoPackage
 	templateFileNames func() []string
 	templateFile      func(string) ([]byte, error)
 	templateExec      templateExecutor
@@ -38,11 +37,9 @@ func (t templateExecutor) AbsoluteRelativeImportPath() string {
 
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
-	var imports []descriptor.GoPackage
 	return &generator{
 		reg:               reg,
 		files:             files,
-		baseImports:       imports,
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
 		templateExec:      templateExecutor{},
@@ -51,6 +48,8 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 
 func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
+
+	g.printAllServices()
 
 	for _, file := range g.templateFileNames() {
 		util.Logf("%v\n", file)
@@ -73,6 +72,21 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	}
 
 	return codeGenFiles, nil
+}
+
+func (g *generator) printAllServices() {
+	for _, file := range g.files {
+		util.Logf("File: %v\n", file.GetName())
+		for _, service := range file.Services {
+			util.Logf("\tService: %v\n", service.GetName())
+			for _, method := range service.Methods {
+				util.Logf("\t\tMethod: %v\n", method.GetName())
+				util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
+				util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
+				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
+			}
+		}
+	}
 }
 
 func generate(targets []*descriptor.File, templateName string, templateBytes []byte) (string, error) {
