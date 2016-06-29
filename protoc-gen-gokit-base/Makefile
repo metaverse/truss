@@ -19,8 +19,9 @@ GENERATED_OUT_DIR=$(OUTPUT)/$(GENERATED_SERVICE)
 
 all: build-generated-code
 
+# -ignore swp ignores vim swap files
 gobindata:
-	go-bindata -pkg template -o ./template/template.go template_files/...
+	go-bindata -pkg template -o ./template/template.go -ignore swp template_files/...
 
 $(PLUGIN): gobindata
 	go build ./cmd/protoc-gen-gokit-base
