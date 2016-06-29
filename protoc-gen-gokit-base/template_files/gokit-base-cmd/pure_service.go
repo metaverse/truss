@@ -1,3 +1,4 @@
+
 package main
 
 import (
@@ -5,40 +6,18 @@ import (
 	"{{.AbsoluteRelativeImportPath}}pb"
 )
 
-type pureCurrencyExchangeService struct {
+
+type pure{{.Service.GetName}} struct {
 	*controller.Controller
 }
 
-func (p pureCurrencyExchangeService) ExchangeRateGetRate(req *pb.ExchangeRateGetRateRequest) (*pb.ExchangeRateGetRateResponse, error) {
-	res, err := p.Controller.ExchangeRateGetRate(req)
+{{range $i := .Service.Methods}}
+func (p pure{{.Service.GetName}}) {{$i.GetName}}(req *pb.{{$i.RequestType.GetName}}) (*pb.{{$i.ResponseType.GetName}}, error) {
+	res, err := p.Controller.{{$i.GetName}}(req)
 	if res == nil {
-		res = &pb.ExchangeRateGetRateResponse{}
+		res = &pb.{{$i.ResponseType.GetName}}{}
 	}
 	return res, err
 }
+{{end}}
 
-func (p pureCurrencyExchangeService) ExchangeRateConvert(req *pb.ExchangeRateConvertRequest) (*pb.ExchangeRateConvertResponse, error) {
-	res, err := p.Controller.ExchangeRateConvert(req)
-	if res == nil {
-		res = &pb.ExchangeRateConvertResponse{}
-	}
-	return res, err
-}
-
-func (p pureCurrencyExchangeService) Status(req *pb.StatusRequest) (*pb.StatusResponse, error) {
-	res, err := p.Controller.Status(req)
-	if res == nil {
-		res = &pb.StatusResponse{
-			Status: pb.ServiceStatus_FAIL,
-		}
-	}
-	return res, err
-}
-
-func (p pureCurrencyExchangeService) Ping(req *pb.PingRequest) (*pb.PingResponse, error) {
-	res, err := p.Controller.Ping(req)
-	if res == nil {
-		res = &pb.PingResponse{}
-	}
-	return res, err
-}
