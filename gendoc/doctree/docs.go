@@ -15,15 +15,7 @@ package doctree
 
 import (
 	"fmt"
-	"os"
-
-	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
-	//plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-)
-
-var (
-	_ = descriptor.MethodDescriptorProto{}
-	_ = os.Stderr
+	"strings"
 )
 
 // prindent is a utility function for creating a formatted string with a given
@@ -260,11 +252,23 @@ func (self *ProtoMessage) describe(depth int) string {
 }
 
 func (self *ProtoMessage) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
-	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Fields")
-	for _, field := range self.Fields {
-		rv += field.describeMarkdown(depth + 1)
+	//name_anchor :=
+	rv := `<a name="` + self.Name + `"></a>` + "\n\n"
+	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
+	if len(self.Description) > 1 {
+		rv += prindent(0, "%v\n\n", self.Description)
 	}
+	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Fields")
+
+	rv += "| Name | Type | Field Number | Description|\n"
+	rv += "| ---- | ---- | ------------ | -----------|\n"
+	for _, f := range self.Fields {
+		safe_desc := f.GetDescription()
+		safe_desc = strings.Replace(safe_desc, "\n", "", -1)
+		rv += fmt.Sprintf("| %v | %v | %v | %v |\n", f.GetName(), f.Type.Name, f.Number, safe_desc)
+		//rv += field.describeMarkdown(depth + 1)
+	}
+	rv += "\n"
 	return rv
 
 }
@@ -392,8 +396,8 @@ func (self *ServiceMethod) describe(depth int) string {
 func (self *ServiceMethod) describeMarkdown(depth int) string {
 	rv := self.describable.describeMarkdown(depth)
 
-	rv += prindent(0, "RequestType: %v\n\n", self.RequestType.GetName())
-	rv += prindent(0, "ResponseType: %v\n\n", self.ResponseType.GetName())
+	rv += prindent(0, "[RequestType: %v](#%v)\n\n", self.RequestType.GetName(), self.RequestType.GetName())
+	rv += prindent(0, "[ResponseType: %v](#%v)\n\n", self.ResponseType.GetName(), self.ResponseType.GetName())
 
 	rv += self.HttpOption.describeMarkdown(depth + 1)
 
