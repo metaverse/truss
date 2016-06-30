@@ -14,8 +14,10 @@ PLUGIN_CMD_DIR=./cmd/$(PLUGIN)
 OUTPUT=./generate
 
 GENERATED_SERVICE=addsvc
+GENERATED_SERVICE_CLIENT=addcli
 
 GENERATED_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE)
+GENERATED_CLIENT_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE_CLIENT)
 
 all: build-generated-code
 
@@ -34,8 +36,10 @@ code-generation: $(PLUGIN)
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'
 	go build $(GENERATED_OUT_DIR)/...
+	go build $(GENERATED_CLIENT_OUT_DIR)/...
 
 clean:
 	rm -f $(PLUGIN)
 	rm -rf $(OUTPUT)
 	rm -f $(GENERATED_SERVICE)
+	rm -f $(GENERATED_SERVICE_CLIENT)
