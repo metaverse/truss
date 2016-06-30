@@ -13,7 +13,7 @@ function diffc {
 # This function searches for two files in generate and to_generate and diffs them
 # See if there are differences between generated service and orginal
 function agd {
-	files=$(ag --ignore template_files --ignore protoc-gen-gokit-base -g generate -g to-generate -g $1)
+	files=$(ag --ignore template_files --ignore protoc-gen-gokit-base --ignore old_currencyexchange -g generate -g original -g $1)
 	IFS=$'\n'
 	lines=($files)
 
