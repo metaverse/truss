@@ -252,13 +252,21 @@ func (self *ProtoMessage) describe(depth int) string {
 }
 
 func (self *ProtoMessage) describeMarkdown(depth int) string {
-	//name_anchor :=
+	// Embed an anchor above this title, to allow for things to link to it. The
+	// 'name' of this anchor link is just the name of this ProtoMessage. This
+	// may not reliably create unique 'name's in all cases, but I've not
+	// encountered any problems with this aproach thus far so I'm keeping it.
 	rv := `<a name="` + self.Name + `"></a>` + "\n\n"
 	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
 	if len(self.Description) > 1 {
 		rv += prindent(0, "%v\n\n", self.Description)
 	}
-	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Fields")
+
+	// If there's no fields, avoid printing an empty table by short-circuiting
+	if len(self.Fields) < 1 {
+		rv += "\n"
+		return rv
+	}
 
 	rv += "| Name | Type | Field Number | Description|\n"
 	rv += "| ---- | ---- | ------------ | -----------|\n"
@@ -266,7 +274,6 @@ func (self *ProtoMessage) describeMarkdown(depth int) string {
 		safe_desc := f.GetDescription()
 		safe_desc = strings.Replace(safe_desc, "\n", "", -1)
 		rv += fmt.Sprintf("| %v | %v | %v | %v |\n", f.GetName(), f.Type.Name, f.Number, safe_desc)
-		//rv += field.describeMarkdown(depth + 1)
 	}
 	rv += "\n"
 	return rv
@@ -294,14 +301,6 @@ func (self *MessageField) describe(depth int) string {
 	rv += prindent(depth, "Type:\n")
 	rv += self.Type.describe(depth + 1)
 	return rv
-}
-
-func (self *MessageField) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
-	rv += prindent(0, "*Protobuf Field Number:*  %v\n\n", self.Number)
-	rv += prindent(0, "*Type:*  %v\n\n", self.Type.Name)
-	return rv
-
 }
 
 type ProtoEnum struct {
@@ -428,7 +427,6 @@ func (self *ServiceHttpOption) describe(depth int) string {
 }
 
 func (self *ServiceHttpOption) describeMarkdown(depth int) string {
-	//rv := self.describable.describeMarkdown(depth)
 	rv := ""
 
 	for _, field := range self.Fields {

@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/TuneLab/gob/gendoc"
+	"github.com/TuneLab/gob/gendoc/doctree/makedt"
 	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
@@ -55,7 +55,7 @@ func main() {
 		panic(err)
 	}
 
-	doc, _ := gendoc.New(request)
+	doc, _ := makedt.New(request)
 
 	response := doc.Markdown()
 	response_file := str_to_response(response, "ast.log")

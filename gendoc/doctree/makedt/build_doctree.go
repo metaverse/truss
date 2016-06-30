@@ -1,4 +1,4 @@
-package gendoc
+package makedt
 
 import (
 	"fmt"
