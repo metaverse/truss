@@ -43,3 +43,6 @@ clean:
 	rm -rf $(OUTPUT)
 	rm -f $(GENERATED_SERVICE)
 	rm -f $(GENERATED_SERVICE_CLIENT)
+
+test:
+	git --no-pager diff --color=always --no-index original/ $(OUTPUT)
