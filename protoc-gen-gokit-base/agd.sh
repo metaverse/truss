@@ -16,9 +16,22 @@ function agd {
 	files=$(ag --ignore template_files --ignore protoc-gen-gokit-base -g generate -g to-generate -g $1)
 	IFS=$'\n'
 	lines=($files)
+	echo $lines
+	count=0
+	ag --ignore template_files --ignore protoc-gen-gokit-base -g generate -g to-generate -g $1| while read line; do
+		echo $count $line
+		(( count++ ))
+	done
 
-	echo "diffing ${lines[1]} and ${lines[0]}"
-	diffc ${lines[1]} ${lines[0]} | less -XFR
+	echo "Select original file:"
+
+	read original
+	echo "Select generated file:"
+	read generated
+
+
+	echo "diffing ${lines[$original]} and ${lines[$generated]}"
+	diffc ${lines[$original]} ${lines[$generated]} | less -XFR
 }
 
 agd $1
