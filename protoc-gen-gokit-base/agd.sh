@@ -16,19 +16,28 @@ function agd {
 	files=$(ag --ignore template_files --ignore protoc-gen-gokit-base -g generate -g to-generate -g $1)
 	IFS=$'\n'
 	lines=($files)
-	echo $lines
-	count=0
-	ag --ignore template_files --ignore protoc-gen-gokit-base -g generate -g to-generate -g $1| while read line; do
-		echo $count $line
-		(( count++ ))
-	done
 
-	echo "Select original file:"
+	# ${#array[@]} gives you the length of a bash array
+	if [ ${#lines[@]} == 0 ]; then
+		echo "No files found"
+		exit
+	fi
 
-	read original
-	echo "Select generated file:"
-	read generated
+	if [ ${#lines[@]} == 2 ]; then
+		original=1
+		generated=0
+	else
+		count=0
+		ag --ignore template_files --ignore protoc-gen-gokit-base -g generate -g to-generate -g $1| while read line; do
+			echo $count $line
+			(( count++ ))
+		done
 
+		echo "Select original file:"
+		read original
+		echo "Select generated file:"
+		read generated
+	fi
 
 	echo "diffing ${lines[$original]} and ${lines[$generated]}"
 	diffc ${lines[$original]} ${lines[$generated]} | less -XFR
