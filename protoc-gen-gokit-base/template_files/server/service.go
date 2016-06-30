@@ -4,9 +4,8 @@ import (
 	"{{.AbsoluteRelativeImportPath}}pb"
 )
 
-type CurrencyExchangeService interface {
-	ExchangeRateGetRate(req *pb.ExchangeRateGetRateRequest) (*pb.ExchangeRateGetRateResponse, error)
-	ExchangeRateConvert(req *pb.ExchangeRateConvertRequest) (*pb.ExchangeRateConvertResponse, error)
-	Status(req *pb.StatusRequest) (*pb.StatusResponse, error)
-	Ping(req *pb.PingRequest) (*pb.PingResponse, error)
+type {{.Service.GetName}} interface {
+	{{range $i := .Service.Methods}}
+	{{$i.GetName}}(req *pb.{{$i.RequestType.GetName}}) (*pb.{{$i.ResponseType.GetName}}, error)
+	{{- end}}
 }
