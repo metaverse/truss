@@ -19,9 +19,9 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}}"
-	grpcclient "{{.AbsoluteRelativeImportPath -}} /client/grpc"
-	httpclient "{{.AbsoluteRelativeImportPath -}} /client/http"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
+	grpcclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/grpc"
+	httpclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/http"
 )
 
 func main() {

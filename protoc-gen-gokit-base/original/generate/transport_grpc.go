@@ -12,7 +12,7 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}} /pb"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
 )
 
 // MakeGRPCServer makes a set of endpoints available as a gRPC AddServer.

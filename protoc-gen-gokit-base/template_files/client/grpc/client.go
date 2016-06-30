@@ -11,12 +11,14 @@ import (
 
 	"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
-	"{{.AbsoluteRelativeImportPath -}} addsvc"
-	"{{.AbsoluteRelativeImportPath -}} addsvc/pb"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/tracing/opentracing"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
+
+	// This Service
+	"{{.AbsoluteRelativeImportPath -}}"
+	"{{.AbsoluteRelativeImportPath -}} /pb"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the

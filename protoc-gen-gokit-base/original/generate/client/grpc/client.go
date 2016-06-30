@@ -1,38 +1,29 @@
-// Package http provides an HTTP client for the add service.
-package http
+// Package grpc provides a gRPC client for the add service.
+package grpc
 
 import (
-	"net/url"
-	"strings"
 	"time"
 
 	jujuratelimit "github.com/juju/ratelimit"
 	stdopentracing "github.com/opentracing/opentracing-go"
 	"github.com/sony/gobreaker"
+	"google.golang.org/grpc"
 
 	"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/tracing/opentracing"
-	httptransport "github.com/go-kit/kit/transport/http"
+	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}}"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
 )
 
-// New returns an AddService backed by an HTTP server living at the remote
-// instance. We expect instance to come from a service discovery system, so
-// likely of the form "host:port".
-func New(instance string, tracer stdopentracing.Tracer, logger log.Logger) (addsvc.Service, error) {
-	if !strings.HasPrefix(instance, "http") {
-		instance = "http://" + instance
-	}
-	u, err := url.Parse(instance)
-	if err != nil {
-		return nil, err
-	}
-
+// New returns an AddService backed by a gRPC client connection. It is the
+// responsibility of the caller to dial, and later close, the connection.
+func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger) addsvc.Service {
 	// We construct a single ratelimiter middleware, to limit the total outgoing
 	// QPS from this client to all methods on the remote instance. We also
 	// construct per-endpoint circuitbreaker middlewares to demonstrate how
@@ -43,12 +34,14 @@ func New(instance string, tracer stdopentracing.Tracer, logger log.Logger) (adds
 
 	var sumEndpoint endpoint.Endpoint
 	{
-		sumEndpoint = httptransport.NewClient(
-			"POST",
-			copyURL(u, "/sum"),
-			addsvc.EncodeHTTPGenericRequest,
-			addsvc.DecodeHTTPSumResponse,
-			httptransport.ClientBefore(opentracing.FromHTTPRequest(tracer, "Sum", logger)),
+		sumEndpoint = grpctransport.NewClient(
+			conn,
+			"Add",
+			"Sum",
+			addsvc.EncodeGRPCSumRequest,
+			addsvc.DecodeGRPCSumResponse,
+			pb.SumReply{},
+			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "Sum", logger)),
 		).Endpoint()
 		sumEndpoint = opentracing.TraceClient(tracer, "Sum")(sumEndpoint)
 		sumEndpoint = limiter(sumEndpoint)
@@ -60,29 +53,25 @@ func New(instance string, tracer stdopentracing.Tracer, logger log.Logger) (adds
 
 	var concatEndpoint endpoint.Endpoint
 	{
-		concatEndpoint = httptransport.NewClient(
-			"POST",
-			copyURL(u, "/concat"),
-			addsvc.EncodeHTTPGenericRequest,
-			addsvc.DecodeHTTPConcatResponse,
-			httptransport.ClientBefore(opentracing.FromHTTPRequest(tracer, "Concat", logger)),
+		concatEndpoint = grpctransport.NewClient(
+			conn,
+			"Add",
+			"Concat",
+			addsvc.EncodeGRPCConcatRequest,
+			addsvc.DecodeGRPCConcatResponse,
+			pb.ConcatReply{},
+			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "Concat", logger)),
 		).Endpoint()
 		concatEndpoint = opentracing.TraceClient(tracer, "Concat")(concatEndpoint)
 		concatEndpoint = limiter(concatEndpoint)
-		sumEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		concatEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
 			Name:    "Concat",
 			Timeout: 30 * time.Second,
-		}))(sumEndpoint)
+		}))(concatEndpoint)
 	}
 
 	return addsvc.Endpoints{
 		SumEndpoint:    sumEndpoint,
 		ConcatEndpoint: concatEndpoint,
-	}, nil
-}
-
-func copyURL(base *url.URL, path string) *url.URL {
-	next := *base
-	next.Path = path
-	return &next
+	}
 }

@@ -18,7 +18,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}}"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
 )
 
 // New returns an AddService backed by an HTTP server living at the remote
