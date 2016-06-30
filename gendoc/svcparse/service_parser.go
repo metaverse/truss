@@ -87,6 +87,11 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
+	// Here we ignore the "stream" keyword which may appear in the arguments of
+	// an RPC definition
+	if val == "stream" {
+		tk, val = lex.GetTokenIgnoreWhitespace()
+	}
 	if tk != IDENT {
 		return nil, parseErr("a string identifier in first argument to method", lex.Scn.R.LineNo, val)
 	}
@@ -110,6 +115,11 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
+	// Here we ignore the "stream" keyword which may appear in the arguments of
+	// an RPC definition
+	if val == "stream" {
+		tk, val = lex.GetTokenIgnoreWhitespace()
+	}
 	if tk != IDENT {
 		return nil, parseErr("a string identifier in return argument to method", lex.Scn.R.LineNo, val)
 	}
