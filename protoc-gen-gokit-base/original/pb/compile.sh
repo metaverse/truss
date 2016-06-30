@@ -11,8 +11,4 @@
 # See also
 #  https://github.com/grpc/grpc-go/tree/master/examples
 
-protoc -I/usr/local/include -I. \
- -I$GOPATH/src \
- -I$GOPATH/src/github.com/gengo/grpc-gateway/third_party/googleapis \
- --go_out=Mgoogle/api/annotations.proto=github.com/gengo/grpc-gateway/third_party/googleapis/google/api,plugins=grpc:. \
- exchange_rate.proto service.proto
+protoc addsvc.proto --go_out=plugins=grpc:.
