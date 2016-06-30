@@ -16,10 +16,12 @@ import (
 	"google.golang.org/grpc"
 	"sourcegraph.com/sourcegraph/appdash"
 
-	"github.com/go-kit/kit/examples/addsvc"
-	grpcclient "github.com/go-kit/kit/examples/addsvc/client/grpc"
-	httpclient "github.com/go-kit/kit/examples/addsvc/client/http"
 	"github.com/go-kit/kit/log"
+
+	// This Service
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
+	grpcclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/grpc"
+	httpclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/http"
 )
 
 func main() {

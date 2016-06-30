@@ -12,11 +12,13 @@ import (
 
 	"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/examples/addsvc"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
+
+	// This Service
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
 )
 
 // New returns an AddService backed by an HTTP server living at the remote

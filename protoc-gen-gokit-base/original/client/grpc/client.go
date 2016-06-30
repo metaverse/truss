@@ -11,12 +11,14 @@ import (
 
 	"github.com/go-kit/kit/circuitbreaker"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/examples/addsvc"
-	"github.com/go-kit/kit/examples/addsvc/pb"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/tracing/opentracing"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
+
+	// This Service
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the
