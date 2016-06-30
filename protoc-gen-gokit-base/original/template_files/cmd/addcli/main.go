@@ -16,9 +16,9 @@ import (
 	"google.golang.org/grpc"
 	"sourcegraph.com/sourcegraph/appdash"
 
-	"{{.AbsoluteRelativeImportPath -}} addsvc"
-	grpcclient "{{.AbsoluteRelativeImportPath -}} client/grpc"
-	httpclient "{{.AbsoluteRelativeImportPath -}} client/http"
+	"github.com/go-kit/kit/examples/addsvc"
+	grpcclient "github.com/go-kit/kit/examples/addsvc/client/grpc"
+	httpclient "github.com/go-kit/kit/examples/addsvc/client/http"
 	"github.com/go-kit/kit/log"
 )
 

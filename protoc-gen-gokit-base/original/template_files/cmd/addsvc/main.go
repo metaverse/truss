@@ -30,9 +30,8 @@ import (
 	"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}} "
-	"{{.AbsoluteRelativeImportPath -}} /pb"
-
+	"github.com/go-kit/kit/examples/addsvc"
+	"github.com/go-kit/kit/examples/addsvc/pb"
 )
 
 func main() {

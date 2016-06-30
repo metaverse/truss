@@ -7,7 +7,7 @@ import (
 	stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
 
-	"{{.AbsoluteRelativeImportPath -}} /pb"
+	"github.com/go-kit/kit/examples/addsvc/pb"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/tracing/opentracing"
 	grpctransport "github.com/go-kit/kit/transport/grpc"

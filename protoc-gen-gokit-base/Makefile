@@ -13,9 +13,9 @@ PLUGIN_CMD_DIR=./cmd/$(PLUGIN)
 
 OUTPUT=./generate
 
-GENERATED_SERVICE=gokit-base-cmd
+GENERATED_SERVICE=addsvc
 
-GENERATED_OUT_DIR=$(OUTPUT)/$(GENERATED_SERVICE)
+GENERATED_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE)
 
 all: build-generated-code
 
@@ -33,7 +33,7 @@ code-generation: $(PLUGIN)
 
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'
-	go build $(GENERATED_OUT_DIR)
+	go build $(GENERATED_OUT_DIR)/...
 
 clean:
 	rm -f $(PLUGIN)

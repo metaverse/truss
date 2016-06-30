@@ -22,19 +22,12 @@ type generator struct {
 }
 
 type templateExecutor struct {
-	Service *descriptor.Service
+	AbsoluteRelativeImportPath string
+	Service                    *descriptor.Service
 }
 
 // Get working directory, trim off GOPATH, add generate.
 // This should be the absolute path for the relative package dependencies
-func (t templateExecutor) AbsoluteRelativeImportPath() string {
-	wd, _ := os.Getwd()
-	goPath := os.Getenv("GOPATH")
-	importPath := strings.TrimPrefix(wd, goPath+"/src/")
-	importPath = importPath + "/generate/"
-
-	return importPath
-}
 
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
@@ -45,13 +38,20 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 			service = file.Services[0]
 		}
 	}
+
+	wd, _ := os.Getwd()
+	goPath := os.Getenv("GOPATH")
+	importPath := strings.TrimPrefix(wd, goPath+"/src/")
+	importPath = importPath + "/generate"
+
 	return &generator{
 		reg:               reg,
 		files:             files,
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
 		templateExec: templateExecutor{
-			Service: service,
+			AbsoluteRelativeImportPath: importPath,
+			Service:                    service,
 		},
 	}
 }
