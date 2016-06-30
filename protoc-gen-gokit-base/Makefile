@@ -29,9 +29,11 @@ $(PLUGIN): gobindata
 	go build ./cmd/protoc-gen-gokit-base
 
 code-generation: $(PLUGIN)
-	mkdir -p ./generate
+	mkdir -p $(OUTPUT)
+	mkdir -p $(OUTPUT)/pb
+	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --go_out=plugins=grpc:$(OUTPUT)/ pb/*.proto
 	@echo -e '$(RUN_MSG)'
-	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --plugin=$(PLUGIN) --$(NAME)_out=logtostderr=true:$(OUTPUT) service.proto
+	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --plugin=$(PLUGIN) --$(NAME)_out=logtostderr=true:$(OUTPUT) pb/*.proto
 
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'
