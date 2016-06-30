@@ -20,4 +20,3 @@ func (p pure{{.Service.GetName}}) {{$i.GetName}}(req *pb.{{$i.RequestType.GetNam
 	return res, err
 }
 {{end}}
-
