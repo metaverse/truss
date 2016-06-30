@@ -2,9 +2,10 @@ package svcparse
 
 import (
 	"fmt"
+	"io"
 	"unicode/utf8"
 
-	"github.com/TuneLab/gob/gen-docs/doctree"
+	"github.com/TuneLab/gob/gendoc/doctree"
 )
 
 func parseErr(expected string, line int, val string) error {
@@ -13,6 +14,9 @@ func parseErr(expected string, line int, val string) error {
 
 func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
 	tk, val := lex.GetTokenIgnoreWhitespace()
+	if tk == EOF {
+		return nil, io.EOF
+	}
 	if tk != IDENT && val != "service" {
 		return nil, parseErr("'service' identifier", lex.Scn.R.LineNo, val)
 	}
@@ -87,7 +91,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		return nil, parseErr("a string identifier in first argument to method", lex.Scn.R.LineNo, val)
 	}
 
-	toret.RequestType = doctree.ProtoMessage{}
+	toret.RequestType = &doctree.ProtoMessage{}
 	toret.RequestType.SetName(val)
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -110,7 +114,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		return nil, parseErr("a string identifier in return argument to method", lex.Scn.R.LineNo, val)
 	}
 
-	toret.ResponseType = doctree.ProtoMessage{}
+	toret.ResponseType = &doctree.ProtoMessage{}
 	toret.ResponseType.SetName(val)
 
 	tk, val = lex.GetTokenIgnoreWhitespace()

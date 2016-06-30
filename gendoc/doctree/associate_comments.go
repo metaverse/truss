@@ -187,7 +187,7 @@ func scrubComments(comment string) string {
 	return comment
 }
 
-func associateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
+func AssociateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 	for _, file := range req.GetProtoFile() {
 		// Skip comments for files outside the main one being considered
 		skip := true

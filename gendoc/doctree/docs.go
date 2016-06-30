@@ -18,7 +18,7 @@ import (
 	"os"
 
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	//plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
 var (
@@ -111,7 +111,8 @@ func (self *describable) GetDescription() string {
 }
 
 func (self *describable) SetDescription(d string) {
-	self.Description = d
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
 }
 
 func (self *describable) GetByName(s string) Describable {
@@ -371,8 +372,8 @@ func (self *ProtoService) GetByName(name string) Describable {
 
 type ServiceMethod struct {
 	describable
-	RequestType  ProtoMessage
-	ResponseType ProtoMessage
+	RequestType  *ProtoMessage
+	ResponseType *ProtoMessage
 	HttpOption   *ServiceHttpOption
 }
 
@@ -381,7 +382,10 @@ func (self *ServiceMethod) describe(depth int) string {
 	rv += prindent(depth, "RequestType: %v\n", self.RequestType.GetName())
 	rv += prindent(depth, "ResponseType: %v\n", self.ResponseType.GetName())
 	rv += prindent(depth, "ServiceHttpOption:\n")
-	rv += self.HttpOption.describe(depth + 1)
+
+	if self.HttpOption != nil {
+		rv += self.HttpOption.describe(depth + 1)
+	}
 	return rv
 }
 
@@ -390,15 +394,18 @@ func (self *ServiceMethod) describeMarkdown(depth int) string {
 
 	rv += prindent(0, "RequestType: %v\n\n", self.RequestType.GetName())
 	rv += prindent(0, "ResponseType: %v\n\n", self.ResponseType.GetName())
+
+	rv += self.HttpOption.describeMarkdown(depth + 1)
+
 	return rv
 }
 
 func (self *ServiceMethod) GetByName(name string) Describable {
 	if name == self.RequestType.GetName() {
-		return &self.RequestType
+		return self.RequestType
 	}
 	if name == self.ResponseType.GetName() {
-		return &self.ResponseType
+		return self.ResponseType
 	}
 	return nil
 }
@@ -416,6 +423,21 @@ func (self *ServiceHttpOption) describe(depth int) string {
 	return rv
 }
 
+func (self *ServiceHttpOption) describeMarkdown(depth int) string {
+	//rv := self.describable.describeMarkdown(depth)
+	rv := ""
+
+	for _, field := range self.Fields {
+		rv += prindent(0, "- '%v' : '%v'\n", field.Kind, field.Value)
+		if field.GetDescription() != "" {
+			rv += prindent(1, "- %v\n", field.GetDescription())
+		}
+	}
+	rv += "\n"
+
+	return rv
+}
+
 type OptionField struct {
 	describable
 	Kind  string
@@ -427,98 +449,4 @@ func (self *OptionField) describe(depth int) string {
 	rv += prindent(depth, "Kind: %v\n", self.Kind)
 	rv += prindent(depth, "Value: %v\n", self.Value)
 	return rv
-}
-
-// New accepts a Protobuf CodeGeneratorRequest and returns a Doctree struct
-func New(req *plugin.CodeGeneratorRequest) (Doctree, error) {
-	dt := MicroserviceDefinition{}
-	for _, file := range req.ProtoFile {
-		// Check if this file is one we even should examine, and if it's not,
-		// skip it
-		fname := file.GetName()
-		should_examine := false
-		for _, goodf := range req.FileToGenerate {
-			if fname == goodf {
-				should_examine = true
-			}
-		}
-		if should_examine == false {
-			continue
-		}
-
-		// This is a file we are meant to examine, so contine with it's
-		// creation in the Doctree
-		new_file := ProtoFile{}
-		new_file.Name = file.GetName()
-
-		if dt.Name == "" {
-			dt.Name = *file.Package
-		} else {
-			if dt.Name != *file.Package {
-				panic("Package name of specified protobuf definitions differ.")
-			}
-		}
-
-		// Add enums to this file
-		for _, enum := range file.EnumType {
-			new_enum := ProtoEnum{}
-			new_enum.SetName(enum.GetName())
-			for _, val := range enum.GetValue() {
-				// Add values to this enum
-				n_val := EnumValue{}
-				n_val.SetName(val.GetName())
-				n_val.Number = int(val.GetNumber())
-				new_enum.Values = append(new_enum.Values, &n_val)
-			}
-			new_file.Enums = append(new_file.Enums, &new_enum)
-		}
-
-		// Add messages to this file
-		for _, msg := range file.MessageType {
-			new_msg := ProtoMessage{}
-			new_msg.Name = *msg.Name
-			// Add fields to this message
-			for _, field := range msg.Field {
-				new_field := MessageField{}
-				new_field.Number = int(field.GetNumber())
-				new_field.Name = *field.Name
-				new_field.Type.Name = field.GetTypeName()
-				// The `GetTypeName` method on FieldDescriptorProto only
-				// returns the path/name of a type if that type is a message or
-				// an Enum. For basic types (int, float, etc.) `GetTypeName()`
-				// returns an empty string. In that case, we set the new_fields
-				// type name to be the string representing the type of the
-				// field being examined.
-				if new_field.Type.Name == "" {
-					new_field.Type.Name = field.Type.String()
-				}
-				new_msg.Fields = append(new_msg.Fields, &new_field)
-			}
-			new_file.Messages = append(new_file.Messages, &new_msg)
-		}
-
-		// Add services to this file
-		for _, srvc := range file.Service {
-			n_svc := ProtoService{}
-			n_svc.Name = *srvc.Name
-
-			// Add methods to this service
-			for _, meth := range srvc.Method {
-				n_meth := ServiceMethod{}
-				n_meth.Name = *meth.Name
-				n_meth.RequestType.SetName(*meth.InputType)
-				n_meth.ResponseType.SetName(*meth.OutputType)
-				n_svc.Methods = append(n_svc.Methods, &n_meth)
-			}
-
-			new_file.Services = append(new_file.Services, &n_svc)
-		}
-		dt.Files = append(dt.Files, &new_file)
-	}
-
-	// Do the association of comments to units code. The implementation of this
-	// function is in `associate_comments.go`
-	associateComments(&dt, req)
-
-	return &dt, nil
 }

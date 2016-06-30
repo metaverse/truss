@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/TuneLab/gob/gen-docs/doctree"
-	"github.com/TuneLab/gob/gen-docs/svcparse"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/gob/gendoc/svcparse"
 )
 
 func main() {
@@ -19,10 +18,6 @@ func main() {
 		panic(err)
 	}
 
-	// Dump basic ast
-	out := spew.Sdump(svc)
-	fmt.Printf("%v\n", out)
-
 	// Couch created AST within parent objects in order to call the "String"
 	// method which calls the internal only 'describe' method
 	parent := &doctree.MicroserviceDefinition{
@@ -34,8 +29,11 @@ func main() {
 			},
 		},
 	}
-	fmt.Printf("%v\n", parent)
+	parent.SetName("Currency Exchange example")
+	parent.Files[0].SetName("dig.pb")
+	fmt.Printf("%v\n", parent.Markdown())
 
+	return
 	// Print remaining tokens
 	for {
 		tk, str := lex.GetTokenIgnoreWhitespace()
