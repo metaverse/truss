@@ -141,7 +141,7 @@ func buildNamePath(path []int32, node reflect.Value) []string {
 	// If the path ends here, then the path is indicating this field, and not
 	// anything more specific
 	if len(path) == 1 {
-		panic("Comment somehow attached to a field label, time to panic!")
+		panic(fmt.Sprintf("Comment somehow attached to a field label, time to panic!\n%v\n%v", path, node))
 		return []string{""}
 	}
 
@@ -207,8 +207,16 @@ func AssociateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 			// all sourcelocations with comments must point to concrete things,
 			// so only recurse on those.
 			if len(lead) > 1 || len(location.LeadingDetachedComments) > 1 {
-				name_path := buildNamePath(location.Path, reflect.ValueOf(*file))
-				dt.SetComment(name_path, scrubComments(lead))
+
+				// Only known case where a comment is attached not to an
+				// instance of a struct, but to a field directly. And it's when
+				// you comment on the package declaration itself.
+				if len(location.Path) == 1 {
+					dt.SetDescription(scrubComments(lead))
+				} else {
+					name_path := buildNamePath(location.Path, reflect.ValueOf(*file))
+					dt.SetComment(name_path, scrubComments(lead))
+				}
 			}
 		}
 	}

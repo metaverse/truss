@@ -11,3 +11,9 @@ To run, ensure the program is installed by running `go install github.com/TuneLa
 
 This will output a file in the current directory named "docs.md" containing a markdown representation of your documentation.
 
+
+## Limitations and Bugs
+
+Currently, there are a variety of limitations in the documentation parser.
+
+- Having additional http bindings via the `additional_bindings` directive when declaring http options causes the parser to break.

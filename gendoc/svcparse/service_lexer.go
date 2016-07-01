@@ -59,6 +59,17 @@ func NewRuneReader(r io.Reader) *RuneReader {
 	}
 }
 
+func isIdent(r rune) bool {
+	switch {
+	case unicode.IsLetter(r):
+		return true
+	case r == '_':
+		return true
+	default:
+		return false
+	}
+}
+
 // Service scanner conducts many of the basic scanning operatiions of a Lexer,
 // with some additional service-specific behavior.
 //
@@ -209,7 +220,7 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 			}
 			buf = append(buf, ch)
 		}
-	case unicode.IsLetter(ch):
+	case isIdent(ch):
 		// Group consecutive letters
 		for {
 			ch, err = self.R.ReadRune()
@@ -218,7 +229,7 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 					return buf, nil
 				}
 				return buf, err
-			} else if !unicode.IsLetter(ch) {
+			} else if !isIdent(ch) {
 				self.R.UnreadRune()
 				if string(buf) == "service" {
 					self.InDefinition = true
@@ -267,7 +278,7 @@ func (self *SvcLexer) GetToken() (Token, string) {
 		if err == io.EOF {
 			return EOF, ""
 		} else {
-			panic(err)
+			return ILLEGAL, fmt.Sprint(err)
 		}
 	}
 	unit, err := self.Scn.ReadUnit()
@@ -276,7 +287,7 @@ func (self *SvcLexer) GetToken() (Token, string) {
 		if err == io.EOF {
 			return EOF, string(unit)
 		} else {
-			panic(err)
+			return ILLEGAL, fmt.Sprint(err)
 		}
 	}
 	switch {
@@ -284,7 +295,7 @@ func (self *SvcLexer) GetToken() (Token, string) {
 		return ILLEGAL, ""
 	case unicode.IsSpace(unit[0]):
 		return WHITESPACE, string(unit)
-	case unicode.IsLetter(unit[0]):
+	case isIdent(unit[0]):
 		return IDENT, string(unit)
 	case unit[0] == '"':
 		return STRING_LITERAL, string(unit)

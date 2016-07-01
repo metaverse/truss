@@ -127,7 +127,8 @@ func (self *MicroserviceDefinition) describe(depth int) string {
 }
 
 func (self *MicroserviceDefinition) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
+	rv := doc_css
+	rv += self.describable.describeMarkdown(depth)
 	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth), "Files")
 	for _, file := range self.Files {
 		rv += file.describeMarkdown(depth + 1)
@@ -183,6 +184,10 @@ type ProtoFile struct {
 
 func (self *ProtoFile) describe(depth int) string {
 	rv := self.describable.describe(depth)
+	for idx, svc := range self.Services {
+		rv += prindent(depth, "Service %v:\n", idx)
+		rv += svc.describe(depth + 1)
+	}
 	for idx, msg := range self.Messages {
 		rv += prindent(depth, "Message %v:\n", idx)
 		rv += msg.describe(depth + 1)
@@ -191,29 +196,31 @@ func (self *ProtoFile) describe(depth int) string {
 		rv += prindent(depth, "Enum %v:\n", idx)
 		rv += enum.describe(depth + 1)
 	}
-	for idx, svc := range self.Services {
-		rv += prindent(depth, "Service %v:\n", idx)
-		rv += svc.describe(depth + 1)
-	}
 	return rv
 }
 
 func (self *ProtoFile) describeMarkdown(depth int) string {
 	rv := self.describable.describeMarkdown(depth)
 
-	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Messages")
-	for _, msg := range self.Messages {
-		rv += msg.describeMarkdown(depth + 2)
+	if len(self.Messages) > 0 {
+		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Messages")
+		for _, msg := range self.Messages {
+			rv += msg.describeMarkdown(depth + 2)
+		}
 	}
 
-	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Enums")
-	for _, enum := range self.Enums {
-		rv += enum.describeMarkdown(depth + 2)
+	if len(self.Enums) > 0 {
+		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Enums")
+		for _, enum := range self.Enums {
+			rv += enum.describeMarkdown(depth + 2)
+		}
 	}
 
-	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Services")
-	for _, svc := range self.Services {
-		rv += svc.describeMarkdown(depth + 2)
+	if len(self.Services) > 0 {
+		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Services")
+		for _, svc := range self.Services {
+			rv += svc.describeMarkdown(depth + 2)
+		}
 	}
 	return rv
 }
@@ -319,9 +326,12 @@ func (self *ProtoEnum) describe(depth int) string {
 
 func (self *ProtoEnum) describeMarkdown(depth int) string {
 	rv := self.describable.describeMarkdown(depth)
+	rv += "| Number | Name |\n"
+	rv += "| ------ | ---- |\n"
 	for _, val := range self.Values {
-		rv += prindent(0, "%v. %v\n\n", val.Number, val.Name)
+		rv += prindent(0, "| %v | %v |\n", val.Number, val.Name)
 	}
+	rv += "\n\n"
 	return rv
 }
 
@@ -357,10 +367,14 @@ func (self *ProtoService) describe(depth int) string {
 
 func (self *ProtoService) describeMarkdown(depth int) string {
 	rv := self.describable.describeMarkdown(depth)
-	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Methods")
+
+	rv += "| Name | Request Type | Response Type | Description|\n"
+	rv += "| ---- | ---- | ------------ | -----------|\n"
 	for _, meth := range self.Methods {
-		rv += meth.describeMarkdown(depth + 2)
+		//rv += meth.describeMarkdown(depth + 2)
+		rv += prindent(0, "| %v | %v | %v | %v |\n", meth.GetName(), meth.RequestType.GetName(), meth.ResponseType.GetName(), meth.GetDescription())
 	}
+	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Methods")
 	return rv
 }
 
