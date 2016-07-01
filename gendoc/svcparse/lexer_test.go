@@ -149,11 +149,62 @@ func TestLexSingleLineComments(t *testing.T) {
 		}
 
 		if str != good_str {
+			for _, grp := range lex.Buf {
+				t.Logf("  '%v'\n", grp.value)
+			}
 			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, good_str)
 		}
-		//t.Logf("Token: '%15v', str: '%v'\n", tk, str)
+
 		if tk == EOF || tk == ILLEGAL {
 			break
 		}
 	}
+}
+
+func TestLextUnGetToken(t *testing.T) {
+	// Ensure that ungetting all the tokens doesn't cause them to change
+	r := strings.NewReader("service testing\n // comment1\n//comment2\n\n//comment 3 \n what")
+	lex := NewSvcLexer(r)
+
+	good_vals := []string{
+		"service",
+		" ",
+		"testing",
+		"\n ",
+		"// comment1\n//comment2\n",
+		"\n",
+		"//comment 3 \n",
+		" ",
+		"what",
+		"",
+	}
+
+	for i, good_str := range good_vals {
+		tk, str := lex.GetToken()
+		if tk == ILLEGAL {
+			t.Fatalf("Recieved ILLEGAL token on '%v' call to GetToken\n", i)
+		}
+		if str != good_str {
+			for _, grp := range lex.Buf {
+				t.Logf("  '%v'\n", grp.value)
+			}
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, good_str)
+		}
+	}
+	for i := 0; i < len(good_vals); i++ {
+		lex.UnGetToken()
+	}
+	for i, good_str := range good_vals {
+		tk, str := lex.GetToken()
+		if tk == ILLEGAL {
+			t.Fatalf("Recieved ILLEGAL token on '%v' call to GetToken\n", i)
+		}
+		if str != good_str {
+			for _, grp := range lex.Buf {
+				t.Logf("  '%v'\n", grp.value)
+			}
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, good_str)
+		}
+	}
+
 }

@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
 	"unicode"
 	"unicode/utf8"
 )
@@ -109,7 +108,7 @@ func (self *SvcScanner) FastForward() error {
 			return err
 		}
 		if string(buf) == search_str {
-			for i := 0; i < len(search_str); i++ {
+			for i := 0; i < utf8.RuneCountInString(search_str); i++ {
 				err = self.R.UnreadRune()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "%v Error unreading: %v\n", i, err)
@@ -257,107 +256,4 @@ func (self *SvcScanner) ReadUnit() ([]rune, error) {
 	// returned one rune at a time.
 
 	return buf, nil
-}
-
-type SvcLexer struct {
-	Scn *SvcScanner
-}
-
-func NewSvcLexer(r io.Reader) *SvcLexer {
-	return &SvcLexer{
-		Scn: NewSvcScanner(r),
-	}
-}
-
-func (self *SvcLexer) GetToken() (Token, string) {
-	// Since FastForward won't take us out of a service definition we're
-	// already within, we can safely call it every time we attempt to get a
-	// token
-	err := self.Scn.FastForward()
-	if err != nil {
-		if err == io.EOF {
-			return EOF, ""
-		} else {
-			return ILLEGAL, fmt.Sprint(err)
-		}
-	}
-	unit, err := self.Scn.ReadUnit()
-
-	if err != nil {
-		if err == io.EOF {
-			return EOF, string(unit)
-		} else {
-			return ILLEGAL, fmt.Sprint(err)
-		}
-	}
-	switch {
-	case len(unit) == 0:
-		return ILLEGAL, ""
-	case unicode.IsSpace(unit[0]):
-		return WHITESPACE, string(unit)
-	case isIdent(unit[0]):
-		return IDENT, string(unit)
-	case unit[0] == '"':
-		return STRING_LITERAL, string(unit)
-	case unit[0] == '(':
-		return OPEN_PAREN, string(unit)
-	case unit[0] == ')':
-		return CLOSE_PAREN, string(unit)
-	case unit[0] == '{':
-		return OPEN_BRACE, string(unit)
-	case unit[0] == '}':
-		return CLOSE_BRACE, string(unit)
-	case len(unit) > 1 && unit[0] == '/':
-		tk, addit_comment := self.buildCommentToken()
-		if tk != ILLEGAL {
-			return COMMENT, string(unit) + addit_comment
-		} else {
-			return COMMENT, string(unit)
-		}
-	case len(unit) == 1:
-		return SYMBOL, string(unit)
-	default:
-		return ILLEGAL, string(unit)
-	}
-}
-
-// Since a multi-line comment could be composed of many single line comments,
-// this method exists to handle such cases.
-func (self *SvcLexer) buildCommentToken() (Token, string) {
-	one_tk, one_str := self.GetToken()
-	// Since the newline at the end of each single-line comment is included
-	// within that comment, if there's whitespace between the last comment and
-	// the next, but they're on consecutive lines, then there should be 0
-	// newlines in the whitespace between them.
-	if one_tk == WHITESPACE && strings.Count(one_str, "\n") == 0 {
-		two_tk, two_str := self.GetToken()
-		if two_tk == COMMENT {
-			return COMMENT, one_str + two_str
-		} else {
-			for i := 0; i < utf8.RuneCountInString(one_str+two_str); i++ {
-				self.Scn.R.UnreadRune()
-			}
-			return ILLEGAL, ""
-		}
-	} else if one_tk == COMMENT {
-		return COMMENT, one_str
-	} else {
-		for i := 0; i < utf8.RuneCountInString(one_str); i++ {
-			self.Scn.R.UnreadRune()
-		}
-		return ILLEGAL, ""
-	}
-}
-
-func (self *SvcLexer) GetTokenIgnoreWhitespace() (Token, string) {
-	return self.getTokenIgnore(WHITESPACE)
-}
-
-func (self *SvcLexer) getTokenIgnore(to_ignore Token) (Token, string) {
-	for {
-		t, s := self.GetToken()
-		if t != to_ignore {
-			return t, s
-		}
-	}
 }

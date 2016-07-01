@@ -41,3 +41,9 @@ var tokenLookup = map[Token]string{
 func (self Token) String() string {
 	return tokenLookup[self]
 }
+
+type TokenGroup struct {
+	token Token
+	value string
+	line  int
+}
