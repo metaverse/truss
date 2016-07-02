@@ -32,10 +32,13 @@ type templateExecutor struct {
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	var service *descriptor.Service
+	util.Logf("There are %v file(s) being processed\n", len(files))
 	for _, file := range files {
 		util.Logf("File: %v\n", file.GetName())
+		util.Logf("This file has %v service(s)\n", len(file.Services))
 		if len(file.Services) > 0 {
 			service = file.Services[0]
+			util.Logf("\tNamed: %v\n", service.GetName())
 		}
 	}
 
@@ -83,33 +86,14 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	return codeGenFiles, nil
 }
 
-func (g *generator) test() {
-	for _, file := range g.files {
-		util.Logf("File: %v\n", file.GetName())
-		for _, service := range file.Services {
-			util.Logf("\tService: %v\n", service.GetName())
-			for _, method := range service.Methods {
-				util.Logf("\t\tMethod: %v\n", method.GetName())
-				util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
-				util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
-				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
-			}
-		}
-	}
-}
-
 func (g *generator) printAllServices() {
-	for _, file := range g.files {
-		util.Logf("File: %v\n", file.GetName())
-		if len(file.Services) > 0 {
-			service := file.Services[0]
-			util.Logf("\tService: %v\n", service.GetName())
-			for _, method := range service.Methods {
-				util.Logf("\t\tMethod: %v\n", method.GetName())
-				util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
-				util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
-				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
-			}
+	if g.templateExec.Service != nil {
+		util.Logf("\tService: %v\n", g.templateExec.Service.GetName())
+		for _, method := range g.templateExec.Service.Methods {
+			util.Logf("\t\tMethod: %v\n", method.GetName())
+			util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
+			util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
+			util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
 		}
 	}
 }
@@ -123,11 +107,14 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	w := bytes.NewBuffer(nil)
 	err := codeTemplate.Execute(w, g.templateExec)
 	if err != nil {
+		util.Logf("\n%v\n", templateName)
+		util.Logf("\n%v\n\n", err.Error())
+		panic(err)
 		return "", err
 	}
 
 	code := w.String()
-	if strings.Contains(templateName, "grpc") {
+	if strings.Contains(templateName, "endpoint") {
 		util.Logf("%v\n", code)
 	}
 
