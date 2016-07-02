@@ -31,8 +31,9 @@ import (
 // construct individual endpoints using transport/http.NewClient, combine them
 // into an Endpoints, and return it to the caller as a Service.
 type Endpoints struct {
-	SumEndpoint    endpoint.Endpoint
-	ConcatEndpoint endpoint.Endpoint
+{{range $i := .Service.Methods}}
+	{{$i.GetName}}Endpoint    endpoint.Endpoint
+{{- end}}
 }
 
 // Sum implements Service. Primarily useful in a client.
