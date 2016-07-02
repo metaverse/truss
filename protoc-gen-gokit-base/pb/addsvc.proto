@@ -2,13 +2,24 @@ syntax = "proto3";
 
 package pb;
 
+import "google/api/annotations.proto";
+
 // The Add service definition.
 service Add {
   // Sums two integers.
-  rpc Sum (SumRequest) returns (SumReply) {}
+  rpc Sum (SumRequest) returns (SumReply) {
+    option (google.api.http) = {
+      get: "/sum"
+    };
+  }
+
 
   // Concatenates two strings
-  rpc Concat (ConcatRequest) returns (ConcatReply) {}
+  rpc Concat (ConcatRequest) returns (ConcatReply) {
+    option (google.api.http) = {
+      get: "/concat"
+    };
+  }
 }
 
 // The sum request contains two parameters.

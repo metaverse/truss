@@ -93,7 +93,10 @@ func (g *generator) printAllServices() {
 			util.Logf("\t\tMethod: %v\n", method.GetName())
 			util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
 			util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
-			util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
+			if method.Options != nil {
+				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
+			}
+
 		}
 	}
 }
@@ -114,9 +117,6 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	}
 
 	code := w.String()
-	if strings.Contains(templateName, "endpoint") {
-		util.Logf("%v\n", code)
-	}
 
 	formatted, err := format.Source([]byte(code))
 

@@ -19,6 +19,8 @@ GENERATED_SERVICE_CLIENT=addcli
 GENERATED_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE)
 GENERATED_CLIENT_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE_CLIENT)
 
+GOOGLE_HTTP_API_DIR=github.com/TuneLab/gob/third_party/googleapis/google/api
+
 all: build-generated-code
 
 # -ignore swp ignores vim swap files
@@ -31,9 +33,19 @@ $(PLUGIN): gobindata
 code-generation: $(PLUGIN)
 	mkdir -p $(OUTPUT)
 	mkdir -p $(OUTPUT)/pb
-	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --go_out=plugins=grpc:$(OUTPUT)/ pb/*.proto
+	protoc  -I/usr/local/include -I. \
+	   		-I.. \
+			-I$(GOPATH)/src \
+     		-I$(GOPATH)/src/github.com/gengo/grpc-gateway/third_party/googleapis \
+     		--go_out=Mgoogle/api/annotations.proto=$(GOOGLE_HTTP_API_DIR),plugins=grpc:$(OUTPUT)/ \
+			pb/addsvc.proto
 	@echo -e '$(RUN_MSG)'
-	protoc -I/usr/local/include -I. -I.. -I$(GOPATH)/src --plugin=$(PLUGIN) --$(NAME)_out=logtostderr=true:$(OUTPUT) pb/*.proto
+	protoc -I/usr/local/include -I. \
+     	   -I.. \
+	   	   -I$(GOPATH)/src \
+		   --plugin=$(PLUGIN) \
+		   --$(NAME)_out=logtostderr=true:$(OUTPUT) \
+		   pb/addsvc.proto
 
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'

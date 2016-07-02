@@ -91,7 +91,7 @@ func template_filesClientGrpcClientGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/client/grpc/client.go", size: 2512, mode: os.FileMode(436), modTime: time.Unix(1467320311, 0)}
+	info := bindataFileInfo{name: "template_files/client/grpc/client.go", size: 2512, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -111,7 +111,7 @@ func template_filesClientHttpClientGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/client/http/client.go", size: 2735, mode: os.FileMode(436), modTime: time.Unix(1467320297, 0)}
+	info := bindataFileInfo{name: "template_files/client/http/client.go", size: 2735, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -131,7 +131,7 @@ func template_filesCmdAddcliMainGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/cmd/addcli/main.go", size: 4023, mode: os.FileMode(436), modTime: time.Unix(1467320572, 0)}
+	info := bindataFileInfo{name: "template_files/cmd/addcli/main.go", size: 4023, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -151,7 +151,7 @@ func template_filesCmdAddsvcMainGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/cmd/addsvc/main.go", size: 6492, mode: os.FileMode(436), modTime: time.Unix(1467324449, 0)}
+	info := bindataFileInfo{name: "template_files/cmd/addsvc/main.go", size: 6492, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -171,7 +171,7 @@ func template_filesDocGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/doc.go", size: 314, mode: os.FileMode(436), modTime: time.Unix(1467315606, 0)}
+	info := bindataFileInfo{name: "template_files/doc.go", size: 314, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -191,7 +191,7 @@ func template_filesEndpointsGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/endpoints.go", size: 4487, mode: os.FileMode(436), modTime: time.Unix(1467315606, 0)}
+	info := bindataFileInfo{name: "template_files/endpoints.go", size: 4487, mode: os.FileMode(436), modTime: time.Unix(1467494045, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -211,7 +211,7 @@ func template_filesServiceGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/service.go", size: 4478, mode: os.FileMode(436), modTime: time.Unix(1467315606, 0)}
+	info := bindataFileInfo{name: "template_files/service.go", size: 4478, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -231,7 +231,7 @@ func template_filesTransport_grpcGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/transport_grpc.go", size: 4524, mode: os.FileMode(436), modTime: time.Unix(1467320513, 0)}
+	info := bindataFileInfo{name: "template_files/transport_grpc.go", size: 4524, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -251,7 +251,7 @@ func template_filesTransport_httpGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/transport_http.go", size: 4588, mode: os.FileMode(436), modTime: time.Unix(1467315606, 0)}
+	info := bindataFileInfo{name: "template_files/transport_http.go", size: 4588, mode: os.FileMode(436), modTime: time.Unix(1467491717, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
