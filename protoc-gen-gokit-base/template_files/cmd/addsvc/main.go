@@ -1,3 +1,7 @@
+{{ with $templateExecutor := .}}
+{{ with $AbsoluteRelativeImportPath := $templateExecutor.AbsoluteRelativeImportPath}}
+{{ with $strings := $templateExecutor.Strings}}
+{{ with $Service := $templateExecutor.Service}}
 package main
 
 import (
@@ -30,8 +34,8 @@ import (
 	//"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}} "
-	"{{.AbsoluteRelativeImportPath -}} /pb"
+	"{{$AbsoluteRelativeImportPath -}} "
+	"{{$AbsoluteRelativeImportPath -}} /pb"
 
 )
 
@@ -130,29 +134,22 @@ func main() {
 	}
 
 	// Endpoint domain.
-	var sumEndpoint endpoint.Endpoint
+	{{range $i := $Service.Methods}}
+	var {{call $strings.ToLower $i.GetName}}Endpoint endpoint.Endpoint
 	{
-		//sumDuration := duration.With(metrics.Field{Key: "method", Value: "Sum"})
-		//sumLogger := log.NewContext(logger).With("method", "Sum")
+		//{{call $strings.ToLower $i.GetName}}Duration := duration.With(metrics.Field{Key: "method", Value: "{{$i.GetName}}})"
+		//{{call $strings.ToLower $i.GetName}}Logger := log.NewContext(logger).With("method", "{{$i.GetName}})")
 
-		sumEndpoint = addsvc.MakeSumEndpoint(service)
-		//sumEndpoint = opentracing.TraceServer(tracer, "Sum")(sumEndpoint)
-		//sumEndpoint = addsvc.EndpointInstrumentingMiddleware(sumDuration)(sumEndpoint)
-		//sumEndpoint = addsvc.EndpointLoggingMiddleware(sumLogger)(sumEndpoint)
+		{{call $strings.ToLower $i.GetName}}Endpoint = addsvc.Make{{$i.GetName}}Endpoint(service)
+		//{{call $strings.ToLower $i.GetName}}Endpoint = opentracing.TraceServer(tracer, "{{$i.GetName}})")({{call $strings.ToLower $i.GetName}}Endpoint)
+		//{{call $strings.ToLower $i.GetName}}Endpoint = addsvc.EndpointInstrumentingMiddleware({{call $strings.ToLower $i.GetName}}Duration)({{call $strings.ToLower $i.GetName}}Endpoint)
+		//{{call $strings.ToLower $i.GetName}}Endpoint = addsvc.EndpointLoggingMiddleware({{call $strings.ToLower $i.GetName}}Logger)({{call $strings.ToLower $i.GetName}}Endpoint)
 	}
-	//var concatEndpoint endpoint.Endpoint
-	//{
-		//concatDuration := duration.With(metrics.Field{Key: "method", Value: "Concat"})
-		//concatLogger := log.NewContext(logger).With("method", "Concat")
-
-		//concatEndpoint = addsvc.MakeConcatEndpoint(service)
-		//concatEndpoint = opentracing.TraceServer(tracer, "Concat")(concatEndpoint)
-		//concatEndpoint = addsvc.EndpointInstrumentingMiddleware(concatDuration)(concatEndpoint)
-		//concatEndpoint = addsvc.EndpointLoggingMiddleware(concatLogger)(concatEndpoint)
-	//}
+	{{end}}
 	endpoints := addsvc.Endpoints{
-		SumEndpoint:    sumEndpoint,
-		//ConcatEndpoint: concatEndpoint,
+	{{range $i := $Service.Methods}}
+		{{$i.GetName}}Endpoint:    {{call $strings.ToLower $i.GetName}}Endpoint,
+	{{- end}}
 	}
 
 	// Mechanical domain.
@@ -211,3 +208,7 @@ func main() {
 	// Run!
 	logger.Log("exit", <-errc)
 }
+{{end}}
+{{end}}
+{{end}}
+{{end}}
