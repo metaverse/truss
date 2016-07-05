@@ -20,6 +20,7 @@ import (
 
 	// This Service
 	"{{.AbsoluteRelativeImportPath -}}"
+	"{{.AbsoluteRelativeImportPath -}} /pb"
 	grpcclient "{{.AbsoluteRelativeImportPath -}} /client/grpc"
 	//httpclient "{{.AbsoluteRelativeImportPath -}} /client/http"
 )
@@ -109,7 +110,11 @@ func main() {
 	case "sum":
 		a, _ := strconv.ParseInt(flag.Args()[0], 10, 64)
 		b, _ := strconv.ParseInt(flag.Args()[1], 10, 64)
-		v, err := service.Sum(context.Background(), int(a), int(b))
+		request := pb.SumRequest{
+			A: a,
+			B: b,
+		}
+		v, err := service.Sum(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
@@ -119,7 +124,11 @@ func main() {
 	case "concat":
 		a := flag.Args()[0]
 		b := flag.Args()[1]
-		v, err := service.Concat(context.Background(), a, b)
+		request := pb.ConcatRequest{
+			A: a,
+			B: b,
+		}
+		v, err := service.Concat(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)

@@ -53,9 +53,10 @@ func (s *grpcServer) {{$i.GetName}}(ctx context.Context, req *pb.{{$i.RequestTyp
 }
 {{end}}
 
-// DecodeGRPCSumRequest is a transport/grpc.DecodeRequestFunc that converts a
-// gRPC sum request to a user-domain sum request. Primarily useful in a server.
+// Server Decode
 {{range $i := .Service.Methods}}
+// DecodeGRPC{{$i.GetName}}Request is a transport/grpc.DecodeRequestFunc that converts a
+// gRPC {{call $god.ToLower $i.GetName}} request to a user-domain {{call $god.ToLower $i.GetName}} request. Primarily useful in a server.
 func DecodeGRPC{{$i.GetName}}Request(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(pb.{{$i.GetName}}Request)
 //	return req.(pb.{{$i.RequestType.GetName}}), nil
@@ -63,42 +64,35 @@ func DecodeGRPC{{$i.GetName}}Request(_ context.Context, grpcReq interface{}) (in
 }
 {{end}}
 
-// EncodeGRPCSumResponse is a transport/grpc.EncodeResponseFunc that converts a
-// user-domain sum response to a gRPC sum reply. Primarily useful in a server.
+
+// Client Decode
 {{range $i := .Service.Methods}}
+// DecodeGRPC{{$i.GetName}}Response is a transport/grpc.DecodeResponseFunc that converts a
+// gRPC {{call $god.ToLower $i.GetName}} reply to a user-domain {{call $god.ToLower $i.GetName}} response. Primarily useful in a client.
+func DecodeGRPC{{$i.GetName}}Response(_ context.Context, grpcReply interface{}) (interface{}, error) {
+	reply := grpcReply.(*pb.{{$i.GetName}}Reply)
+	return reply, nil
+}
+{{end}}
+
+// Server Encode
+{{range $i := .Service.Methods}}
+// EncodeGRPC{{$i.GetName}}Response is a transport/grpc.EncodeResponseFunc that converts a
+// user-domain {{call $god.ToLower $i.GetName}} response to a gRPC {{call $god.ToLower $i.GetName}} reply. Primarily useful in a server.
 func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (interface{}, error) {
 	resp := response.(pb.{{$i.ResponseType.GetName}})
 	return resp, nil
 }
 {{end}}
 
-// DecodeGRPCSumResponse is a transport/grpc.DecodeResponseFunc that converts a
-// gRPC sum reply to a user-domain sum response. Primarily useful in a client.
-//func DecodeGRPCSumResponse(_ context.Context, grpcReply interface{}) (interface{}, error) {
-	//reply := grpcReply.(*pb.SumReply)
-	//return sumResponse{V: int(reply.V), Err: str2err(reply.Err)}, nil
-//}
 
-// DecodeGRPCConcatResponse is a transport/grpc.DecodeResponseFunc that converts
-// a gRPC concat reply to a user-domain concat response. Primarily useful in a
-// client.
-//func DecodeGRPCConcatResponse(_ context.Context, grpcReply interface{}) (interface{}, error) {
-	//reply := grpcReply.(*pb.ConcatReply)
-	//return concatResponse{V: reply.V, Err: str2err(reply.Err)}, nil
-//}
-
-// EncodeGRPCSumRequest is a transport/grpc.EncodeRequestFunc that converts a
-// user-domain sum request to a gRPC sum request. Primarily useful in a client.
-//func EncodeGRPCSumRequest(_ context.Context, request interface{}) (interface{}, error) {
-	//req := request.(sumRequest)
-	//return &pb.SumRequest{A: int64(req.A), B: int64(req.B)}, nil
-//}
-
-// EncodeGRPCConcatRequest is a transport/grpc.EncodeRequestFunc that converts a
-// user-domain concat request to a gRPC concat request. Primarily useful in a
-// client.
-//func EncodeGRPCConcatRequest(_ context.Context, request interface{}) (interface{}, error) {
-	//req := request.(concatRequest)
-	//return &pb.ConcatRequest{A: req.A, B: req.B}, nil
-//}
+// Client Decode
+{{range $i := .Service.Methods}}
+// EncodeGRPC{{$i.GetName}}Request is a transport/grpc.EncodeRequestFunc that converts a
+// user-domain {{call $god.ToLower $i.GetName}} request to a gRPC {{call $god.ToLower $i.GetName}} request. Primarily useful in a client.
+func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (interface{}, error) {
+	req := request.(pb.{{$i.RequestType.GetName}})
+	return req, nil
+}
+{{end}}
 {{end}}
