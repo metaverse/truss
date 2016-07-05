@@ -10,7 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
+	//"time"
 
 	// 3d Party
 	lightstep "github.com/lightstep/lightstep-tracer-go"
@@ -25,9 +25,9 @@ import (
 	// Go Kit
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/metrics"
-	"github.com/go-kit/kit/metrics/prometheus"
-	"github.com/go-kit/kit/tracing/opentracing"
+	//"github.com/go-kit/kit/metrics"
+	//"github.com/go-kit/kit/metrics/prometheus"
+	//"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
@@ -36,8 +36,8 @@ import (
 
 func main() {
 	var (
-		debugAddr      = flag.String("debug.addr", ":8080", "Debug and metrics listen address")
-		httpAddr       = flag.String("http.addr", ":8081", "HTTP listen address")
+		debugAddr = flag.String("debug.addr", ":8080", "Debug and metrics listen address")
+		//httpAddr       = flag.String("http.addr", ":8081", "HTTP listen address")
 		grpcAddr       = flag.String("grpc.addr", ":8082", "gRPC (HTTP) listen address")
 		zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka server host:port")
 		appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
@@ -55,31 +55,32 @@ func main() {
 	logger.Log("msg", "hello")
 	defer logger.Log("msg", "goodbye")
 
-	// Metrics domain.
-	var ints, chars metrics.Counter
-	{
-		// Business level metrics.
-		ints = prometheus.NewCounter(stdprometheus.CounterOpts{
-			Namespace: "addsvc",
-			Name:      "integers_summed",
-			Help:      "Total count of integers summed via the Sum method.",
-		}, []string{})
-		chars = prometheus.NewCounter(stdprometheus.CounterOpts{
-			Namespace: "addsvc",
-			Name:      "characters_concatenated",
-			Help:      "Total count of characters concatenated via the Concat method.",
-		}, []string{})
-	}
-	var duration metrics.TimeHistogram
-	{
-		// Transport level metrics.
-		duration = metrics.NewTimeHistogram(time.Nanosecond, prometheus.NewSummary(stdprometheus.SummaryOpts{
-			Namespace: "addsvc",
-			Name:      "request_duration_ns",
-			Help:      "Request duration in nanoseconds.",
-		}, []string{"method", "success"}))
-	}
-
+	/*
+		// Metrics domain.
+		var ints, chars metrics.Counter
+		{
+			// Business level metrics.
+			ints = prometheus.NewCounter(stdprometheus.CounterOpts{
+				Namespace: "addsvc",
+				Name:      "integers_summed",
+				Help:      "Total count of integers summed via the Sum method.",
+			}, []string{})
+			chars = prometheus.NewCounter(stdprometheus.CounterOpts{
+				Namespace: "addsvc",
+				Name:      "characters_concatenated",
+				Help:      "Total count of characters concatenated via the Concat method.",
+			}, []string{})
+		}
+		var duration metrics.TimeHistogram
+		{
+			// Transport level metrics.
+			duration = metrics.NewTimeHistogram(time.Nanosecond, prometheus.NewSummary(stdprometheus.SummaryOpts{
+				Namespace: "addsvc",
+				Name:      "request_duration_ns",
+				Help:      "Request duration in nanoseconds.",
+			}, []string{"method", "success"}))
+		}
+	*/
 	// Tracing domain.
 	var tracer stdopentracing.Tracer
 	{
@@ -123,32 +124,36 @@ func main() {
 	var service addsvc.Service
 	{
 		service = addsvc.NewBasicService()
-		service = addsvc.ServiceLoggingMiddleware(logger)(service)
-		service = addsvc.ServiceInstrumentingMiddleware(ints, chars)(service)
+		//service = addsvc.ServiceLoggingMiddleware(logger)(service)
+		//service = addsvc.ServiceInstrumentingMiddleware(ints, chars)(service)
 	}
 
 	// Endpoint domain.
+
 	var sumEndpoint endpoint.Endpoint
 	{
-		sumDuration := duration.With(metrics.Field{Key: "method", Value: "Sum"})
-		sumLogger := log.NewContext(logger).With("method", "Sum")
+		//sumDuration := duration.With(metrics.Field{Key: "method", Value: "Sum})"
+		//sumLogger := log.NewContext(logger).With("method", "Sum)")
 
 		sumEndpoint = addsvc.MakeSumEndpoint(service)
-		sumEndpoint = opentracing.TraceServer(tracer, "Sum")(sumEndpoint)
-		sumEndpoint = addsvc.EndpointInstrumentingMiddleware(sumDuration)(sumEndpoint)
-		sumEndpoint = addsvc.EndpointLoggingMiddleware(sumLogger)(sumEndpoint)
+		//sumEndpoint = opentracing.TraceServer(tracer, "Sum)")(sumEndpoint)
+		//sumEndpoint = addsvc.EndpointInstrumentingMiddleware(sumDuration)(sumEndpoint)
+		//sumEndpoint = addsvc.EndpointLoggingMiddleware(sumLogger)(sumEndpoint)
 	}
+
 	var concatEndpoint endpoint.Endpoint
 	{
-		concatDuration := duration.With(metrics.Field{Key: "method", Value: "Concat"})
-		concatLogger := log.NewContext(logger).With("method", "Concat")
+		//concatDuration := duration.With(metrics.Field{Key: "method", Value: "Concat})"
+		//concatLogger := log.NewContext(logger).With("method", "Concat)")
 
 		concatEndpoint = addsvc.MakeConcatEndpoint(service)
-		concatEndpoint = opentracing.TraceServer(tracer, "Concat")(concatEndpoint)
-		concatEndpoint = addsvc.EndpointInstrumentingMiddleware(concatDuration)(concatEndpoint)
-		concatEndpoint = addsvc.EndpointLoggingMiddleware(concatLogger)(concatEndpoint)
+		//concatEndpoint = opentracing.TraceServer(tracer, "Concat)")(concatEndpoint)
+		//concatEndpoint = addsvc.EndpointInstrumentingMiddleware(concatDuration)(concatEndpoint)
+		//concatEndpoint = addsvc.EndpointLoggingMiddleware(concatLogger)(concatEndpoint)
 	}
+
 	endpoints := addsvc.Endpoints{
+
 		SumEndpoint:    sumEndpoint,
 		ConcatEndpoint: concatEndpoint,
 	}
@@ -181,12 +186,12 @@ func main() {
 	}()
 
 	// HTTP transport.
-	go func() {
-		logger := log.NewContext(logger).With("transport", "HTTP")
-		h := addsvc.MakeHTTPHandler(ctx, endpoints, tracer, logger)
-		logger.Log("addr", *httpAddr)
-		errc <- http.ListenAndServe(*httpAddr, h)
-	}()
+	//go func() {
+	//logger := log.NewContext(logger).With("transport", "HTTP")
+	//h := addsvc.MakeHTTPHandler(ctx, endpoints, tracer, logger)
+	//logger.Log("addr", *httpAddr)
+	//errc <- http.ListenAndServe(*httpAddr, h)
+	//}()
 
 	// gRPC transport.
 	go func() {

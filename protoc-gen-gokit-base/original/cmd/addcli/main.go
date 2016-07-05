@@ -21,7 +21,8 @@ import (
 	// This Service
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
 	grpcclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/grpc"
-	httpclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/http"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate/pb"
+	//httpclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/http"
 )
 
 func main() {
@@ -33,7 +34,7 @@ func main() {
 	// see profilesvc.
 
 	var (
-		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
+		//httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
 		grpcAddr       = flag.String("grpc.addr", "", "gRPC (HTTP) address of addsvc")
 		zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka Collector host:port")
 		appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
@@ -86,9 +87,9 @@ func main() {
 		service addsvc.Service
 		err     error
 	)
-	if *httpAddr != "" {
-		service, err = httpclient.New(*httpAddr, tracer, log.NewNopLogger())
-	} else if *grpcAddr != "" {
+	//if *httpAddr != "" {
+	//service, err = httpclient.New(*httpAddr, tracer, log.NewNopLogger())
+	/*} else */ if *grpcAddr != "" {
 		conn, err := grpc.Dial(*grpcAddr, grpc.WithInsecure(), grpc.WithTimeout(time.Second))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v", err)
@@ -109,7 +110,11 @@ func main() {
 	case "sum":
 		a, _ := strconv.ParseInt(flag.Args()[0], 10, 64)
 		b, _ := strconv.ParseInt(flag.Args()[1], 10, 64)
-		v, err := service.Sum(context.Background(), int(a), int(b))
+		request := pb.SumRequest{
+			A: a,
+			B: b,
+		}
+		v, err := service.Sum(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
@@ -119,7 +124,11 @@ func main() {
 	case "concat":
 		a := flag.Args()[0]
 		b := flag.Args()[1]
-		v, err := service.Concat(context.Background(), a, b)
+		request := pb.ConcatRequest{
+			A: a,
+			B: b,
+		}
+		v, err := service.Concat(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
