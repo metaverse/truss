@@ -9,6 +9,7 @@ import (
 
 	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/util"
+
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
@@ -24,6 +25,7 @@ type generator struct {
 type templateExecutor struct {
 	AbsoluteRelativeImportPath string
 	Service                    *descriptor.Service
+	ToLower                    func(string) string
 }
 
 // Get working directory, trim off GOPATH, add generate.
@@ -55,6 +57,7 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 		templateExec: templateExecutor{
 			AbsoluteRelativeImportPath: importPath,
 			Service:                    service,
+			ToLower:                    strings.ToLower,
 		},
 	}
 }
@@ -110,6 +113,7 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	w := bytes.NewBuffer(nil)
 	err := codeTemplate.Execute(w, g.templateExec)
 	if err != nil {
+		util.Logf("\nTEMPLATE ERROR\n", "")
 		util.Logf("\n%v\n", templateName)
 		util.Logf("\n%v\n\n", err.Error())
 		panic(err)
@@ -119,6 +123,14 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	code := w.String()
 
 	formatted, err := format.Source([]byte(code))
+
+	if err != nil {
+		util.Logf("\nCODE FORMATTING ERROR\n", "")
+		util.Logf("\n%v\n", code)
+		util.Logf("\n%v\n", err.Error())
+		// Set formatted to code so at least we get something to examine
+		formatted = []byte(code)
+	}
 
 	return string(formatted), err
 }

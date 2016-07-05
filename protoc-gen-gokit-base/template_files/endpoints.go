@@ -6,14 +6,16 @@ package addsvc
 // formats. It also includes endpoint middlewares.
 
 import (
-	"fmt"
-	"time"
+	_ "fmt"
+	_ "time"
 
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/metrics"
+	_ "github.com/go-kit/kit/log"
+	_ "github.com/go-kit/kit/metrics"
+
+	"{{.AbsoluteRelativeImportPath -}} /pb"
 )
 
 // Endpoints collects all of the endpoints that compose an add service. It's
@@ -36,102 +38,64 @@ type Endpoints struct {
 {{- end}}
 }
 
-// Sum implements Service. Primarily useful in a client.
-func (e Endpoints) Sum(ctx context.Context, a, b int) (int, error) {
-	request := sumRequest{A: a, B: b}
-	response, err := e.SumEndpoint(ctx, request)
+// Endpoints
+{{range $i := .Service.Methods}}
+func (e Endpoints) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error) {
+	response, err := e.{{$i.GetName}}Endpoint(ctx, in)
 	if err != nil {
-		return 0, err
+		return pb.{{$i.ResponseType.GetName}}{}, err
 	}
-	return response.(sumResponse).V, response.(sumResponse).Err
+	return response.(pb.{{$i.ResponseType.GetName}}), nil
 }
+{{end}}
 
-// Concat implements Service. Primarily useful in a client.
-func (e Endpoints) Concat(ctx context.Context, a, b string) (string, error) {
-	request := concatRequest{A: a, B: b}
-	response, err := e.ConcatEndpoint(ctx, request)
-	if err != nil {
-		return "", err
-	}
-	return response.(concatResponse).V, response.(concatResponse).Err
-}
-
-// MakeSumEndpoint returns an endpoint that invokes Sum on the service.
-// Primarily useful in a server.
-func MakeSumEndpoint(s Service) endpoint.Endpoint {
+// Make Endpoints
+{{range $i := .Service.Methods}}
+func Make{{$i.GetName}}Endpoint(s Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		sumReq := request.(sumRequest)
-		v, err := s.Sum(ctx, sumReq.A, sumReq.B)
-		if err == ErrIntOverflow {
+		v, err := s.{{$i.GetName}}(ctx, request.(pb.{{$i.RequestType.GetName}}))
+		if err != nil {
 			return nil, err // special case; see comment on ErrIntOverflow
 		}
-		return sumResponse{
-			V:   v,
-			Err: err,
-		}, nil
+		return v, nil
 	}
 }
+{{end}}
 
-// MakeConcatEndpoint returns an endpoint that invokes Concat on the service.
-// Primarily useful in a server.
-func MakeConcatEndpoint(s Service) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		concatReq := request.(concatRequest)
-		v, err := s.Concat(ctx, concatReq.A, concatReq.B)
-		return concatResponse{
-			V:   v,
-			Err: err,
-		}, nil
-	}
-}
+
+// MIDDLE WARE
+
 
 // EndpointInstrumentingMiddleware returns an endpoint middleware that records
 // the duration of each invocation to the passed histogram. The middleware adds
 // a single field: "success", which is "true" if no error is returned, and
 // "false" otherwise.
-func EndpointInstrumentingMiddleware(duration metrics.TimeHistogram) endpoint.Middleware {
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+//func EndpointInstrumentingMiddleware(duration metrics.TimeHistogram) endpoint.Middleware {
+	//return func(next endpoint.Endpoint) endpoint.Endpoint {
+		//return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 
-			defer func(begin time.Time) {
-				f := metrics.Field{Key: "success", Value: fmt.Sprint(err == nil)}
-				duration.With(f).Observe(time.Since(begin))
-			}(time.Now())
-			return next(ctx, request)
+			//defer func(begin time.Time) {
+				//f := metrics.Field{Key: "success", Value: fmt.Sprint(err == nil)}
+				//duration.With(f).Observe(time.Since(begin))
+			//}(time.Now())
+			//return next(ctx, request)
 
-		}
-	}
-}
+		//}
+	//}
+//}
 
 // EndpointLoggingMiddleware returns an endpoint middleware that logs the
 // duration of each invocation, and the resulting error, if any.
-func EndpointLoggingMiddleware(logger log.Logger) endpoint.Middleware {
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+//func EndpointLoggingMiddleware(logger log.Logger) endpoint.Middleware {
+	//return func(next endpoint.Endpoint) endpoint.Endpoint {
+		//return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 
-			defer func(begin time.Time) {
-				logger.Log("error", err, "took", time.Since(begin))
-			}(time.Now())
-			return next(ctx, request)
+			//defer func(begin time.Time) {
+				//logger.Log("error", err, "took", time.Since(begin))
+			//}(time.Now())
+			//return next(ctx, request)
 
-		}
-	}
-}
+		//}
+	//}
+//}
 
-// These types are unexported because they only exist to serve the endpoint
-// domain, which is totally encapsulated in this package. They are otherwise
-// opaque to all callers.
-
-type sumRequest struct{ A, B int }
-
-type sumResponse struct {
-	V   int
-	Err error
-}
-
-type concatRequest struct{ A, B string }
-
-type concatResponse struct {
-	V   string
-	Err error
-}

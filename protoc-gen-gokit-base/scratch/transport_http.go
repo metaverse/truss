@@ -2,7 +2,7 @@ package addsvc
 
 // This file provides server-side bindings for the HTTP transport.
 // It utilizes the transport/http.Server.
-/*
+
 import (
 	"bytes"
 	"encoding/json"
@@ -139,4 +139,3 @@ func EncodeHTTPGenericRequest(_ context.Context, r *http.Request, request interf
 func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
 }
-*/

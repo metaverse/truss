@@ -19,9 +19,9 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}}"
-	grpcclient "{{.AbsoluteRelativeImportPath -}} /client/grpc"
-	//httpclient "{{.AbsoluteRelativeImportPath -}} /client/http"
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/generate"
+	grpcclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/grpc"
+	httpclient "github.com/TuneLab/gob/protoc-gen-gokit-base/generate/client/http"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 	// see profilesvc.
 
 	var (
-		//httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
+		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
 		grpcAddr       = flag.String("grpc.addr", "", "gRPC (HTTP) address of addsvc")
 		zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka Collector host:port")
 		appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
@@ -86,9 +86,9 @@ func main() {
 		service addsvc.Service
 		err     error
 	)
-	//if *httpAddr != "" {
-		//service, err = httpclient.New(*httpAddr, tracer, log.NewNopLogger())
-	/*} else */if *grpcAddr != "" {
+	if *httpAddr != "" {
+		service, err = httpclient.New(*httpAddr, tracer, log.NewNopLogger())
+	} else if *grpcAddr != "" {
 		conn, err := grpc.Dial(*grpcAddr, grpc.WithInsecure(), grpc.WithTimeout(time.Second))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v", err)
