@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
+	"strings"
 	"unicode"
-	"unicode/utf8"
 )
 
 type RuneReader struct {
@@ -62,11 +61,183 @@ func isIdent(r rune) bool {
 	switch {
 	case unicode.IsLetter(r):
 		return true
+	case unicode.IsDigit(r):
+		return true
 	case r == '_':
 		return true
 	default:
 		return false
 	}
+}
+
+type ScanUnit struct {
+	InRpcDefinition bool
+	InRpcBody       bool
+	BraceLevel      int
+	LineNo          int
+	Value           []rune
+}
+
+func (self ScanUnit) String() string {
+	cleanval := strings.Replace(string(self.Value), "\n", "\\n", -1)
+	cleanval = strings.Replace(cleanval, "\t", "\\t", -1)
+	cleanval = strings.Replace(cleanval, "\"", "\\\"", -1)
+	return fmt.Sprintf(`{"value": "%v", "InRpcDefinition": %v, "InRpcBody": %v, "BraceLevel": %v, "LineNo": %v},`, cleanval, self.InRpcDefinition, self.InRpcBody, self.BraceLevel, self.LineNo)
+}
+
+var (
+	withinBody bool = false
+	withinDef  bool = false
+	braceLev   int  = 0
+)
+
+func BuildScanUnit(rr *RuneReader) (*ScanUnit, error) {
+	rv := &ScanUnit{
+		false,
+		false,
+		0,
+		1,
+		[]rune{},
+	}
+	var ch rune
+	buf := make([]rune, 0)
+	setReturn := func() *ScanUnit {
+		rv.BraceLevel = braceLev
+		rv.LineNo = rr.LineNo
+		rv.InRpcBody = withinBody
+		rv.InRpcDefinition = withinDef
+		rv.Value = buf
+		return rv
+	}
+
+	// Populate the buffer with at least one rune so even if it's an unknown
+	// character it will at least return this
+	ch, err := rr.ReadRune()
+	if err != nil {
+		return setReturn(), err
+	}
+	buf = append(buf, ch)
+
+	switch {
+	case ch == '/':
+		// Searching for comments beginning with '/'
+		ch, err = rr.ReadRune()
+		if err != nil {
+			return setReturn(), err
+		} else if ch == '/' {
+			// Handle single line comments of the form '//'
+			buf = append(buf, ch)
+			for {
+				ch, err = rr.ReadRune()
+				if err != nil {
+					return setReturn(), err
+				} else if ch == '\n' {
+					buf = append(buf, ch)
+					return setReturn(), nil
+				}
+				buf = append(buf, ch)
+			}
+		} else if ch == '*' {
+			// Handle (potentially) multi-line comments of the form '/**/'
+			buf = append(buf, ch)
+			for {
+				ch, err = rr.ReadRune()
+				if err != nil {
+					return setReturn(), err
+				} else if ch == '*' {
+					buf = append(buf, ch)
+					ch, err = rr.ReadRune()
+					if err != nil {
+						return setReturn(), err
+					} else if ch == '/' {
+						buf = append(buf, ch)
+						return setReturn(), nil
+					}
+				}
+			}
+		} else {
+			// Not a comment, so unread the last Rune and return this '/' only
+			rr.UnreadRune()
+			return setReturn(), nil
+		}
+	case ch == '"':
+		// Handle strings
+		for {
+			ch, err = rr.ReadRune()
+			if err != nil {
+				return setReturn(), err
+			} else if ch == '\\' {
+				// Handle escape sequences within strings
+				buf = append(buf, ch)
+				ch, err = rr.ReadRune()
+				if err != nil {
+					return setReturn(), err
+				} else {
+					buf = append(buf, ch)
+				}
+			} else if ch == '"' {
+				// Closing quotation
+				buf = append(buf, ch)
+				return setReturn(), nil
+			} else {
+				buf = append(buf, ch)
+			}
+		}
+	case unicode.IsSpace(ch):
+		// Group consecutive white space characters
+		for {
+			ch, err = rr.ReadRune()
+			if err != nil {
+				// Don't pass along this EOF since we did find a valid 'Unit'
+				// to return. This way, the next call of this function will
+				// return EOF and nothing else, a more clear behavior.
+				if err == io.EOF {
+					return setReturn(), nil
+				}
+				return setReturn(), err
+			} else if !unicode.IsSpace(ch) {
+				rr.UnreadRune()
+				break
+			}
+			buf = append(buf, ch)
+		}
+	case isIdent(ch):
+		// Group consecutive letters
+		for {
+			ch, err = rr.ReadRune()
+			if err != nil {
+				if err == io.EOF {
+					return setReturn(), nil
+				}
+				return setReturn(), err
+			} else if !isIdent(ch) {
+				rr.UnreadRune()
+				if string(buf) == "service" {
+					withinDef = true
+				}
+				break
+			}
+			buf = append(buf, ch)
+		}
+	case ch == '{':
+		braceLev += 1
+		if withinDef == true {
+			withinDef = false
+			withinBody = true
+		}
+	case ch == '}':
+		braceLev -= 1
+		if withinBody == true && braceLev == 0 {
+			withinBody = false
+		}
+	}
+
+	// Implicitly, everything that's not a group of letters, not a group of
+	// whitespace, not a comment, and not a string-literal, (common examples of
+	// runes in this category are numbers and symbols like '&' or '9') will be
+	// returned one rune at a time.
+
+	return setReturn(), nil
 }
 
 // Service scanner conducts many of the basic scanning operatiions of a Lexer,
@@ -83,14 +254,29 @@ type SvcScanner struct {
 	InDefinition bool
 	InBody       bool
 	BraceLevel   int
+	Buf          []*ScanUnit
+	UnitPos      int
+	lineNo       int
 }
 
 func NewSvcScanner(r io.Reader) *SvcScanner {
+	b := make([]*ScanUnit, 0)
+	rr := NewRuneReader(r)
+	for {
+		unit, err := BuildScanUnit(rr)
+		if err == nil {
+			b = append(b, unit)
+		} else {
+			break
+		}
+	}
 	return &SvcScanner{
 		R:            NewRuneReader(r),
 		InDefinition: false,
 		InBody:       false,
 		BraceLevel:   0,
+		Buf:          b,
+		UnitPos:      0,
 	}
 }
 
@@ -108,152 +294,201 @@ func (self *SvcScanner) FastForward() error {
 			return err
 		}
 		if string(buf) == search_str {
-			for i := 0; i < utf8.RuneCountInString(search_str); i++ {
-				err = self.R.UnreadRune()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "%v Error unreading: %v\n", i, err)
-					return err
-				}
-			}
+			self.UnitPos -= 1
 			break
 		}
 	}
 	return nil
 }
 
+func (self *SvcScanner) ReadUnit() ([]rune, error) {
+	var rv []rune
+	var err error = nil
+	if self.UnitPos < len(self.Buf) {
+		unit := self.Buf[self.UnitPos]
+
+		self.InBody = unit.InRpcBody
+		self.InDefinition = unit.InRpcDefinition
+		self.BraceLevel = unit.BraceLevel
+		self.lineNo = unit.LineNo
+
+		rv = unit.Value
+
+		self.UnitPos += 1
+	} else {
+		err = io.EOF
+	}
+
+	return rv, err
+}
+
+func (self *SvcScanner) UnreadUnit() error {
+	if self.UnitPos == 0 {
+		return fmt.Errorf("Cannot unread when scanner is at start of input")
+	}
+	self.UnitPos -= 1
+
+	unit := self.Buf[self.UnitPos]
+	self.InBody = unit.InRpcBody
+	self.InDefinition = unit.InRpcDefinition
+	self.BraceLevel = unit.BraceLevel
+	self.lineNo = unit.LineNo
+
+	return nil
+}
+func (self *SvcScanner) UnReadToPosition(position int) error {
+	for {
+		if self.UnitPos != position {
+			err := self.UnreadUnit()
+			if err != nil {
+				return err
+			}
+		} else {
+			break
+		}
+	}
+	return nil
+}
+
+func (self *SvcScanner) GetLineNumber() int {
+	return self.lineNo
+}
+
 // Returns one rough "syntactical unit" of a Protobuf file. Returns strings
 // containing groups of letters, groups of whitespace, and entire comments.
 // Every other type of unit is returned one character at a time.
-func (self *SvcScanner) ReadUnit() ([]rune, error) {
-	var ch rune
-	buf := make([]rune, 0)
-
-	// Populate the buffer with at least one rune so even if it's an unknown
-	// character it will at least return this
-	ch, err := self.R.ReadRune()
-	if err != nil {
-		return buf, err
-	}
-	buf = append(buf, ch)
-
-	switch {
-	case ch == '/':
-		// Searching for comments beginning with '/'
-		ch, err = self.R.ReadRune()
-		if err != nil {
-			return buf, err
-		} else if ch == '/' {
-			// Handle single line comments of the form '//'
-			buf = append(buf, ch)
-			for {
-				ch, err = self.R.ReadRune()
-				if err != nil {
-					return buf, err
-				} else if ch == '\n' {
-					buf = append(buf, ch)
-					return buf, nil
-				}
-				buf = append(buf, ch)
-			}
-		} else if ch == '*' {
-			// Handle (potentially) multi-line comments of the form '/**/'
-			buf = append(buf, ch)
-			for {
-				ch, err = self.R.ReadRune()
-				if err != nil {
-					return buf, err
-				} else if ch == '*' {
-					buf = append(buf, ch)
-					ch, err = self.R.ReadRune()
-					if err != nil {
-						return buf, err
-					} else if ch == '/' {
-						buf = append(buf, ch)
-						return buf, nil
-					}
-				}
-			}
-		} else {
-			// Not a comment, so unread the last Rune and return this '/' only
-			self.R.UnreadRune()
-			return buf, nil
-		}
-	case ch == '"':
-		// Handle strings
-		for {
-			ch, err = self.R.ReadRune()
-			if err != nil {
-				return buf, err
-			} else if ch == '\\' {
-				// Handle escape sequences within strings
-				buf = append(buf, ch)
-				ch, err = self.R.ReadRune()
-				if err != nil {
-					return buf, err
-				} else {
-					buf = append(buf, ch)
-				}
-			} else if ch == '"' {
-				// Closing quotation
-				buf = append(buf, ch)
-				return buf, nil
-			} else {
-				buf = append(buf, ch)
-			}
-		}
-	case unicode.IsSpace(ch):
-		// Group consecutive white space characters
-		for {
-			ch, err = self.R.ReadRune()
-			if err != nil {
-				// Don't pass along this EOF since we did find a valid 'Unit'
-				// to return. This way, the next call of this function will
-				// return EOF and nothing else, a more clear behavior.
-				if err == io.EOF {
-					return buf, nil
-				}
-				return buf, err
-			} else if !unicode.IsSpace(ch) {
-				self.R.UnreadRune()
-				break
-			}
-			buf = append(buf, ch)
-		}
-	case isIdent(ch):
-		// Group consecutive letters
-		for {
-			ch, err = self.R.ReadRune()
-			if err != nil {
-				if err == io.EOF {
-					return buf, nil
-				}
-				return buf, err
-			} else if !isIdent(ch) {
-				self.R.UnreadRune()
-				if string(buf) == "service" {
-					self.InDefinition = true
-				}
-				break
-			}
-			buf = append(buf, ch)
-		}
-	case ch == '{':
-		self.BraceLevel += 1
-		if self.InDefinition == true {
-			self.InDefinition = false
-			self.InBody = true
-		}
-	case ch == '}':
-		self.BraceLevel -= 1
-		if self.InBody == true && self.BraceLevel == 0 {
-			self.InBody = false
-		}
-	}
-
-	// Implicitly, everything that's not a group of letters, not a group of
-	// whitespace, not a comment, and not a string-literal, (common examples of
-	// runes in this category are numbers and symbols like '&' or '9') will be
-	// returned one rune at a time.
-
-	return buf, nil
-}
+/*
+ *func (self *SvcScanner) ReadUnit() ([]rune, error) {
+ *    var ch rune
+ *    buf := make([]rune, 0)
+ *
+ *    // Populate the buffer with at least one rune so even if it's an unknown
+ *    // character it will at least return this
+ *    ch, err := self.R.ReadRune()
+ *    if err != nil {
+ *        return buf, err
+ *    }
+ *    buf = append(buf, ch)
+ *
+ *    switch {
+ *    case ch == '/':
+ *        // Searching for comments beginning with '/'
+ *        ch, err = self.R.ReadRune()
+ *        if err != nil {
+ *            return buf, err
+ *        } else if ch == '/' {
+ *            // Handle single line comments of the form '//'
+ *            buf = append(buf, ch)
+ *            for {
+ *                ch, err = self.R.ReadRune()
+ *                if err != nil {
+ *                    return buf, err
+ *                } else if ch == '\n' {
+ *                    buf = append(buf, ch)
+ *                    return buf, nil
+ *                }
+ *                buf = append(buf, ch)
+ *            }
+ *        } else if ch == '*' {
+ *            // Handle (potentially) multi-line comments of the form '/**'
+ *            buf = append(buf, ch)
+ *            for {
+ *                ch, err = self.R.ReadRune()
+ *                if err != nil {
+ *                    return buf, err
+ *                } else if ch == '*' {
+ *                    buf = append(buf, ch)
+ *                    ch, err = self.R.ReadRune()
+ *                    if err != nil {
+ *                        return buf, err
+ *                    } else if ch == '/' {
+ *                        buf = append(buf, ch)
+ *                        return buf, nil
+ *                    }
+ *                }
+ *            }
+ *        } else {
+ *            // Not a comment, so unread the last Rune and return this '/' only
+ *            self.R.UnreadRune()
+ *            return buf, nil
+ *        }
+ *    case ch == '"':
+ *        // Handle strings
+ *        for {
+ *            ch, err = self.R.ReadRune()
+ *            if err != nil {
+ *                return buf, err
+ *            } else if ch == '\\' {
+ *                // Handle escape sequences within strings
+ *                buf = append(buf, ch)
+ *                ch, err = self.R.ReadRune()
+ *                if err != nil {
+ *                    return buf, err
+ *                } else {
+ *                    buf = append(buf, ch)
+ *                }
+ *            } else if ch == '"' {
+ *                // Closing quotation
+ *                buf = append(buf, ch)
+ *                return buf, nil
+ *            } else {
+ *                buf = append(buf, ch)
+ *            }
+ *        }
+ *    case unicode.IsSpace(ch):
+ *        // Group consecutive white space characters
+ *        for {
+ *            ch, err = self.R.ReadRune()
+ *            if err != nil {
+ *                // Don't pass along this EOF since we did find a valid 'Unit'
+ *                // to return. This way, the next call of this function will
+ *                // return EOF and nothing else, a more clear behavior.
+ *                if err == io.EOF {
+ *                    return buf, nil
+ *                }
+ *                return buf, err
+ *            } else if !unicode.IsSpace(ch) {
+ *                self.R.UnreadRune()
+ *                break
+ *            }
+ *            buf = append(buf, ch)
+ *        }
+ *    case isIdent(ch):
+ *        // Group consecutive letters
+ *        for {
+ *            ch, err = self.R.ReadRune()
+ *            if err != nil {
+ *                if err == io.EOF {
+ *                    return buf, nil
+ *                }
+ *                return buf, err
+ *            } else if !isIdent(ch) {
+ *                self.R.UnreadRune()
+ *                if string(buf) == "service" {
+ *                    self.InDefinition = true
+ *                }
+ *                break
+ *            }
+ *            buf = append(buf, ch)
+ *        }
+ *    case ch == '{':
+ *        self.BraceLevel += 1
+ *        if self.InDefinition == true {
+ *            self.InDefinition = false
+ *            self.InBody = true
+ *        }
+ *    case ch == '}':
+ *        self.BraceLevel -= 1
+ *        if self.InBody == true && self.BraceLevel == 0 {
+ *            self.InBody = false
+ *        }
+ *    }
+ *
+ *    // Implicitly, everything that's not a group of letters, not a group of
+ *    // whitespace, not a comment, and not a string-literal, (common examples of
+ *    // runes in this category are numbers and symbols like '&' or '9') will be
+ *    // returned one rune at a time.
+ *
+ *    return buf, nil
+ *}
+ */

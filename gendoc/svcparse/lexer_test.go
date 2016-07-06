@@ -121,8 +121,8 @@ func TestLinNos(t *testing.T) {
 			t.Logf("ReadUnit returned error: '%v'\n", err)
 			t.Fail()
 		}
-		if good_linno != scn.R.LineNo {
-			t.Logf("Unexpected line number on unit %v: Expected '%v', found '%v'\n", i, good_linno, scn.R.LineNo)
+		if good_linno != scn.GetLineNumber() {
+			t.Logf("Unexpected line number on unit %v: Expected '%v', found '%v'\n", i, good_linno, scn.GetLineNumber())
 			t.Fail()
 		}
 	}
@@ -150,9 +150,9 @@ func TestLexSingleLineComments(t *testing.T) {
 
 		if str != good_str {
 			for _, grp := range lex.Buf {
-				t.Logf("  '%v'\n", grp.value)
+				t.Logf("  '%v'\n", cleanStr(grp.value))
 			}
-			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, good_str)
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, cleanStr(str), cleanStr(good_str))
 		}
 
 		if tk == EOF || tk == ILLEGAL {
@@ -207,4 +207,65 @@ func TestLextUnGetToken(t *testing.T) {
 		}
 	}
 
+}
+
+func TestLexNewlines(t *testing.T) {
+	// Ensure that all newlines are properly accounted for
+	r := strings.NewReader("service 1\n//2\n//3\n4\n5\n6")
+	lex := NewSvcLexer(r)
+
+	type val struct {
+		v    string
+		line int
+	}
+
+	good_vals := []val{
+		{"service", 1},
+		{" ", 1},
+		{"1", 1},
+		{"\n", 2},
+		{"//2\n//3\n", 4},
+		{"4", 4},
+		{"\n", 5},
+		{"5", 5},
+		{"\n", 6},
+		{"6", 6},
+	}
+	for i, g := range good_vals {
+		tk, str := lex.GetToken()
+		if tk == ILLEGAL {
+			t.Fatalf("Recieved ILLEGAL token on '%v' call to GetToken\n", i)
+		}
+		if str != g.v {
+			t.Log(lex.Buf)
+			for _, grp := range lex.Buf {
+				t.Logf("%v\n", grp)
+			}
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, g.v)
+		}
+		if lex.GetLineNumber() != g.line {
+			t.Log(lex.Buf)
+			t.Fatalf("Expected line '%v' go line '%v'\n", g.line, lex.GetLineNumber())
+		}
+	}
+	for i := 0; i < 7; i++ {
+		lex.UnGetToken()
+	}
+	for i, g := range good_vals[len(good_vals)-7:] {
+		tk, str := lex.GetToken()
+		if tk == ILLEGAL {
+			t.Fatalf("Recieved ILLEGAL token on '%v' call to GetToken\n", i)
+		}
+		if str != g.v {
+			t.Log(lex.Buf)
+			for _, grp := range lex.Buf {
+				t.Logf("%v\n", grp)
+			}
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, str, g.v)
+		}
+		if lex.GetLineNumber() != g.line {
+			t.Log(lex.Buf)
+			t.Fatalf("Expected line '%v' go line '%v'\n", g.line, lex.GetLineNumber())
+		}
+	}
 }

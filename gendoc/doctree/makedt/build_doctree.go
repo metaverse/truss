@@ -139,7 +139,7 @@ func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 		svc := dt.GetByName(fname).GetByName(parsed_svc.GetName()).(*doctree.ProtoService)
 		for _, pmeth := range parsed_svc.Methods {
 			meth := svc.GetByName(pmeth.GetName()).(*doctree.ServiceMethod)
-			meth.HttpOption = pmeth.HttpOption
+			meth.HttpBindings = pmeth.HttpBindings
 		}
 	}
 }

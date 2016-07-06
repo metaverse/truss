@@ -21,7 +21,65 @@ func TestUnderscoreIdent(t *testing.T) {
 	}
 }
 
-func TestAdditionalHttpOpts(t *testing.T) {
+func TestTrailingCommentsThreeDeep(t *testing.T) {
+	r := strings.NewReader(`
+service Example_Service {
+	rpc Example(Empty) returns (Empty) {
+		option (google.api.http) = {
+			// Some example comment
+			get: "/ExampleGet"
+			body: "*"
+
+			additional_bindings {
+				post: "/ExamplePost"
+			}
+			// Testing comments
+		}
+	}
+}
+`)
+	lex := NewSvcLexer(r)
+	//t.Logf("%v", lex.Buf)
+	svc, err := ParseService(lex)
+
+	if err != nil {
+		t.Error(err)
+	}
+	if svc == nil {
+		t.Fatalf("Returned service is nil\n")
+	}
+}
+
+func TestTrailingCommentsTwoDeep(t *testing.T) {
+	r := strings.NewReader(`
+service Example_Service {
+	rpc Example(Empty) returns (Empty) {
+		option (google.api.http) = {
+			// Some example comment
+			get: "/ExampleGet"
+			body: "*"
+
+			additional_bindings {
+				post: "/ExamplePost"
+			}
+		}
+		// Testing comments
+	}
+}
+`)
+	lex := NewSvcLexer(r)
+	//t.Logf("%v", lex.Buf)
+	svc, err := ParseService(lex)
+
+	if err != nil {
+		t.Error(err)
+	}
+	if svc == nil {
+		t.Fatalf("Returned service is nil\n")
+	}
+}
+
+func TestTrailingCommentsOneDeep(t *testing.T) {
 	r := strings.NewReader(`
 service Example_Service {
 	rpc Example(Empty) returns (Empty) {
@@ -35,8 +93,12 @@ service Example_Service {
 			}
 		}
 	}
-}`)
+	// Testing comments
+}
+`)
 	lex := NewSvcLexer(r)
+	t.Logf("%v", lex.Scn.Buf)
+	t.Logf("%v", lex.Buf)
 	svc, err := ParseService(lex)
 
 	if err != nil {

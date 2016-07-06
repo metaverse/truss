@@ -3,7 +3,7 @@ package svcparse
 import (
 	"fmt"
 	"io"
-	"unicode/utf8"
+	//"unicode/utf8"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
 )
@@ -12,26 +12,39 @@ func parseErr(expected string, line int, val string) error {
 	return fmt.Errorf("Parser expected %v in line '%v', instead found '%v'\n", expected, line, val)
 }
 
+// fastForwardTill moves the lexer forward till a token with a certain value
+// has been found. If an illegal token or EOF is reached, returns an error
+func fastForwardTill(lex *SvcLexer, delim string) error {
+	for {
+		tk, val := lex.GetTokenIgnoreWhitespace()
+		if tk == EOF || tk == ILLEGAL {
+			return fmt.Errorf("In fastForwardTill found token of type '%v' and val '%v'\n", tk, val)
+		} else if val == delim {
+			return nil
+		}
+	}
+}
+
 func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
 	tk, val := lex.GetTokenIgnoreWhitespace()
 	if tk == EOF {
 		return nil, io.EOF
 	}
 	if tk != IDENT && val != "service" {
-		return nil, parseErr("'service' identifier", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'service' identifier", lex.GetLineNumber(), val)
 	}
 
 	toret := &doctree.ProtoService{}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
-		return nil, parseErr("a string identifier", lex.Scn.R.LineNo, val)
+		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
 	}
 	toret.SetName(val)
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
-		return nil, parseErr("'{'", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'{'", lex.GetLineNumber(), val)
 	}
 
 	// Recursively parse the methods of this service
@@ -66,7 +79,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 	case tk == CLOSE_BRACE:
 		return nil, nil
 	case tk != IDENT || val != "rpc":
-		return nil, parseErr("identifier 'rpc'", lex.Scn.R.LineNo, val)
+		return nil, parseErr("identifier 'rpc'", lex.GetLineNumber(), val)
 	}
 
 	toret := &doctree.ServiceMethod{}
@@ -74,7 +87,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
-		return nil, parseErr("a string identifier", lex.Scn.R.LineNo, val)
+		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
 	}
 	toret.SetName(val)
 
@@ -83,7 +96,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_PAREN {
-		return nil, parseErr("'('", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'('", lex.GetLineNumber(), val)
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -93,7 +106,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		tk, val = lex.GetTokenIgnoreWhitespace()
 	}
 	if tk != IDENT {
-		return nil, parseErr("a string identifier in first argument to method", lex.Scn.R.LineNo, val)
+		return nil, parseErr("a string identifier in first argument to method", lex.GetLineNumber(), val)
 	}
 
 	toret.RequestType = &doctree.ProtoMessage{}
@@ -101,17 +114,17 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
-		return nil, parseErr("')'", lex.Scn.R.LineNo, val)
+		return nil, parseErr("')'", lex.GetLineNumber(), val)
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT || val != "returns" {
-		return nil, parseErr("'returns' keyword", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'returns' keyword", lex.GetLineNumber(), val)
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_PAREN {
-		return nil, parseErr("'('", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'('", lex.GetLineNumber(), val)
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -121,7 +134,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		tk, val = lex.GetTokenIgnoreWhitespace()
 	}
 	if tk != IDENT {
-		return nil, parseErr("a string identifier in return argument to method", lex.Scn.R.LineNo, val)
+		return nil, parseErr("a string identifier in return argument to method", lex.GetLineNumber(), val)
 	}
 
 	toret.ResponseType = &doctree.ProtoMessage{}
@@ -129,116 +142,145 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
-		return nil, parseErr("')' after declaration of return type to method", lex.Scn.R.LineNo, val)
+		return nil, parseErr("')' after declaration of return type to method", lex.GetLineNumber(), val)
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
-		return nil, parseErr("'{' after declaration of method signature", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'{' after declaration of method signature", lex.GetLineNumber(), val)
 	}
 
-	opt, err := ParseHttpOption(lex)
-
+	bindings, err := ParseHttpBindings(lex)
 	if err != nil {
 		return nil, err
 	}
+	toret.HttpBindings = bindings
 
-	toret.HttpOption = opt
-
-	tk, val = lex.GetTokenIgnoreWhitespace()
+	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
 	if tk != CLOSE_BRACE {
-		return nil, parseErr("'}' after declaration of http options", lex.Scn.R.LineNo, val)
+		return nil, parseErr("'}' after declaration of http options", lex.GetLineNumber(), val+tk.String())
 	}
 
 	return toret, nil
 
 }
 
-func ParseHttpOption(lex *SvcLexer) (*doctree.ServiceHttpOption, error) {
-	// This basically assumes that every single method declaration has exactly
-	// one, no more, no less, option declaration, and that that option is an
-	// http option. This should be changed in the future.
-	toret := &doctree.ServiceHttpOption{}
+func ParseHttpBindings(lex *SvcLexer) ([]*doctree.ServiceHttpBinding, error) {
+
+	rv := make([]*doctree.ServiceHttpBinding, 0)
+	new_opt := &doctree.ServiceHttpBinding{}
 
 	tk, val := lex.GetTokenIgnoreWhitespace()
-
-	if tk == COMMENT {
-		toret.Description = val
-	} else {
-		for i := 0; i < utf8.RuneCountInString(val); i++ {
-			lex.Scn.R.UnreadRune()
-		}
-	}
-
-	for _, good_val := range []string{
-		"option",
-		"(",
-		"google",
-		".",
-		"api",
-		".",
-		"http",
-		")",
-		"=",
-		"{",
-	} {
-		_, val := lex.GetTokenIgnoreWhitespace()
-		if val != good_val {
-			return nil, parseErr("'"+good_val+"'", lex.Scn.R.LineNo, val)
-		}
-	}
-
-	// Parse all the fields
+	// If there's a comment before the declaration of a new HttpBinding, then
+	// we set that comment as the description of that HttpBinding. Since we're
+	// iterating through tokens while ignoring whitespace, this technically
+	// means that a comment could be "detached" from an HttpBinding, but still
+	// precede that HttpBinding, and this parser will still set that comment as
+	// the description of the HttpBinding. This is potentially a bug.
+	//
+	// TODO: Fix this property so that newlines, or their absence, are the
+	// basis for association.
 	for {
-		field, err := ParseOptionField(lex)
+		if tk == COMMENT {
+			new_opt.SetDescription(val)
+			tk, val = lex.GetTokenIgnoreWhitespace()
+		} else if tk == EOF || tk == ILLEGAL {
+			return nil, parseErr("non-illegal input", lex.GetLineNumber(), tk.String())
+		} else {
+			break
+		}
+	}
+
+	switch {
+	case val == "option":
+		err := fastForwardTill(lex, "{")
 		if err != nil {
 			return nil, err
 		}
-		if field == nil {
-			break
+		fields, err := ParseBindingFields(lex)
+		if err != nil {
+			return nil, err
 		}
-		toret.Fields = append(toret.Fields, field)
+		new_opt.Fields = fields
+		good_position := lex.GetPosition()
+
+		tk, val = lex.GetTokenIgnoreWhitespace()
+		for {
+			if tk == CLOSE_BRACE {
+				return append(rv, new_opt), nil
+			} else if tk == COMMENT {
+				good_position = lex.GetPosition()
+			} else if val == "additional_bindings" {
+				lex.UnGetToPosition(good_position)
+				more_bindings, err := ParseHttpBindings(lex)
+				if err != nil {
+					return nil, err
+				}
+				rv = append(rv, more_bindings...)
+				good_position = lex.GetPosition()
+			} else if tk == EOF || tk == ILLEGAL {
+				return nil, parseErr("non-illegal token while parsing HttpBindings", lex.GetLineNumber(), fmt.Sprintf("(%v) of type %v", val, tk))
+			}
+			tk, val = lex.GetTokenIgnoreWhitespace()
+		}
+	case val == "additional_bindings":
+		err := fastForwardTill(lex, "{")
+		if err != nil {
+			return nil, err
+		}
+		fields, err := ParseBindingFields(lex)
+		if err != nil {
+			return nil, err
+		}
+		new_opt.Fields = fields
+		return append(rv, new_opt), nil
 	}
 
-	tk, val = lex.GetTokenIgnoreWhitespace()
-	if tk != SYMBOL {
-		return nil, parseErr("';' after http option", lex.Scn.R.LineNo, val)
-	}
-
-	return toret, nil
+	return nil, parseErr("'option' or 'additional_bindings' while parsing options", lex.GetLineNumber(), val)
 }
 
-func ParseOptionField(lex *SvcLexer) (*doctree.OptionField, error) {
-	toret := &doctree.OptionField{}
+func ParseBindingFields(lex *SvcLexer) ([]*doctree.BindingField, error) {
 
-	tk, val := lex.GetTokenIgnoreWhitespace()
+	rv := make([]*doctree.BindingField, 0)
+	field := &doctree.BindingField{}
+	for {
+		tk, val := lex.GetTokenIgnoreWhitespace()
+		for {
+			if tk == COMMENT {
+				field.SetDescription(val)
+				tk, val = lex.GetTokenIgnoreWhitespace()
+			} else if tk == EOF || tk == ILLEGAL {
+				return nil, parseErr("non-illegal token whil parsing binding fields", lex.GetLineNumber(), val)
+			} else {
+				break
+			}
+		}
+		// No longer any more fields
+		if tk == CLOSE_BRACE && val == "}" {
+			break
+		} else if val == "additional_bindings" {
+			lex.UnGetToken()
+			break
+		}
 
-	if tk == COMMENT {
-		toret.SetDescription(val)
+		field.Kind = val
+		field.SetName(val)
+
 		tk, val = lex.GetTokenIgnoreWhitespace()
+		if tk != SYMBOL || val != ":" {
+			return nil, parseErr("symbol ':'", lex.GetLineNumber(), val)
+		}
+
+		tk, val = lex.GetTokenIgnoreWhitespace()
+		if tk != STRING_LITERAL {
+			return nil, parseErr("string literal", lex.GetLineNumber(), val)
+		}
+
+		field.Value = val
+
+		rv = append(rv, field)
+		field = &doctree.BindingField{}
 	}
 
-	// No longer any more options
-	if tk == CLOSE_BRACE && val == "}" {
-		return nil, nil
-	}
-
-	if tk != IDENT {
-		return nil, parseErr("string identifier", lex.Scn.R.LineNo, val)
-	}
-	toret.SetName(val)
-	toret.Kind = val
-
-	tk, val = lex.GetTokenIgnoreWhitespace()
-	if tk != SYMBOL || val != ":" {
-		return nil, parseErr("symbol ':'", lex.Scn.R.LineNo, val)
-	}
-
-	tk, val = lex.GetTokenIgnoreWhitespace()
-	if tk != STRING_LITERAL {
-		return nil, parseErr("string literal", lex.Scn.R.LineNo, val)
-	}
-	toret.Value = val
-
-	return toret, nil
+	return rv, nil
 }

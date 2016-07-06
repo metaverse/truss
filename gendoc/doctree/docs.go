@@ -391,17 +391,17 @@ type ServiceMethod struct {
 	describable
 	RequestType  *ProtoMessage
 	ResponseType *ProtoMessage
-	HttpOption   *ServiceHttpOption
+	HttpBindings []*ServiceHttpBinding
 }
 
 func (self *ServiceMethod) describe(depth int) string {
 	rv := self.describable.describe(depth)
 	rv += prindent(depth, "RequestType: %v\n", self.RequestType.GetName())
 	rv += prindent(depth, "ResponseType: %v\n", self.ResponseType.GetName())
-	rv += prindent(depth, "ServiceHttpOption:\n")
+	rv += prindent(depth, "ServiceHttpBinding:\n")
 
-	if self.HttpOption != nil {
-		rv += self.HttpOption.describe(depth + 1)
+	for _, bind := range self.HttpBindings {
+		rv += bind.describe(depth + 1)
 	}
 	return rv
 }
@@ -412,7 +412,9 @@ func (self *ServiceMethod) describeMarkdown(depth int) string {
 	rv += prindent(0, "[RequestType: %v](#%v)\n\n", self.RequestType.GetName(), self.RequestType.GetName())
 	rv += prindent(0, "[ResponseType: %v](#%v)\n\n", self.ResponseType.GetName(), self.ResponseType.GetName())
 
-	rv += self.HttpOption.describeMarkdown(depth + 1)
+	for _, bind := range self.HttpBindings {
+		rv += bind.describeMarkdown(depth + 1)
+	}
 
 	return rv
 }
@@ -427,12 +429,12 @@ func (self *ServiceMethod) GetByName(name string) Describable {
 	return nil
 }
 
-type ServiceHttpOption struct {
+type ServiceHttpBinding struct {
 	describable
-	Fields []*OptionField
+	Fields []*BindingField
 }
 
-func (self *ServiceHttpOption) describe(depth int) string {
+func (self *ServiceHttpBinding) describe(depth int) string {
 	rv := self.describable.describe(depth)
 	for _, field := range self.Fields {
 		rv += field.describe(depth + 1)
@@ -440,7 +442,7 @@ func (self *ServiceHttpOption) describe(depth int) string {
 	return rv
 }
 
-func (self *ServiceHttpOption) describeMarkdown(depth int) string {
+func (self *ServiceHttpBinding) describeMarkdown(depth int) string {
 	rv := ""
 
 	for _, field := range self.Fields {
@@ -454,13 +456,13 @@ func (self *ServiceHttpOption) describeMarkdown(depth int) string {
 	return rv
 }
 
-type OptionField struct {
+type BindingField struct {
 	describable
 	Kind  string
 	Value string
 }
 
-func (self *OptionField) describe(depth int) string {
+func (self *BindingField) describe(depth int) string {
 	rv := self.describable.describe(depth)
 	rv += prindent(depth, "Kind: %v\n", self.Kind)
 	rv += prindent(depth, "Value: %v\n", self.Value)

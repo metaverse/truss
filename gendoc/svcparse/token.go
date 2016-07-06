@@ -1,5 +1,10 @@
 package svcparse
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Token int
 
 const (
@@ -46,4 +51,11 @@ type TokenGroup struct {
 	token Token
 	value string
 	line  int
+}
+
+func (self TokenGroup) String() string {
+	cleanval := strings.Replace(self.value, "\n", "\\n", -1)
+	cleanval = strings.Replace(cleanval, "\t", "\\t", -1)
+	cleanval = strings.Replace(cleanval, "\"", "\\\"", -1)
+	return fmt.Sprintf(`{"token": "%v", "value": "%v", "line": %v},`, self.token, cleanval, self.line)
 }
