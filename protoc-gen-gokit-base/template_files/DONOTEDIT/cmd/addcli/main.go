@@ -19,10 +19,10 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}}"
-	"{{.AbsoluteRelativeImportPath -}} /pb"
-	grpcclient "{{.AbsoluteRelativeImportPath -}} /client/grpc"
-	//httpclient "{{.AbsoluteRelativeImportPath -}} /client/http"
+	handler "{{.HandlerImport -}}"
+	"{{.GeneratedImport -}} /pb"
+	grpcclient "{{.GeneratedImport -}} /client/grpc"
+	//httpclient "{{.GeneratedImport -}} /client/http"
 )
 
 func main() {
@@ -84,7 +84,7 @@ func main() {
 	// Your clients will probably just define and stick with 1 transport.
 
 	var (
-		service addsvc.Service
+		service handler.Service
 		err     error
 	)
 	//if *httpAddr != "" {

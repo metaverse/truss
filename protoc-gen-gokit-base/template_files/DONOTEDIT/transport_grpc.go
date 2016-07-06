@@ -1,5 +1,5 @@
 {{ with $templateExecutor := .}}
-{{ with $AbsoluteRelativeImportPath := $templateExecutor.AbsoluteRelativeImportPath}}
+{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
 {{ with $strings := $templateExecutor.Strings}}
 {{ with $Service := $templateExecutor.Service}}
 package addsvc
@@ -16,7 +16,7 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	"{{$AbsoluteRelativeImportPath -}} /pb"
+	"{{$GeneratedImport -}} /pb"
 )
 
 

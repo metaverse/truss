@@ -1,5 +1,6 @@
 {{ with $templateExecutor := .}}
-{{ with $AbsoluteRelativeImportPath := $templateExecutor.AbsoluteRelativeImportPath}}
+{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
+{{ with $HandlerImport := $templateExecutor.HandlerImport}}
 {{ with $strings := $templateExecutor.Strings}}
 {{ with $Service := $templateExecutor.Service}}
 package main
@@ -34,8 +35,9 @@ import (
 	//"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
-	"{{$AbsoluteRelativeImportPath -}} "
-	"{{$AbsoluteRelativeImportPath -}} /pb"
+	handler "{{$HandlerImport -}} "
+	"{{$GeneratedImport -}} "
+	"{{$GeneratedImport -}} /pb"
 
 )
 
@@ -126,11 +128,11 @@ func main() {
 	}
 
 	// Business domain.
-	var service addsvc.Service
+	var service handler.Service
 	{
-		service = addsvc.NewBasicService()
-		//service = addsvc.ServiceLoggingMiddleware(logger)(service)
-		//service = addsvc.ServiceInstrumentingMiddleware(ints, chars)(service)
+		service = handler.NewBasicService()
+		//service = handler.ServiceLoggingMiddleware(logger)(service)
+		//service = handler.ServiceInstrumentingMiddleware(ints, chars)(service)
 	}
 
 	// Endpoint domain.
@@ -208,6 +210,7 @@ func main() {
 	// Run!
 	logger.Log("exit", <-errc)
 }
+{{end}}
 {{end}}
 {{end}}
 {{end}}

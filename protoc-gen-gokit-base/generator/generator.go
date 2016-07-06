@@ -25,8 +25,10 @@ type generator struct {
 // templateExecutor is passed to templates as the executing struct
 // Its fields and methods are used to modify the template
 type templateExecutor struct {
+	// Import path for handler package
+	HandlerImport string
 	// Import path for generated packages
-	AbsoluteRelativeImportPath string
+	GeneratedImport string
 	// GRPC/Protobuff service, with all parameters and return values accessible
 	Service *descriptor.Service
 	// Contains the strings.ToLower() method for lowercasing Service names, methods, and fields
@@ -56,8 +58,9 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 
 	wd, _ := os.Getwd()
 	goPath := os.Getenv("GOPATH")
-	importPath := strings.TrimPrefix(wd, goPath+"/src/")
-	importPath = importPath + "/generate"
+	baseImportPath := strings.TrimPrefix(wd, goPath+"/src/")
+	handlerImportPath := baseImportPath + "/generate"
+	generatedImportPath := baseImportPath + "/generate/DONOTEDIT"
 
 	// Attaching the strings.ToLower method so that it can be used in template execution
 	stringsMethods := stringsTemplateMethods{
@@ -70,9 +73,10 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
 		templateExec: templateExecutor{
-			AbsoluteRelativeImportPath: importPath,
-			Service:                    service,
-			Strings:                    stringsMethods,
+			HandlerImport:   handlerImportPath,
+			GeneratedImport: generatedImportPath,
+			Service:         service,
+			Strings:         stringsMethods,
 		},
 	}
 }

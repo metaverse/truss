@@ -1,4 +1,4 @@
-package addsvc
+package handler
 
 // This file contains the Service definition, and a basic service
 // implementation. It also includes service middlewares.
@@ -12,7 +12,7 @@ import (
 	_ "github.com/go-kit/kit/log"
 	_ "github.com/go-kit/kit/metrics"
 
-	"{{.AbsoluteRelativeImportPath -}} /pb"
+	"{{.GeneratedImport -}} /pb"
 )
 
 // Service describes a service that adds things together.

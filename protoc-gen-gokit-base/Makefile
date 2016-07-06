@@ -6,12 +6,13 @@ PLUGIN=protoc-gen-$(NAME)
 PLUGIN_CMD_DIR=./cmd/$(PLUGIN)
 
 OUTPUT=./generate
+NON_EDITABLE_OUTPUT=$(OUTPUT)/DONOTEDIT
 
 GENERATED_SERVICE=addsvc
 GENERATED_SERVICE_CLIENT=addcli
 
-GENERATED_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE)
-GENERATED_CLIENT_OUT_DIR=$(OUTPUT)/cmd/$(GENERATED_SERVICE_CLIENT)
+GENERATED_OUT_BIN_DIR=$(NON_EDITABLE_OUTPUT)/cmd/$(GENERATED_SERVICE)
+GENERATED_CLIENT_OUT_BIN_DIR=$(NON_EDITABLE_OUTPUT)/cmd/$(GENERATED_SERVICE_CLIENT)
 
 
 # GOOGLE_HTTP_API_DIR Must contain the following directory structure
@@ -40,13 +41,13 @@ $(PLUGIN): gobindata
 	go build ./cmd/protoc-gen-gokit-base
 
 code-generation: $(PLUGIN)
-	mkdir -p $(OUTPUT)
-	mkdir -p $(OUTPUT)/pb
+	mkdir -p $(NON_EDITABLE_OUTPUT)
+	mkdir -p $(NON_EDITABLE_OUTPUT)/pb
 	protoc  -I/usr/local/include -I. \
 	   		-I.. \
 			-I$(GOPATH)/src \
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
-     		--go_out=Mgoogle/api/annotations.proto=$(GOOGLE_HTTP_API_DIR)/google/api,plugins=grpc:$(OUTPUT)/ \
+     		--go_out=Mgoogle/api/annotations.proto=$(GOOGLE_HTTP_API_DIR)/google/api,plugins=grpc:$(NON_EDITABLE_OUTPUT)/ \
 			pb/*.proto
 	@echo -e '$(RUN_MSG)'
 	protoc -I/usr/local/include -I. \
@@ -59,8 +60,8 @@ code-generation: $(PLUGIN)
 
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'
-	go build $(GENERATED_OUT_DIR)/...
-	go build $(GENERATED_CLIENT_OUT_DIR)/...
+	go build $(GENERATED_OUT_BIN_DIR)/...
+	go build $(GENERATED_CLIENT_OUT_BIN_DIR)/...
 
 clean:
 	rm -f $(PLUGIN)

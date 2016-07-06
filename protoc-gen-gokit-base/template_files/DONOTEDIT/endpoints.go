@@ -15,7 +15,8 @@ import (
 	_ "github.com/go-kit/kit/log"
 	_ "github.com/go-kit/kit/metrics"
 
-	"{{.AbsoluteRelativeImportPath -}} /pb"
+	"{{.HandlerImport -}}"
+	"{{.GeneratedImport -}} /pb"
 )
 
 // Endpoints collects all of the endpoints that compose an add service. It's
@@ -51,7 +52,7 @@ func (e Endpoints) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.Ge
 
 // Make Endpoints
 {{range $i := .Service.Methods}}
-func Make{{$i.GetName}}Endpoint(s Service) endpoint.Endpoint {
+func Make{{$i.GetName}}Endpoint(s handler.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		v, err := s.{{$i.GetName}}(ctx, request.(pb.{{$i.RequestType.GetName}}))
 		if err != nil {

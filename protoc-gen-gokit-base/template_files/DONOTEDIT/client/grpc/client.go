@@ -17,13 +17,14 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	"{{.AbsoluteRelativeImportPath -}}"
-	"{{.AbsoluteRelativeImportPath -}} /pb"
+	handler "{{.HandlerImport -}}"
+	"{{.GeneratedImport -}}"
+	"{{.GeneratedImport -}} /pb"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the
 // responsibility of the caller to dial, and later close, the connection.
-func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger) addsvc.Service {
+func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger) handler.Service {
 	// We construct a single ratelimiter middleware, to limit the total outgoing
 	// QPS from this client to all methods on the remote instance. We also
 	// construct per-endpoint circuitbreaker middlewares to demonstrate how
