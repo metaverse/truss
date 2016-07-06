@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -28,16 +27,6 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 	return req, nil
 }
 
-var (
-	response = string("")
-)
-
-// Leland Batey's log to os.Stderr
-func logf(format string, args ...interface{}) {
-	response += fmt.Sprintf(format, args...)
-	fmt.Fprintf(os.Stderr, format, args...)
-}
-
 func main() {
 
 	registry := descriptor.NewRegistry()
@@ -56,9 +45,6 @@ func main() {
 	}
 
 	g := generator.New(registry, targets)
-
-	// Get working directory, trim off GOPATH, add generate.
-	// This should be the absolute path for the relative package dependencies
 
 	codeGenFiles, _ := g.GenerateResponseFiles(targets)
 
