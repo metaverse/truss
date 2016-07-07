@@ -116,6 +116,9 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			codeGenFiles = append(codeGenFiles, &curResponseFile)
 		} else {
 			util.Log("-------------------------------- service.go exists, not overwriting... ----------------------------------")
+
+			// All ast things have used this blog post for understanding
+			// http://www.lshift.net/blog/2011/04/30/using-the-syntax-tree-in-go/
 			fset := token.NewFileSet()
 			file, _ := parser.ParseFile(fset, servicePath, nil, 0)
 			if err != nil {
