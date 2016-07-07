@@ -125,24 +125,44 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				util.Log(err)
 				panic(err)
 			}
-			ast.Walk(&MethodVisitor{}, file)
+
+			walker := &methodVisitor{
+				handlerMethods: make(map[string]bool),
+			}
+
+			ast.Walk(walker, file)
+
+			for _, meth := range g.templateExec.Service.Methods {
+				methName := meth.GetName()
+				if walker.handlerMethods[methName] == false {
+					util.Logf("Definition file Service rpc:%v does not exist\n", methName)
+				} else {
+					util.Logf("%v Exists\n", methName)
+				}
+			}
 		}
 	}
 
 	return codeGenFiles, nil
 }
 
-type MethodVisitor struct{}
+type methodVisitor struct {
+	handlerMethods map[string]bool
+	callNumber     int
+}
 
-func (v *MethodVisitor) Visit(node ast.Node) ast.Visitor {
+func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
+	util.Log(v.callNumber)
+	v.callNumber = v.callNumber + 1
 	switch t := node.(type) {
 	case *ast.FuncDecl:
 		if t.Name.String() != "NewBasicService" {
+			v.handlerMethods[t.Name.String()] = true
 			util.Log(t.Name.String())
+			util.Log(v.handlerMethods)
 		}
 	}
 	return v
-
 }
 
 func (g *generator) printAllServices() {
