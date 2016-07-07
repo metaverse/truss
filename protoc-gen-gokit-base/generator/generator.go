@@ -59,8 +59,8 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	wd, _ := os.Getwd()
 	goPath := os.Getenv("GOPATH")
 	baseImportPath := strings.TrimPrefix(wd, goPath+"/src/")
-	handlerImportPath := baseImportPath + "/generate"
-	generatedImportPath := baseImportPath + "/generate/DONOTEDIT"
+	handlerImportPath := baseImportPath
+	generatedImportPath := baseImportPath + "/DONOTEDIT"
 
 	// Attaching the strings.ToLower method so that it can be used in template execution
 	stringsMethods := stringsTemplateMethods{

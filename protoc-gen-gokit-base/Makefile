@@ -50,13 +50,17 @@ code-generation: $(PLUGIN)
      		--go_out=Mgoogle/api/annotations.proto=$(GOOGLE_HTTP_API_DIR)/google/api,plugins=grpc:$(NON_EDITABLE_OUTPUT)/ \
 			pb/*.proto
 	@echo -e '$(RUN_MSG)'
+	# The plugin is copied into the output directory so that it can be called from within that directory
+	cp $(PLUGIN) $(OUTPUT)
+	# Currently the plugin assumes that the output directory of the plugin is the current directory (.), otherwise it will fail
+	cd $(OUTPUT) && \
 	protoc -I/usr/local/include -I. \
      	   -I.. \
 	   	   -I$(GOPATH)/src \
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
 		   --plugin=$(PLUGIN) \
-		   --$(NAME)_out=logtostderr=true:$(OUTPUT) \
-		   pb/*.proto
+		   --$(NAME)_out=logtostderr=true:. \
+		   ../pb/*.proto
 
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'
