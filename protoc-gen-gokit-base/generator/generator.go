@@ -2,7 +2,10 @@ package generator
 
 import (
 	"bytes"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
@@ -112,11 +115,31 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 
 			codeGenFiles = append(codeGenFiles, &curResponseFile)
 		} else {
-			util.Log("-------------------------------- service.go exists, not overwriting... -----------------------------------")
+			util.Log("-------------------------------- service.go exists, not overwriting... ----------------------------------")
+			fset := token.NewFileSet()
+			file, _ := parser.ParseFile(fset, servicePath, nil, 0)
+			if err != nil {
+				util.Log(err)
+				panic(err)
+			}
+			ast.Walk(&MethodVisitor{}, file)
 		}
 	}
 
 	return codeGenFiles, nil
+}
+
+type MethodVisitor struct{}
+
+func (v *MethodVisitor) Visit(node ast.Node) ast.Visitor {
+	switch t := node.(type) {
+	case *ast.FuncDecl:
+		if t.Name.String() != "NewBasicService" {
+			util.Log(t.Name.String())
+		}
+	}
+	return v
+
 }
 
 func (g *generator) printAllServices() {
