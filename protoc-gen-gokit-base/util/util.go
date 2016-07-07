@@ -9,8 +9,8 @@ var (
 	response = string("")
 )
 
-func Log(str string) {
-	fmt.Fprintln(os.Stderr, str)
+func Log(args ...interface{}) {
+	fmt.Fprintln(os.Stderr, args...)
 }
 
 // Leland Batey's log to os.Stderr
