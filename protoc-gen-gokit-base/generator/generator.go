@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"go/format"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -40,9 +41,6 @@ type stringsTemplateMethods struct {
 	ToLower func(string) string
 }
 
-// Get working directory, trim off GOPATH, add generate.
-// This should be the absolute path for the relative package dependencies
-
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	var service *descriptor.Service
@@ -59,7 +57,9 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	wd, _ := os.Getwd()
 	goPath := os.Getenv("GOPATH")
 	baseImportPath := strings.TrimPrefix(wd, goPath+"/src/")
+	// import path for generated code that the user can edit
 	handlerImportPath := baseImportPath
+	// import path for generated code that user should not edit
 	generatedImportPath := baseImportPath + "/DONOTEDIT"
 
 	// Attaching the strings.ToLower method so that it can be used in template execution
@@ -86,23 +86,34 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 
 	g.printAllServices()
 
+	wd, _ := os.Getwd()
+	servicePath := wd + "/service.go"
 	for _, templateFile := range g.templateFileNames() {
-		curResponseFile := plugin.CodeGeneratorResponse_File{}
 
-		// Remove "template_files/" so that generated files do not include that directory
-		d := strings.TrimPrefix(templateFile, "template_files/")
-		curResponseFile.Name = &d
+		// If service.go does not exist, generate all files
+		// If template file is not service.go then generate the file
+		// If service.go exists and the template file is service.go then skip
+		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFile) != "service.go" {
 
-		// Get the bytes from the file we are working on
-		// then turn it into a string to build a template out of it
-		bytesOfFile, _ := g.templateFile(templateFile)
-		stringFile := string(bytesOfFile)
+			curResponseFile := plugin.CodeGeneratorResponse_File{}
 
-		// Currently only templating main.go
-		stringFile, _ = g.generate(templateFile, bytesOfFile)
-		curResponseFile.Content = &stringFile
+			// Remove "template_files/" so that generated files do not include that directory
+			d := strings.TrimPrefix(templateFile, "template_files/")
+			curResponseFile.Name = &d
 
-		codeGenFiles = append(codeGenFiles, &curResponseFile)
+			// Get the bytes from the file we are working on
+			// then turn it into a string to build a template out of it
+			bytesOfFile, _ := g.templateFile(templateFile)
+			stringFile := string(bytesOfFile)
+
+			// Currently only templating main.go
+			stringFile, _ = g.generate(templateFile, bytesOfFile)
+			curResponseFile.Content = &stringFile
+
+			codeGenFiles = append(codeGenFiles, &curResponseFile)
+		} else {
+			util.Log("-------------------------------- service.go exists, not overwriting... -----------------------------------")
+		}
 	}
 
 	return codeGenFiles, nil
