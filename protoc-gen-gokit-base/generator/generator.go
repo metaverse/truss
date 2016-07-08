@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/format"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"os"
 	"path/filepath"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+
+	_ "github.com/davecgh/go-spew/spew"
 )
 
 type generator struct {
@@ -97,6 +100,10 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		// If template file is not service.go then generate the file
 		// If service.go exists and the template file is service.go then skip
 		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFile) != "service.go" {
+			if filepath.Ext(templateFile) != ".go" {
+				util.Logf("%v: is not a go file, skipping...\n", templateFile)
+				continue
+			}
 
 			curResponseFile := plugin.CodeGeneratorResponse_File{}
 
@@ -126,43 +133,136 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				panic(err)
 			}
 
-			walker := &methodVisitor{
-				handlerMethods: make(map[string]bool),
+			protobufMethods := make(map[string]bool)
+			for _, meth := range g.templateExec.Service.Methods {
+				protobufMethods[meth.GetName()] = true
 			}
+
+			walker := &methodVisitor{
+				handlerMethods:          make(map[string]bool),
+				serviceInterfaceMethods: make(map[string]bool),
+				protobufMethods:         protobufMethods,
+			}
+
+			serviceCode := bytes.NewBuffer(nil)
+			//err = printer.Fprint(serviceCode, fset, file)
+			//if err != nil {
+			//panic(err)
+			//}
+
+			//util.Logf("service code before walk:\n%v\n", serviceCode.String())
 
 			ast.Walk(walker, file)
 
+			serviceCode = bytes.NewBuffer(nil)
+
+			err = printer.Fprint(serviceCode, fset, file)
+			if err != nil {
+				panic(err)
+			}
+
+			util.Logf("service code before temp:\n%v\n", serviceCode.String())
 			for _, meth := range g.templateExec.Service.Methods {
 				methName := meth.GetName()
 				if walker.handlerMethods[methName] == false {
-					util.Logf("Definition file Service rpc:%v does not exist\n", methName)
+					templateOut := g.applyTemplate("template_files/handler.method", meth)
+					serviceCode.Write(templateOut)
 				} else {
 					util.Logf("%v Exists\n", methName)
 				}
 			}
+
+			templateOut := g.applyTemplate("template_files/service.interface", g.templateExec)
+			serviceCode.Write(templateOut)
+
+			formatted, err := format.Source(serviceCode.Bytes())
+
+			if err != nil {
+				util.Logf("\nCODE FORMATTING ERROR\n", "")
+				util.Logf("\n%v\n", err.Error())
+				// Set formatted to code so at least we get something to examine
+				formatted = serviceCode.Bytes()
+			}
+			curResponseFile := plugin.CodeGeneratorResponse_File{}
+
+			fileName := "service.go"
+			curResponseFile.Name = &fileName
+
+			stringFile := string(formatted)
+			curResponseFile.Content = &stringFile
+
+			codeGenFiles = append(codeGenFiles, &curResponseFile)
 		}
 	}
 
 	return codeGenFiles, nil
 }
 
+func (g generator) applyTemplate(templateFile string, executor interface{}) []byte {
+	templateBytes, _ := g.templateFile(templateFile)
+	templateString := string(templateBytes)
+
+	templ := template.Must(template.New(templateFile).Parse(templateString))
+	outputBuffer := bytes.NewBuffer(nil)
+
+	err := templ.Execute(outputBuffer, executor)
+	if err != nil {
+		util.Logf("\nTEMPLATE ERROR\n", "")
+		util.Logf("\n%v\n", "ServiceRPC")
+		util.Logf("\n%v\n\n", err.Error())
+		panic(err)
+	}
+
+	return outputBuffer.Bytes()
+
+}
+
 type methodVisitor struct {
-	handlerMethods map[string]bool
-	callNumber     int
+	handlerMethods          map[string]bool
+	serviceInterfaceMethods map[string]bool
+	protobufMethods         map[string]bool
+	callNumber              int
 }
 
 func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
-	util.Log(v.callNumber)
 	v.callNumber = v.callNumber + 1
-	switch t := node.(type) {
-	case *ast.FuncDecl:
-		if t.Name.String() != "NewBasicService" {
-			v.handlerMethods[t.Name.String()] = true
-			util.Log(t.Name.String())
-			util.Log(v.handlerMethods)
+	serviceInterfaceFound := false
+	var declareIndexToDelete int
+	if file, ok := node.(*ast.File); ok {
+
+		//fmt.Println(file.Pos())
+		//fmt.Println(file.End())
+		util.Log("---------- File ----------------")
+		for i, decs := range file.Decls {
+			//fmt.Printf("\t---------- Decls %v ---------------\n", i)
+			switch specDec := decs.(type) {
+			case *ast.GenDecl:
+				if !serviceInterfaceFound {
+					for j, spec := range specDec.Specs {
+						util.Logf("\t\t---------- Specs %v ---------------\n", j)
+						if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+							if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
+								util.Logf("\t\t\t%v in Decls %v\n", typeSpec.Name.String(), i)
+								//fmt.Println(typeSpec.Pos())
+								//fmt.Println(typeSpec.End())
+								_ = interfaceType
+								declareIndexToDelete = i
+								serviceInterfaceFound = true
+							}
+						}
+					}
+				}
+			case *ast.FuncDecl:
+				if specDec.Name.String() != "NewBasicService" {
+					v.handlerMethods[specDec.Name.String()] = true
+				}
+			}
+		}
+		if serviceInterfaceFound {
+			file.Decls = append(file.Decls[:declareIndexToDelete], file.Decls[declareIndexToDelete+1:]...)
 		}
 	}
-	return v
+	return nil
 }
 
 func (g *generator) printAllServices() {

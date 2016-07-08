@@ -15,12 +15,6 @@ import (
 	"{{.GeneratedImport -}} /pb"
 )
 
-// Service describes a service that adds things together.
-type Service interface {
-{{range $i := .Service.Methods}}
-	{{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error)
-{{- end}}
-}
 
 
 // NewBasicService returns a naïve, stateless implementation of Service.
@@ -30,8 +24,8 @@ func NewBasicService() Service {
 
 type basicService struct{}
 
-// Sum implements Service.
 {{range $i := .Service.Methods}}
+// {{$i.GetName}} implements Service.
 func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
@@ -39,3 +33,8 @@ func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType
 }
 {{end}}
 
+type Service interface {
+{{range $i := .Service.Methods}}
+	{{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error)
+{{- end}}
+}

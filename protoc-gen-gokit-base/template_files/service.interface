@@ -1,0 +1,5 @@
+type Service interface {
+{{range $i := .Service.Methods}}
+	{{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error)
+{{- end}}
+}

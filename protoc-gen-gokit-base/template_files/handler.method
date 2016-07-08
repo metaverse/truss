@@ -1,0 +1,7 @@
+
+// {{.GetName}} implements Service.
+func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{.RequestType.GetName}}) (pb.{{.ResponseType.GetName}}, error){
+	_ = ctx
+	_ = in
+	return pb.{{.ResponseType.GetName}}{}, nil
+}
