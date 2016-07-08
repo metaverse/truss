@@ -220,7 +220,6 @@ func (g generator) applyTemplate(templateFile string, executor interface{}) []by
 	}
 
 	return outputBuffer.Bytes()
-
 }
 
 type methodVisitor struct {
@@ -233,6 +232,7 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 	v.callNumber = v.callNumber + 1
 	serviceInterfaceFound := false
 	var declareIndexToDelete int
+	var funcsToDelete []int
 	if file, ok := node.(*ast.File); ok {
 
 		//fmt.Println(file.Pos())
@@ -258,13 +258,22 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 					}
 				}
 			case *ast.FuncDecl:
-				if specDec.Name.String() != "NewBasicService" {
-					v.handlerMethods[specDec.Name.String()] = true
+				funcName := specDec.Name.String()
+				if funcName != "NewBasicService" {
+					if v.protobufMethods[funcName] == false {
+						util.Logf("Handler method %v does not exist in Service description, deleting...", funcName)
+						funcsToDelete = append(funcsToDelete, i)
+					} else {
+						v.handlerMethods[funcName] = true
+					}
 				}
 			}
 		}
 		if serviceInterfaceFound {
 			file.Decls = append(file.Decls[:declareIndexToDelete], file.Decls[declareIndexToDelete+1:]...)
+		}
+		for _, index := range funcsToDelete {
+			file.Decls = append(file.Decls[:index], file.Decls[index+1:]...)
 		}
 	}
 	return nil
