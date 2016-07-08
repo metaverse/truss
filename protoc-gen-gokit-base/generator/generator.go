@@ -122,12 +122,19 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 
 			codeGenFiles = append(codeGenFiles, &curResponseFile)
 		} else {
-			util.Log("-------------------------------- service.go exists, not overwriting... ----------------------------------")
 
-			// All ast things have used this blog post for understanding
-			// http://www.lshift.net/blog/2011/04/30/using-the-syntax-tree-in-go/
+			util.Log("-------------------------------- service.go exists, not overwriting... ----------------------------------")
+			// Steps that this block of code executes
+			// 1. service.go is parsed into an Ast and stored in fileAst
+			// 2. We create a map of methods in the protobuf file
+			// 3. We create a walker which walks the ast, saving methods it finds, also deleting the service interface as it will be retemplated
+			// 4. The ast is pretty printed into a buffer
+			// 5. For every handler that is in the protobuf but not in service.go we template in a handler for that method
+			// 6. The service interface template is added to the end
+			// 7. The file is formatted
+
 			fset := token.NewFileSet()
-			file, _ := parser.ParseFile(fset, servicePath, nil, 0)
+			fileAst, _ := parser.ParseFile(fset, servicePath, nil, 0)
 			if err != nil {
 				util.Log(err)
 				panic(err)
@@ -139,24 +146,23 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			}
 
 			walker := &methodVisitor{
-				handlerMethods:          make(map[string]bool),
-				serviceInterfaceMethods: make(map[string]bool),
-				protobufMethods:         protobufMethods,
+				handlerMethods:  make(map[string]bool),
+				protobufMethods: protobufMethods,
 			}
 
 			serviceCode := bytes.NewBuffer(nil)
-			//err = printer.Fprint(serviceCode, fset, file)
+			//err = printer.Fprint(serviceCode, fset, fileAst)
 			//if err != nil {
 			//panic(err)
 			//}
 
 			//util.Logf("service code before walk:\n%v\n", serviceCode.String())
 
-			ast.Walk(walker, file)
+			ast.Walk(walker, fileAst)
 
 			serviceCode = bytes.NewBuffer(nil)
 
-			err = printer.Fprint(serviceCode, fset, file)
+			err = printer.Fprint(serviceCode, fset, fileAst)
 			if err != nil {
 				panic(err)
 			}
@@ -218,10 +224,9 @@ func (g generator) applyTemplate(templateFile string, executor interface{}) []by
 }
 
 type methodVisitor struct {
-	handlerMethods          map[string]bool
-	serviceInterfaceMethods map[string]bool
-	protobufMethods         map[string]bool
-	callNumber              int
+	handlerMethods  map[string]bool
+	protobufMethods map[string]bool
+	callNumber      int
 }
 
 func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
