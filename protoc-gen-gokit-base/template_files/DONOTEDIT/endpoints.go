@@ -46,7 +46,7 @@ func (e Endpoints) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.Ge
 	if err != nil {
 		return pb.{{$i.ResponseType.GetName}}{}, err
 	}
-	return response.(pb.{{$i.ResponseType.GetName}}), nil
+	return *response.(*pb.{{$i.ResponseType.GetName}}), nil
 }
 {{end}}
 
@@ -54,11 +54,12 @@ func (e Endpoints) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.Ge
 {{range $i := .Service.Methods}}
 func Make{{$i.GetName}}Endpoint(s handler.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		v, err := s.{{$i.GetName}}(ctx, request.(pb.{{$i.RequestType.GetName}}))
+		req := request.(*pb.{{$i.RequestType.GetName}})
+		v, err := s.{{$i.GetName}}(ctx, *req)
 		if err != nil {
 			return nil, err // special case; see comment on ErrIntOverflow
 		}
-		return v, nil
+		return &v, nil
 	}
 }
 {{end}}

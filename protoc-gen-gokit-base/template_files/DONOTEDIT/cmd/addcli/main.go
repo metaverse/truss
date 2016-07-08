@@ -119,7 +119,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stdout, "%d + %d = %d\n", a, b, v)
+		fmt.Fprintf(os.Stdout, "%d + %d = %d\n", a, b, v.V)
 
 	case "concat":
 		a := flag.Args()[0]
@@ -133,7 +133,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stdout, "%q + %q = %q\n", a, b, v)
+		fmt.Fprintf(os.Stdout, "%q + %q = %q\n", a, b, v.V)
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)

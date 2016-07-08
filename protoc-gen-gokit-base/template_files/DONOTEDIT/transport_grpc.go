@@ -61,7 +61,7 @@ func (s *grpcServer) {{$i.GetName}}(ctx context.Context, req *pb.{{$i.RequestTyp
 // DecodeGRPC{{$i.GetName}}Request is a transport/grpc.DecodeRequestFunc that converts a
 // gRPC {{call $strings.ToLower $i.GetName}} request to a user-domain {{call $strings.ToLower $i.GetName}} request. Primarily useful in a server.
 func DecodeGRPC{{$i.GetName}}Request(_ context.Context, grpcReq interface{}) (interface{}, error) {
-	req := grpcReq.(pb.{{$i.RequestType.GetName}})
+	req := grpcReq.(*pb.{{$i.RequestType.GetName}})
 	return req, nil
 }
 {{end}}
@@ -82,7 +82,7 @@ func DecodeGRPC{{$i.GetName}}Response(_ context.Context, grpcReply interface{}) 
 // EncodeGRPC{{$i.GetName}}Response is a transport/grpc.EncodeResponseFunc that converts a
 // user-domain {{call $strings.ToLower $i.GetName}} response to a gRPC {{call $strings.ToLower $i.GetName}} reply. Primarily useful in a server.
 func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (interface{}, error) {
-	resp := response.(pb.{{$i.ResponseType.GetName}})
+	resp := response.(*pb.{{$i.ResponseType.GetName}})
 	return resp, nil
 }
 {{end}}
@@ -94,7 +94,7 @@ func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (
 // user-domain {{call $strings.ToLower $i.GetName}} request to a gRPC {{call $strings.ToLower $i.GetName}} request. Primarily useful in a client.
 func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (interface{}, error) {
 	req := request.(pb.{{$i.RequestType.GetName}})
-	return req, nil
+	return &req, nil
 }
 {{end}}
 {{end}}

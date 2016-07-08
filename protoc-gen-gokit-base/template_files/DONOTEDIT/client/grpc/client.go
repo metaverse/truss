@@ -35,6 +35,7 @@ func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger)
 
 	var sumEndpoint endpoint.Endpoint
 	{
+
 		sumEndpoint = grpctransport.NewClient(
 			conn,
 			"Add",
