@@ -1,3 +1,8 @@
+{{ with $templateExecutor := .}}
+{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
+{{ with $HandlerImport := $templateExecutor.HandlerImport}}
+{{ with $strings := $templateExecutor.Strings}}
+{{ with $Service := $templateExecutor.Service}}
 // Package grpc provides a gRPC client for the add service.
 package grpc
 
@@ -17,9 +22,9 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	handler "{{.HandlerImport -}}"
-	"{{.GeneratedImport -}}"
-	"{{.GeneratedImport -}} /pb"
+	handler "{{$HandlerImport -}} /server"
+	addsvc "{{$GeneratedImport -}}"
+	"{{$GeneratedImport -}} /pb"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the
@@ -33,47 +38,35 @@ func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger)
 
 	limiter := ratelimit.NewTokenBucketLimiter(jujuratelimit.NewBucketWithRate(100, 100))
 
-	var sumEndpoint endpoint.Endpoint
+{{range $i := $Service.Methods}}
+	var {{call $strings.ToLower $i.GetName}}Endpoint endpoint.Endpoint
 	{
-
-		sumEndpoint = grpctransport.NewClient(
+		{{call $strings.ToLower $i.GetName}}Endpoint = grpctransport.NewClient(
 			conn,
-			"Add",
-			"Sum",
-			addsvc.EncodeGRPCSumRequest,
-			addsvc.DecodeGRPCSumResponse,
-			pb.SumReply{},
-			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "Sum", logger)),
+			"{{$Service.GetName}}",
+			"{{$i.GetName}}",
+			addsvc.EncodeGRPC{{$i.GetName}}Request,
+			addsvc.DecodeGRPC{{$i.GetName}}Response,
+			pb.{{$i.GetName}}Reply{},
+			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "{{$i.GetName}}", logger)),
 		).Endpoint()
-		sumEndpoint = opentracing.TraceClient(tracer, "Sum")(sumEndpoint)
-		sumEndpoint = limiter(sumEndpoint)
-		sumEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
-			Name:    "Sum",
+		{{call $strings.ToLower $i.GetName}}Endpoint = opentracing.TraceClient(tracer, "{{$i.GetName}}")({{call $strings.ToLower $i.GetName}}Endpoint)
+		{{call $strings.ToLower $i.GetName}}Endpoint = limiter({{call $strings.ToLower $i.GetName}}Endpoint)
+		{{call $strings.ToLower $i.GetName}}Endpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
+			Name:    "{{$i.GetName}}",
 			Timeout: 30 * time.Second,
-		}))(sumEndpoint)
+		}))({{call $strings.ToLower $i.GetName}}Endpoint)
 	}
-
-	var concatEndpoint endpoint.Endpoint
-	{
-		concatEndpoint = grpctransport.NewClient(
-			conn,
-			"Add",
-			"Concat",
-			addsvc.EncodeGRPCConcatRequest,
-			addsvc.DecodeGRPCConcatResponse,
-			pb.ConcatReply{},
-			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "Concat", logger)),
-		).Endpoint()
-		concatEndpoint = opentracing.TraceClient(tracer, "Concat")(concatEndpoint)
-		concatEndpoint = limiter(concatEndpoint)
-		concatEndpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
-			Name:    "Concat",
-			Timeout: 30 * time.Second,
-		}))(concatEndpoint)
-	}
+{{end}}
 
 	return addsvc.Endpoints{
-		SumEndpoint:    sumEndpoint,
-		ConcatEndpoint: concatEndpoint,
+	{{range $i := $Service.Methods}}
+		{{$i.GetName}}Endpoint:    {{call $strings.ToLower $i.GetName}}Endpoint,
+	{{- end}}
 	}
 }
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+{{end}}

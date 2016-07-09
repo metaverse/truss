@@ -35,7 +35,7 @@ import (
 	//"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
-	handler "{{$HandlerImport -}} "
+	handler "{{$HandlerImport -}} /server"
 	"{{$GeneratedImport -}} "
 	"{{$GeneratedImport -}} /pb"
 

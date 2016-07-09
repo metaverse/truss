@@ -15,7 +15,7 @@ import (
 	_ "github.com/go-kit/kit/log"
 	_ "github.com/go-kit/kit/metrics"
 
-	"{{.HandlerImport -}}"
+	"{{.HandlerImport -}} /server"
 	"{{.GeneratedImport -}} /pb"
 )
 

@@ -93,7 +93,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	g.printAllServices()
 
 	wd, _ := os.Getwd()
-	servicePath := wd + "/service.go"
+	servicePath := wd + "/server/service.go"
 	for _, templateFile := range g.templateFileNames() {
 
 		// If service.go does not exist, generate all files
@@ -191,7 +191,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			}
 			curResponseFile := plugin.CodeGeneratorResponse_File{}
 
-			fileName := "service.go"
+			fileName := "server/service.go"
 			curResponseFile.Name = &fileName
 
 			stringFile := string(formatted)

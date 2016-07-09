@@ -1,10 +1,14 @@
+{{ with $templateExecutor := .}}
+{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
+{{ with $HandlerImport := $templateExecutor.HandlerImport}}
+{{ with $strings := $templateExecutor.Strings}}
+{{ with $Service := $templateExecutor.Service}}
 package main
 
 import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -19,10 +23,11 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	handler "{{.HandlerImport -}}"
-	"{{.GeneratedImport -}} /pb"
-	grpcclient "{{.GeneratedImport -}} /client/grpc"
-	//httpclient "{{.GeneratedImport -}} /client/http"
+	handler "{{$HandlerImport -}} /server"
+	clientHandler "{{$HandlerImport -}} /client"
+	_ "{{$GeneratedImport -}} /pb"
+	grpcclient "{{$GeneratedImport -}} /client/grpc"
+	//httpclient "{{$GeneratedImport -}} /client/http"
 )
 
 func main() {
@@ -39,7 +44,7 @@ func main() {
 		zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka Collector host:port")
 		appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
 		lightstepToken = flag.String("lightstep.token", "", "Enable LightStep tracing via a LightStep access token")
-		method         = flag.String("method", "sum", "sum, concat")
+		method         = flag.String("method", "{{range $index, $i := $Service.Methods}}{{if $index}}{{else}}{{call $strings.ToLower $i.GetName}}{{end}}{{end}}",	"{{range $index, $i := $Service.Methods}}{{if $index}},{{end}}{{call $strings.ToLower $i.GetName}}{{end}}")
 	)
 	flag.Parse()
 
@@ -107,36 +112,26 @@ func main() {
 	}
 
 	switch *method {
-	case "sum":
-		a, _ := strconv.ParseInt(flag.Args()[0], 10, 64)
-		b, _ := strconv.ParseInt(flag.Args()[1], 10, 64)
-		request := pb.SumRequest{
-			A: a,
-			B: b,
-		}
-		v, err := service.Sum(context.Background(), request)
+{{range $i := $Service.Methods}}
+	case "{{call $strings.ToLower $i.GetName}}":
+		args := flag.Args()
+		request, _ := clientHandler.{{$i.GetName}}(flag.Args())
+		v, err := service.{{$i.GetName}}(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Fprintf(os.Stdout, "%d + %d = %d\n", a, b, v.V)
-
-	case "concat":
-		a := flag.Args()[0]
-		b := flag.Args()[1]
-		request := pb.ConcatRequest{
-			A: a,
-			B: b,
-		}
-		v, err := service.Concat(context.Background(), request)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Fprintf(os.Stdout, "%q + %q = %q\n", a, b, v.V)
+		fmt.Println(args)
+		fmt.Println(v)
+	{{end}}
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)
 		os.Exit(1)
 	}
 }
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+{{end}}
