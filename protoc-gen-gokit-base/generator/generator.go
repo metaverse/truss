@@ -94,11 +94,16 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 
 	wd, _ := os.Getwd()
 	servicePath := wd + "/server/service.go"
+	clientPath := wd + "/client/client_handler.go"
 	for _, templateFile := range g.templateFileNames() {
 
 		// If service.go does not exist, generate all files
 		// If template file is not service.go then generate the file
 		// If service.go exists and the template file is service.go then skip
+		if _, err := os.Stat(clientPath); err == nil && filepath.Base(templateFile) == "client_handler.go" {
+			util.Log("CLIENT HANDLER EXISTS")
+			continue
+		}
 		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFile) != "service.go" {
 			if filepath.Ext(templateFile) != ".go" {
 				util.Logf("%v: is not a go file, skipping...\n", templateFile)
