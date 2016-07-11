@@ -326,9 +326,21 @@ func (self *SvcScanner) UnreadUnit() error {
 	if self.UnitPos == 0 {
 		return fmt.Errorf("Cannot unread when scanner is at start of input")
 	}
+	// If we're on the first unit, Unreading means setting the state of the
+	// scanner back to it's defaults.
+	if self.UnitPos == 1 {
+		self.UnitPos = 0
+		self.InBody = false
+		self.InDefinition = false
+		self.BraceLevel = 0
+		self.lineNo = 0
+	}
 	self.UnitPos -= 1
 
-	unit := self.Buf[self.UnitPos]
+	// Since the state of the scanner usually tracks one behind the `unit`
+	// indicated by `UnitPos` we further subtract one when selecting the unit
+	// to reflect the state of
+	unit := self.Buf[self.UnitPos-1]
 	self.InBody = unit.InRpcBody
 	self.InDefinition = unit.InRpcDefinition
 	self.BraceLevel = unit.BraceLevel
@@ -353,142 +365,3 @@ func (self *SvcScanner) UnReadToPosition(position int) error {
 func (self *SvcScanner) GetLineNumber() int {
 	return self.lineNo
 }
-
-// Returns one rough "syntactical unit" of a Protobuf file. Returns strings
-// containing groups of letters, groups of whitespace, and entire comments.
-// Every other type of unit is returned one character at a time.
-/*
- *func (self *SvcScanner) ReadUnit() ([]rune, error) {
- *    var ch rune
- *    buf := make([]rune, 0)
- *
- *    // Populate the buffer with at least one rune so even if it's an unknown
- *    // character it will at least return this
- *    ch, err := self.R.ReadRune()
- *    if err != nil {
- *        return buf, err
- *    }
- *    buf = append(buf, ch)
- *
- *    switch {
- *    case ch == '/':
- *        // Searching for comments beginning with '/'
- *        ch, err = self.R.ReadRune()
- *        if err != nil {
- *            return buf, err
- *        } else if ch == '/' {
- *            // Handle single line comments of the form '//'
- *            buf = append(buf, ch)
- *            for {
- *                ch, err = self.R.ReadRune()
- *                if err != nil {
- *                    return buf, err
- *                } else if ch == '\n' {
- *                    buf = append(buf, ch)
- *                    return buf, nil
- *                }
- *                buf = append(buf, ch)
- *            }
- *        } else if ch == '*' {
- *            // Handle (potentially) multi-line comments of the form '/**'
- *            buf = append(buf, ch)
- *            for {
- *                ch, err = self.R.ReadRune()
- *                if err != nil {
- *                    return buf, err
- *                } else if ch == '*' {
- *                    buf = append(buf, ch)
- *                    ch, err = self.R.ReadRune()
- *                    if err != nil {
- *                        return buf, err
- *                    } else if ch == '/' {
- *                        buf = append(buf, ch)
- *                        return buf, nil
- *                    }
- *                }
- *            }
- *        } else {
- *            // Not a comment, so unread the last Rune and return this '/' only
- *            self.R.UnreadRune()
- *            return buf, nil
- *        }
- *    case ch == '"':
- *        // Handle strings
- *        for {
- *            ch, err = self.R.ReadRune()
- *            if err != nil {
- *                return buf, err
- *            } else if ch == '\\' {
- *                // Handle escape sequences within strings
- *                buf = append(buf, ch)
- *                ch, err = self.R.ReadRune()
- *                if err != nil {
- *                    return buf, err
- *                } else {
- *                    buf = append(buf, ch)
- *                }
- *            } else if ch == '"' {
- *                // Closing quotation
- *                buf = append(buf, ch)
- *                return buf, nil
- *            } else {
- *                buf = append(buf, ch)
- *            }
- *        }
- *    case unicode.IsSpace(ch):
- *        // Group consecutive white space characters
- *        for {
- *            ch, err = self.R.ReadRune()
- *            if err != nil {
- *                // Don't pass along this EOF since we did find a valid 'Unit'
- *                // to return. This way, the next call of this function will
- *                // return EOF and nothing else, a more clear behavior.
- *                if err == io.EOF {
- *                    return buf, nil
- *                }
- *                return buf, err
- *            } else if !unicode.IsSpace(ch) {
- *                self.R.UnreadRune()
- *                break
- *            }
- *            buf = append(buf, ch)
- *        }
- *    case isIdent(ch):
- *        // Group consecutive letters
- *        for {
- *            ch, err = self.R.ReadRune()
- *            if err != nil {
- *                if err == io.EOF {
- *                    return buf, nil
- *                }
- *                return buf, err
- *            } else if !isIdent(ch) {
- *                self.R.UnreadRune()
- *                if string(buf) == "service" {
- *                    self.InDefinition = true
- *                }
- *                break
- *            }
- *            buf = append(buf, ch)
- *        }
- *    case ch == '{':
- *        self.BraceLevel += 1
- *        if self.InDefinition == true {
- *            self.InDefinition = false
- *            self.InBody = true
- *        }
- *    case ch == '}':
- *        self.BraceLevel -= 1
- *        if self.InBody == true && self.BraceLevel == 0 {
- *            self.InBody = false
- *        }
- *    }
- *
- *    // Implicitly, everything that's not a group of letters, not a group of
- *    // whitespace, not a comment, and not a string-literal, (common examples of
- *    // runes in this category are numbers and symbols like '&' or '9') will be
- *    // returned one rune at a time.
- *
- *    return buf, nil
- *}
- */
