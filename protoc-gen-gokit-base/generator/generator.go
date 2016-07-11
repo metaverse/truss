@@ -111,30 +111,29 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	wd, _ := os.Getwd()
 	servicePath := wd + "/server/service.go"
 	clientPath := wd + "/client/client_handler.go"
-	for _, templateFile := range g.templateFileNames() {
+	for _, templateFilePath := range g.templateFileNames() {
 		var generatedFilePath string
 		var generatedCode string
 
 		// If service.go does not exist, generate all files
 		// If template file is not service.go then generate the file
 		// If service.go exists and the template file is service.go then skip
-		if _, err := os.Stat(clientPath); err == nil && filepath.Base(templateFile) == "client_handler.go" {
+		if _, err := os.Stat(clientPath); err == nil && filepath.Base(templateFilePath) == "client_handler.go" {
 			log.Info("client/client_handler.go exists")
 			continue
 		}
-		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFile) != "service.go" {
-			if filepath.Ext(templateFile) != ".go" {
-				log.WithField("Template file", templateFile).Debug("Skipping rendering non-buildable partial template")
+		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFilePath) != "service.go" {
+			if filepath.Ext(templateFilePath) != ".go" {
+				log.WithField("Template file", templateFilePath).Debug("Skipping rendering non-buildable partial template")
 				continue
 			}
 
 			// Remove "template_files/" so that generated files do not include that directory
-			generatedFilePath = strings.TrimPrefix(templateFile, "template_files/")
+			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
 
-			// Get the bytes from the file we are working on
-			bytesOfFile, _ := g.templateFile(templateFile)
+			generatedCode = g.applyTemplate(templateFilePath, g.templateExec)
 
-			generatedCode, _ = g.generate(templateFile, bytesOfFile)
+			generatedCode = formatCode(generatedCode)
 		} else {
 
 			log.Info("server/service.go exists")
@@ -163,11 +162,9 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				protobufMethods: protobufMethods,
 			}
 
-			serviceCode := bytes.NewBuffer(nil)
-
 			ast.Walk(walker, fileAst)
 
-			serviceCode = bytes.NewBuffer(nil)
+			serviceCode := bytes.NewBuffer(nil)
 
 			err = printer.Fprint(serviceCode, fset, fileAst)
 			if err != nil {
@@ -180,28 +177,21 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				if walker.handlerMethods[methName] == false {
 					log.WithField("Method", methName).Info("Rendering template for method")
 					templateOut := g.applyTemplate("template_files/partial_template/handler.method", meth)
-					serviceCode.Write(templateOut)
+					serviceCode.WriteString(templateOut)
 				} else {
 					log.WithField("Method", methName).Info("Handler method already exists")
 				}
 			}
 
 			templateOut := g.applyTemplate("template_files/partial_template/service.interface", g.templateExec)
-			serviceCode.Write(templateOut)
 
-			formatted, err := format.Source(serviceCode.Bytes())
-
-			if err != nil {
-				log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
-				// Set formatted to code so at least we get something to examine
-				formatted = serviceCode.Bytes()
-			}
+			serviceCode.WriteString(templateOut)
 
 			generatedFilePath = "server/service.go"
 
-			generatedCode = string(formatted)
-
+			generatedCode = formatCode(serviceCode.String())
 		}
+
 		curResponseFile := plugin.CodeGeneratorResponse_File{
 			Name:    &generatedFilePath,
 			Content: &generatedCode,
@@ -213,23 +203,28 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	return codeGenFiles, nil
 }
 
-func (g *generator) applyTemplate(templateFile string, executor interface{}) []byte {
-	templateBytes, _ := g.templateFile(templateFile)
+//func (g *generator) removeFunctions(codePath string, toRemove []string) string {
+
+//}
+
+func (g *generator) applyTemplate(templateFilePath string, executor interface{}) string {
+
+	templateBytes, _ := g.templateFile(templateFilePath)
+
 	templateString := string(templateBytes)
 
-	codeTemplate := template.Must(template.New(templateFile).Parse(templateString))
-	outputBuffer := bytes.NewBuffer(nil)
+	codeTemplate := template.Must(template.New(templateFilePath).Parse(templateString))
 
+	outputBuffer := bytes.NewBuffer(nil)
 	err := codeTemplate.Execute(outputBuffer, executor)
 	if err != nil {
 		log.WithError(err).Fatal("Template Error")
 	}
 
-	return outputBuffer.Bytes()
+	return outputBuffer.String()
 }
 
 func formatCode(code string) string {
-
 	formatted, err := format.Source([]byte(code))
 
 	if err != nil {
@@ -239,24 +234,6 @@ func formatCode(code string) string {
 	}
 
 	return string(formatted)
-}
-
-func (g *generator) generate(templateName string, templateBytes []byte) (string, error) {
-
-	templateString := string(templateBytes)
-
-	codeTemplate := template.Must(template.New(templateName).Parse(templateString))
-
-	w := bytes.NewBuffer(nil)
-	err := codeTemplate.Execute(w, g.templateExec)
-	if err != nil {
-		log.WithError(err).Fatal("Template Error")
-	}
-
-	code := w.String()
-	code = formatCode(code)
-
-	return code, nil
 }
 
 type methodVisitor struct {
