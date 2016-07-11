@@ -157,8 +157,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			fset := token.NewFileSet()
 			fileAst, _ := parser.ParseFile(fset, servicePath, nil, 0)
 			if err != nil {
-				util.Log(err)
-				panic(err)
+				log.WithError(err).Fatal("server/service.go could not be parsed by go/parser into AST")
 			}
 
 			protobufMethods := make(map[string]bool)
@@ -193,14 +192,14 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				methName := meth.GetName()
 				if walker.handlerMethods[methName] == false {
 					log.WithField("Method", methName).Info("Rendering template for method")
-					templateOut := g.applyTemplate("template_files/handler.method", meth)
+					templateOut := g.applyTemplate("template_files/partial_template/handler.method", meth)
 					serviceCode.Write(templateOut)
 				} else {
 					log.WithField("Method", methName).Info("Handler method already exists")
 				}
 			}
 
-			templateOut := g.applyTemplate("template_files/service.interface", g.templateExec)
+			templateOut := g.applyTemplate("template_files/partial_template/service.interface", g.templateExec)
 			serviceCode.Write(templateOut)
 
 			formatted, err := format.Source(serviceCode.Bytes())
