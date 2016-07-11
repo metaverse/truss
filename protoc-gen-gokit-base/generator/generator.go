@@ -18,8 +18,14 @@ import (
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
+	log "github.com/Sirupsen/logrus"
 	_ "github.com/davecgh/go-spew/spew"
 )
+
+func init() {
+	log.SetLevel(log.DebugLevel)
+	log.SetOutput(os.Stderr)
+}
 
 type generator struct {
 	reg               *descriptor.Registry
@@ -50,14 +56,24 @@ type stringsTemplateMethods struct {
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	var service *descriptor.Service
-	util.Logf("There are %v file(s) being processed\n", len(files))
+
+	log.WithField("File Count", len(files)).Info("Files are being processed")
+
 	for _, file := range files {
-		util.Logf("File: %v\n", file.GetName())
-		util.Logf("This file has %v service(s)\n", len(file.Services))
+
+		log.WithFields(log.Fields{
+			"File":          file.GetName(),
+			"Service Count": len(file.Services),
+		}).Info("File being processed")
+
 		if len(file.Services) > 0 {
 			service = file.Services[0]
-			util.Logf("\tNamed: %v\n", service.GetName())
+			log.WithField("Service", service.GetName()).Info("Service Discoved")
 		}
+	}
+
+	if service == nil {
+		log.Fatal("No service discovered, aborting...")
 	}
 
 	wd, _ := os.Getwd()
@@ -101,12 +117,12 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		// If template file is not service.go then generate the file
 		// If service.go exists and the template file is service.go then skip
 		if _, err := os.Stat(clientPath); err == nil && filepath.Base(templateFile) == "client_handler.go" {
-			util.Log("CLIENT HANDLER EXISTS")
+			log.Info("client/client_handler.go exists")
 			continue
 		}
 		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFile) != "service.go" {
 			if filepath.Ext(templateFile) != ".go" {
-				util.Logf("%v: is not a go file, skipping...\n", templateFile)
+				log.WithField("Template file", templateFile).Debug("Skipping rendering non-buildable partial template")
 				continue
 			}
 
@@ -128,7 +144,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			codeGenFiles = append(codeGenFiles, &curResponseFile)
 		} else {
 
-			util.Log("-------------------------------- service.go exists, not overwriting... ----------------------------------")
+			log.Info("server/service.go exists")
 			// Steps that this block of code executes
 			// 1. service.go is parsed into an Ast and stored in fileAst
 			// 2. We create a map of methods in the protobuf file
@@ -172,14 +188,15 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				panic(err)
 			}
 
-			util.Logf("service code before temp:\n%v\n", serviceCode.String())
+			log.WithField("Code", serviceCode.String()).Debug("Server service handlers before template")
 			for _, meth := range g.templateExec.Service.Methods {
 				methName := meth.GetName()
 				if walker.handlerMethods[methName] == false {
+					log.WithField("Method", methName).Info("Rendering template for method")
 					templateOut := g.applyTemplate("template_files/handler.method", meth)
 					serviceCode.Write(templateOut)
 				} else {
-					util.Logf("%v Exists\n", methName)
+					log.WithField("Method", methName).Info("Handler method already exists")
 				}
 			}
 
@@ -189,8 +206,7 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			formatted, err := format.Source(serviceCode.Bytes())
 
 			if err != nil {
-				util.Logf("\nCODE FORMATTING ERROR\n", "")
-				util.Logf("\n%v\n", err.Error())
+				log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
 				// Set formatted to code so at least we get something to examine
 				formatted = serviceCode.Bytes()
 			}
@@ -218,10 +234,7 @@ func (g generator) applyTemplate(templateFile string, executor interface{}) []by
 
 	err := templ.Execute(outputBuffer, executor)
 	if err != nil {
-		util.Logf("\nTEMPLATE ERROR\n", "")
-		util.Logf("\n%v\n", "ServiceRPC")
-		util.Logf("\n%v\n\n", err.Error())
-		panic(err)
+		log.WithError(err).Fatal("Template Error")
 	}
 
 	return outputBuffer.Bytes()
@@ -240,8 +253,6 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 	var funcsToDelete []int
 	if file, ok := node.(*ast.File); ok {
 
-		//fmt.Println(file.Pos())
-		//fmt.Println(file.End())
 		util.Log("---------- File ----------------")
 		for i, decs := range file.Decls {
 			//fmt.Printf("\t---------- Decls %v ---------------\n", i)
@@ -308,11 +319,7 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	w := bytes.NewBuffer(nil)
 	err := codeTemplate.Execute(w, g.templateExec)
 	if err != nil {
-		util.Logf("\nTEMPLATE ERROR\n", "")
-		util.Logf("\n%v\n", templateName)
-		util.Logf("\n%v\n\n", err.Error())
-		panic(err)
-		return "", err
+		log.WithError(err).Fatal("Template Error")
 	}
 
 	code := w.String()
@@ -320,9 +327,7 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	formatted, err := format.Source([]byte(code))
 
 	if err != nil {
-		util.Logf("\nCODE FORMATTING ERROR\n", "")
-		util.Logf("\n%v\n", code)
-		util.Logf("\n%v\n", err.Error())
+		log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
 		// Set formatted to code so at least we get something to examine
 		formatted = []byte(code)
 	}
