@@ -252,19 +252,30 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 	var funcsToDelete []int
 	if file, ok := node.(*ast.File); ok {
 
-		util.Log("---------- File ----------------")
+		log.WithField(
+			"File Name", file.Name,
+		).Debug("AST File")
+
 		for i, decs := range file.Decls {
-			//fmt.Printf("\t---------- Decls %v ---------------\n", i)
 			switch specDec := decs.(type) {
 			case *ast.GenDecl:
 				if !serviceInterfaceFound {
 					for j, spec := range specDec.Specs {
-						util.Logf("\t\t---------- Specs %v ---------------\n", j)
+
+						log.WithFields(log.Fields{
+							"Type":       "GenDecl",
+							"Decl Index": i,
+							"Spec Index": j,
+						}).Debug("AST Spec")
+
 						if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 							if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
-								util.Logf("\t\t\t%v in Decls %v\n", typeSpec.Name.String(), i)
-								//fmt.Println(typeSpec.Pos())
-								//fmt.Println(typeSpec.End())
+
+								log.WithFields(log.Fields{
+									"Decls": typeSpec.Name.String(),
+									"Index": i,
+								}).Debug("Service interface found")
+
 								_ = interfaceType
 								declareIndexToDelete = i
 								serviceInterfaceFound = true
@@ -276,7 +287,7 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 				funcName := specDec.Name.String()
 				if funcName != "NewBasicService" {
 					if v.protobufMethods[funcName] == false {
-						util.Logf("Handler method %v does not exist in Service description, deleting...", funcName)
+						log.WithField("Method", funcName).Info("Handler does not exist in proto service description, deleting...")
 						funcsToDelete = append(funcsToDelete, i)
 					} else {
 						v.handlerMethods[funcName] = true
@@ -292,21 +303,6 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 		}
 	}
 	return nil
-}
-
-func (g *generator) printAllServices() {
-	if g.templateExec.Service != nil {
-		util.Logf("\tService: %v\n", g.templateExec.Service.GetName())
-		for _, method := range g.templateExec.Service.Methods {
-			util.Logf("\t\tMethod: %v\n", method.GetName())
-			util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
-			util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
-			if method.Options != nil {
-				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
-			}
-
-		}
-	}
 }
 
 func (g *generator) generate(templateName string, templateBytes []byte) (string, error) {
@@ -332,4 +328,19 @@ func (g *generator) generate(templateName string, templateBytes []byte) (string,
 	}
 
 	return string(formatted), err
+}
+
+func (g *generator) printAllServices() {
+	if g.templateExec.Service != nil {
+		util.Logf("\tService: %v\n", g.templateExec.Service.GetName())
+		for _, method := range g.templateExec.Service.Methods {
+			util.Logf("\t\tMethod: %v\n", method.GetName())
+			util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
+			util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
+			if method.Options != nil {
+				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
+			}
+
+		}
+	}
 }
