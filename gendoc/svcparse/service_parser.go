@@ -9,7 +9,8 @@ import (
 )
 
 func parseErr(expected string, line int, val string) error {
-	return fmt.Errorf("Parser expected %v in line '%v', instead found '%v'\n", expected, line, val)
+	err := fmt.Errorf("Parser expected %v in line '%v', instead found '%v'\n", expected, line, val)
+	return err
 }
 
 // fastForwardTill moves the lexer forward till a token with a certain value
@@ -156,9 +157,16 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 	}
 	toret.HttpBindings = bindings
 
+	// There should be a semi-colon immediately following all 'option'
+	// declarations, which we should check for
+	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
+	if tk != SYMBOL || val != ";" {
+		return nil, parseErr("';' after declaration of http options", lex.GetLineNumber(), val+tk.String())
+	}
+
 	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
 	if tk != CLOSE_BRACE {
-		return nil, parseErr("'}' after declaration of http options", lex.GetLineNumber(), val+tk.String())
+		return nil, parseErr("'}' after declaration of http options marking end of rpc declarations", lex.GetLineNumber(), val+tk.String())
 	}
 
 	return toret, nil
@@ -220,6 +228,8 @@ func ParseHttpBindings(lex *SvcLexer) ([]*doctree.ServiceHttpBinding, error) {
 				good_position = lex.GetPosition()
 			} else if tk == EOF || tk == ILLEGAL {
 				return nil, parseErr("non-illegal token while parsing HttpBindings", lex.GetLineNumber(), fmt.Sprintf("(%v) of type %v", val, tk))
+			} else {
+				return nil, parseErr("close brace or comment while parsing http bindings", lex.GetLineNumber(), tk.String()+val)
 			}
 			tk, val = lex.GetTokenIgnoreWhitespace()
 		}
@@ -233,6 +243,10 @@ func ParseHttpBindings(lex *SvcLexer) ([]*doctree.ServiceHttpBinding, error) {
 			return nil, err
 		}
 		new_opt.Fields = fields
+		err = fastForwardTill(lex, "}")
+		if err != nil {
+			return nil, err
+		}
 		return append(rv, new_opt), nil
 	}
 
@@ -257,6 +271,7 @@ func ParseBindingFields(lex *SvcLexer) ([]*doctree.BindingField, error) {
 		}
 		// No longer any more fields
 		if tk == CLOSE_BRACE && val == "}" {
+			lex.UnGetToken()
 			break
 		} else if val == "additional_bindings" {
 			lex.UnGetToken()
