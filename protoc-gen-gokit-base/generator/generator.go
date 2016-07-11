@@ -112,6 +112,8 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	servicePath := wd + "/server/service.go"
 	clientPath := wd + "/client/client_handler.go"
 	for _, templateFile := range g.templateFileNames() {
+		var generatedFilePath string
+		var generatedCode string
 
 		// If service.go does not exist, generate all files
 		// If template file is not service.go then generate the file
@@ -126,22 +128,13 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				continue
 			}
 
-			curResponseFile := plugin.CodeGeneratorResponse_File{}
-
 			// Remove "template_files/" so that generated files do not include that directory
-			d := strings.TrimPrefix(templateFile, "template_files/")
-			curResponseFile.Name = &d
+			generatedFilePath = strings.TrimPrefix(templateFile, "template_files/")
 
 			// Get the bytes from the file we are working on
-			// then turn it into a string to build a template out of it
 			bytesOfFile, _ := g.templateFile(templateFile)
-			stringFile := string(bytesOfFile)
 
-			// Currently only templating main.go
-			stringFile, _ = g.generate(templateFile, bytesOfFile)
-			curResponseFile.Content = &stringFile
-
-			codeGenFiles = append(codeGenFiles, &curResponseFile)
+			generatedCode, _ = g.generate(templateFile, bytesOfFile)
 		} else {
 
 			log.Info("server/service.go exists")
@@ -171,12 +164,6 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			}
 
 			serviceCode := bytes.NewBuffer(nil)
-			//err = printer.Fprint(serviceCode, fset, fileAst)
-			//if err != nil {
-			//panic(err)
-			//}
-
-			//util.Logf("service code before walk:\n%v\n", serviceCode.String())
 
 			ast.Walk(walker, fileAst)
 
@@ -209,34 +196,67 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 				// Set formatted to code so at least we get something to examine
 				formatted = serviceCode.Bytes()
 			}
-			curResponseFile := plugin.CodeGeneratorResponse_File{}
 
-			fileName := "server/service.go"
-			curResponseFile.Name = &fileName
+			generatedFilePath = "server/service.go"
 
-			stringFile := string(formatted)
-			curResponseFile.Content = &stringFile
+			generatedCode = string(formatted)
 
-			codeGenFiles = append(codeGenFiles, &curResponseFile)
 		}
+		curResponseFile := plugin.CodeGeneratorResponse_File{
+			Name:    &generatedFilePath,
+			Content: &generatedCode,
+		}
+
+		codeGenFiles = append(codeGenFiles, &curResponseFile)
 	}
 
 	return codeGenFiles, nil
 }
 
-func (g generator) applyTemplate(templateFile string, executor interface{}) []byte {
+func (g *generator) applyTemplate(templateFile string, executor interface{}) []byte {
 	templateBytes, _ := g.templateFile(templateFile)
 	templateString := string(templateBytes)
 
-	templ := template.Must(template.New(templateFile).Parse(templateString))
+	codeTemplate := template.Must(template.New(templateFile).Parse(templateString))
 	outputBuffer := bytes.NewBuffer(nil)
 
-	err := templ.Execute(outputBuffer, executor)
+	err := codeTemplate.Execute(outputBuffer, executor)
 	if err != nil {
 		log.WithError(err).Fatal("Template Error")
 	}
 
 	return outputBuffer.Bytes()
+}
+
+func formatCode(code string) string {
+
+	formatted, err := format.Source([]byte(code))
+
+	if err != nil {
+		log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
+		// Set formatted to code so at least we get something to examine
+		formatted = []byte(code)
+	}
+
+	return string(formatted)
+}
+
+func (g *generator) generate(templateName string, templateBytes []byte) (string, error) {
+
+	templateString := string(templateBytes)
+
+	codeTemplate := template.Must(template.New(templateName).Parse(templateString))
+
+	w := bytes.NewBuffer(nil)
+	err := codeTemplate.Execute(w, g.templateExec)
+	if err != nil {
+		log.WithError(err).Fatal("Template Error")
+	}
+
+	code := w.String()
+	code = formatCode(code)
+
+	return code, nil
 }
 
 type methodVisitor struct {
@@ -303,31 +323,6 @@ func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
 		}
 	}
 	return nil
-}
-
-func (g *generator) generate(templateName string, templateBytes []byte) (string, error) {
-
-	templateString := string(templateBytes)
-
-	codeTemplate := template.Must(template.New(templateName).Parse(templateString))
-
-	w := bytes.NewBuffer(nil)
-	err := codeTemplate.Execute(w, g.templateExec)
-	if err != nil {
-		log.WithError(err).Fatal("Template Error")
-	}
-
-	code := w.String()
-
-	formatted, err := format.Source([]byte(code))
-
-	if err != nil {
-		log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
-		// Set formatted to code so at least we get something to examine
-		formatted = []byte(code)
-	}
-
-	return string(formatted), err
 }
 
 func (g *generator) printAllServices() {
