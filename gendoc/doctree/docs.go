@@ -371,10 +371,11 @@ func (self *ProtoService) describeMarkdown(depth int) string {
 	rv += "| Name | Request Type | Response Type | Description|\n"
 	rv += "| ---- | ---- | ------------ | -----------|\n"
 	for _, meth := range self.Methods {
-		//rv += meth.describeMarkdown(depth + 2)
-		rv += prindent(0, "| %v | %v | %v | %v |\n", meth.GetName(), meth.RequestType.GetName(), meth.ResponseType.GetName(), meth.GetDescription())
+		req_link := fmt.Sprintf("[%v](#%v)", meth.RequestType.GetName(), meth.RequestType.GetName())
+		res_link := fmt.Sprintf("[%v](#%v)", meth.ResponseType.GetName(), meth.ResponseType.GetName())
+
+		rv += prindent(0, "| %v | %v | %v | %v |\n", meth.GetName(), req_link, res_link, meth.GetDescription())
 	}
-	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Methods")
 	return rv
 }
 
