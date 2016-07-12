@@ -85,9 +85,9 @@ func (a *astModifier) Buffer() *bytes.Buffer {
 	return code
 }
 
-// RemoveFunctions takes a []string of function names to keep
+// RemoveFunctionsExecpt takes a []string of function names to keep
 // All other functions are removed from source file
-func (a *astModifier) RemoveFunctions(functionsToKeep []string) {
+func (a *astModifier) RemoveFunctionsExecpt(functionsToKeep []string) {
 	a.funcRemover.functionsToKeep = make(map[string]bool)
 
 	for _, fun := range functionsToKeep {

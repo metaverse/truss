@@ -2,7 +2,6 @@ package generator
 
 import (
 	"bytes"
-	"go/ast"
 	"go/format"
 	"os"
 	"path/filepath"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/astmodifier"
 	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/util"
 
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
@@ -117,6 +115,11 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		serviceHandlerExists = true
 	}
 
+	var serviceFunctions []string
+	for _, meth := range g.templateExec.Service.Methods {
+		serviceFunctions = append(serviceFunctions, meth.GetName())
+	}
+	serviceFunctions = append(serviceFunctions, "NewBasicService")
 	for _, templateFilePath := range g.templateFileNames() {
 		if filepath.Ext(templateFilePath) != ".go" {
 			log.WithField("Template file", templateFilePath).Debug("Skipping rendering non-buildable partial template")
@@ -126,75 +129,47 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 		var generatedFilePath string
 		var generatedCode string
 
-		// If service.go does not exist, generate all files
-		// If template file is not service.go then generate the file
-		// If service.go exists and the template file is service.go then skip
 		if filepath.Base(templateFilePath) == "service.go" && serviceHandlerExists {
 			log.Info("server/service.go exists")
-
-			var serviceFunctions []string
-			for _, meth := range g.templateExec.Service.Methods {
-				serviceFunctions = append(serviceFunctions, meth.GetName())
-			}
-			serviceFunctions = append(serviceFunctions, "NewBasicService")
 			astMod := astmodifier.New(servicePath)
 
-			astMod.RemoveFunctions(serviceFunctions)
+			// Remove functions no longer in definition and remove Service interface
+			astMod.RemoveFunctionsExecpt(serviceFunctions)
 			astMod.RemoveInterface("Service")
 
 			log.WithField("Code", astMod.String()).Debug("Server service handlers before template")
 
+			// Index handler functions, apply handler template for all function in service definition that are not defined in handler
 			currentFuncs := astMod.IndexFunctions()
 			code := astMod.Buffer()
+			code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/service.method", currentFuncs, code)
 
-			for _, meth := range g.templateExec.Service.Methods {
-				methName := meth.GetName()
-				if currentFuncs[methName] == false {
-					log.WithField("Method", methName).Info("Rendering template for method")
-					templateOut := g.applyTemplate("template_files/partial_template/service.method", meth)
-					code.WriteString(templateOut)
-				} else {
-					log.WithField("Method", methName).Info("Handler method already exists")
-				}
-			}
-
+			// Insert updated Service interface
 			templateOut := g.applyTemplate("template_files/partial_template/service.interface", g.templateExec)
-
 			code.WriteString(templateOut)
 
+			// Get file ready to write
 			generatedFilePath = "server/service.go"
-
 			generatedCode = formatCode(code.String())
+
 		} else if filepath.Base(templateFilePath) == "client_handler.go" && clientHandlerExists {
 			log.Info("client/client_handler.go exists")
-
-			var serviceFunctions []string
-			for _, meth := range g.templateExec.Service.Methods {
-				serviceFunctions = append(serviceFunctions, meth.GetName())
-			}
 			astMod := astmodifier.New(clientPath)
 
-			astMod.RemoveFunctions(serviceFunctions)
+			// Remove functions no longer in definition
+			astMod.RemoveFunctionsExecpt(serviceFunctions)
 
 			log.WithField("Code", astMod.String()).Debug("Client handlers before template")
 
+			// Index handler functions, apply handler template for all function in service definition that are not defined in handler
 			currentFuncs := astMod.IndexFunctions()
 			code := astMod.Buffer()
+			code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/client_handler.method", currentFuncs, code)
 
-			for _, meth := range g.templateExec.Service.Methods {
-				methName := meth.GetName()
-				if currentFuncs[methName] == false {
-					log.WithField("Method", methName).Info("Rendering template for method")
-					templateOut := g.applyTemplate("template_files/partial_template/client_handler.method", meth)
-					code.WriteString(templateOut)
-				} else {
-					log.WithField("Method", methName).Info("Handler method already exists")
-				}
-			}
-
+			// Get file ready to write
 			generatedFilePath = "client/client_handler.go"
-
 			generatedCode = formatCode(code.String())
+
 		} else {
 			// Remove "template_files/" so that generated files do not include that directory
 			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
@@ -213,6 +188,20 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 	}
 
 	return codeGenFiles, nil
+}
+
+func (g *generator) applyTemplateForMissingServiceMethods(templateFilePath string, functionIndex map[string]bool, code *bytes.Buffer) *bytes.Buffer {
+	for _, meth := range g.templateExec.Service.Methods {
+		methName := meth.GetName()
+		if functionIndex[methName] == false {
+			log.WithField("Method", methName).Info("Rendering template for method")
+			templateOut := g.applyTemplate(templateFilePath, meth)
+			code.WriteString(templateOut)
+		} else {
+			log.WithField("Method", methName).Info("Handler method already exists")
+		}
+	}
+	return code
 }
 
 func (g *generator) applyTemplate(templateFilePath string, executor interface{}) string {
@@ -242,85 +231,4 @@ func formatCode(code string) string {
 	}
 
 	return string(formatted)
-}
-
-type methodVisitor struct {
-	handlerMethods  map[string]bool
-	protobufMethods map[string]bool
-	callNumber      int
-}
-
-func (v *methodVisitor) Visit(node ast.Node) ast.Visitor {
-	v.callNumber = v.callNumber + 1
-	serviceInterfaceFound := false
-	var declareIndexToDelete int
-	var funcsToDelete []int
-	if file, ok := node.(*ast.File); ok {
-
-		log.WithField(
-			"File Name", file.Name,
-		).Debug("AST File")
-
-		for i, decs := range file.Decls {
-			switch specDec := decs.(type) {
-			case *ast.GenDecl:
-				if !serviceInterfaceFound {
-					for j, spec := range specDec.Specs {
-
-						log.WithFields(log.Fields{
-							"Type":       "GenDecl",
-							"Decl Index": i,
-							"Spec Index": j,
-						}).Debug("AST Spec")
-
-						if typeSpec, ok := spec.(*ast.TypeSpec); ok {
-							if interfaceType, ok := typeSpec.Type.(*ast.InterfaceType); ok {
-
-								log.WithFields(log.Fields{
-									"Decls": typeSpec.Name.String(),
-									"Index": i,
-								}).Debug("Service interface found")
-
-								_ = interfaceType
-								declareIndexToDelete = i
-								serviceInterfaceFound = true
-							}
-						}
-					}
-				}
-			case *ast.FuncDecl:
-				funcName := specDec.Name.String()
-				if funcName != "NewBasicService" {
-					if v.protobufMethods[funcName] == false {
-						log.WithField("Method", funcName).Info("Handler does not exist in proto service description, deleting...")
-						funcsToDelete = append(funcsToDelete, i)
-					} else {
-						v.handlerMethods[funcName] = true
-					}
-				}
-			}
-		}
-		if serviceInterfaceFound {
-			file.Decls = append(file.Decls[:declareIndexToDelete], file.Decls[declareIndexToDelete+1:]...)
-		}
-		for _, index := range funcsToDelete {
-			file.Decls = append(file.Decls[:index], file.Decls[index+1:]...)
-		}
-	}
-	return nil
-}
-
-func (g *generator) printAllServices() {
-	if g.templateExec.Service != nil {
-		util.Logf("\tService: %v\n", g.templateExec.Service.GetName())
-		for _, method := range g.templateExec.Service.Methods {
-			util.Logf("\t\tMethod: %v\n", method.GetName())
-			util.Logf("\t\t\t Request: %v\n", method.RequestType.GetName())
-			util.Logf("\t\t\t Response: %v\n", method.ResponseType.GetName())
-			if method.Options != nil {
-				util.Logf("\t\t\t\tOptions: %v\n", method.Options.String())
-			}
-
-		}
-	}
 }

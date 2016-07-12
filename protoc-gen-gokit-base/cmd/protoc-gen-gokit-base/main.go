@@ -6,7 +6,6 @@ import (
 	"os"
 
 	generator "github.com/TuneLab/gob/protoc-gen-gokit-base/generator"
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/util"
 	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
 	"github.com/golang/protobuf/proto"
 	_ "github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -28,7 +27,6 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 }
 
 func main() {
-
 	registry := descriptor.NewRegistry()
 	request, err := parseReq(os.Stdin)
 
@@ -38,7 +36,6 @@ func main() {
 
 	var targets []*descriptor.File
 	for _, target := range request.FileToGenerate {
-		util.Logf("file to be processed: %v\n", target)
 		f, err := registry.LookupFile(target)
 		_ = err
 		targets = append(targets, f)
@@ -56,6 +53,6 @@ func main() {
 	_ = err
 
 	if _, err := os.Stdout.Write(buf); err != nil {
-		util.Logf("%v\n", err)
+		os.Exit(1)
 	}
 }
