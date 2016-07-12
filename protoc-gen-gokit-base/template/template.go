@@ -10,9 +10,10 @@
 // template_files/DONOTEDIT/transport_grpc.go
 // template_files/DONOTEDIT/transport_http.go
 // template_files/client/client_handler.go
-// template_files/handler.method
+// template_files/partial_template/client_handler.method
+// template_files/partial_template/service.interface
+// template_files/partial_template/service.method
 // template_files/server/service.go
-// template_files/service.interface
 // DO NOT EDIT!
 
 package template
@@ -135,7 +136,7 @@ func template_filesDonoteditCmdAddcliMainGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/DONOTEDIT/cmd/addcli/main.go", size: 4370, mode: os.FileMode(436), modTime: time.Unix(1468022083, 0)}
+	info := bindataFileInfo{name: "template_files/DONOTEDIT/cmd/addcli/main.go", size: 4370, mode: os.FileMode(436), modTime: time.Unix(1468258900, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -235,7 +236,7 @@ func template_filesDonoteditTransport_grpcGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/DONOTEDIT/transport_grpc.go", size: 3691, mode: os.FileMode(436), modTime: time.Unix(1468017706, 0)}
+	info := bindataFileInfo{name: "template_files/DONOTEDIT/transport_grpc.go", size: 3691, mode: os.FileMode(436), modTime: time.Unix(1468258621, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -280,22 +281,62 @@ func template_filesClientClient_handlerGo() (*asset, error) {
 	return a, nil
 }
 
-var _template_filesHandlerMethod = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x6c\x8d\xc1\x0a\x82\x40\x10\x86\xcf\xee\x53\xcc\x51\x41\xd6\x27\xe8\xd4\xa1\x5b\x87\xea\x1e\xba\xfc\xc1\x82\x8e\xdb\xce\x18\xc6\xe2\xbb\xb7\x60\x21\x42\xa7\x19\xe6\x9f\xef\xfb\x4d\xd3\x50\x4a\xf6\x04\x3d\xb7\x03\x96\x85\xfc\x10\x7a\x0c\x60\x15\xba\x22\xbe\xbc\x83\x35\x8f\x89\x1d\x95\x42\x5d\x2b\xde\x7d\xaf\xd5\x0e\x2b\x9d\xce\xe4\x46\x56\xcc\x6a\x8f\xeb\xac\xc9\x33\x85\xce\xe6\xbf\x0b\x9e\x13\x44\x6f\xef\x80\x8d\xa9\xa8\xfc\xa5\x12\x46\x16\xec\xe3\x9a\x10\xe3\x18\xab\x64\x8a\x3b\x1d\x28\x17\xac\x8b\x67\x53\x44\xe8\x14\x37\xf9\x3f\x3c\x65\x01\xfb\xde\x2c\xe6\x13\x00\x00\xff\xff\x63\x20\x89\x35\xe3\x00\x00\x00")
+var _template_filesPartial_templateClient_handlerMethod = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\xe2\xd2\xd7\x57\xa8\xae\x56\xc9\xd4\x73\x4f\x2d\xf1\x4b\xcc\x4d\xad\xad\x55\xc8\xcc\x2d\xc8\x49\xcd\x4d\xcd\x2b\x29\x56\x08\x4e\x2d\x2a\xcb\x4c\x4e\xd5\xe3\x4a\x2b\xcd\x4b\x46\x53\xa7\x91\x99\xa7\x10\x1d\x5b\x5c\x52\x94\x99\x97\xae\xa9\xa0\x51\x90\xa4\x07\x96\x0f\x4a\x2d\x2c\x4d\x2d\x2e\x09\xa9\x2c\x48\x45\xa8\xd5\x51\x48\x2d\x2a\xca\x2f\xd2\xac\xe6\xe2\x8c\x57\xb0\x55\xc8\xcc\xe3\xe2\x2c\x4a\x2d\x29\x2d\xca\x53\xc0\xab\xad\x1a\xa8\x31\x2f\x33\x87\xab\x96\x0b\x10\x00\x00\xff\xff\x14\x48\x07\x06\xa7\x00\x00\x00")
 
-func template_filesHandlerMethodBytes() ([]byte, error) {
+func template_filesPartial_templateClient_handlerMethodBytes() ([]byte, error) {
 	return bindataRead(
-		_template_filesHandlerMethod,
-		"template_files/handler.method",
+		_template_filesPartial_templateClient_handlerMethod,
+		"template_files/partial_template/client_handler.method",
 	)
 }
 
-func template_filesHandlerMethod() (*asset, error) {
-	bytes, err := template_filesHandlerMethodBytes()
+func template_filesPartial_templateClient_handlerMethod() (*asset, error) {
+	bytes, err := template_filesPartial_templateClient_handlerMethodBytes()
 	if err != nil {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/handler.method", size: 227, mode: os.FileMode(436), modTime: time.Unix(1467922204, 0)}
+	info := bindataFileInfo{name: "template_files/partial_template/client_handler.method", size: 167, mode: os.FileMode(436), modTime: time.Unix(1468362907, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _template_filesPartial_templateServiceInterface = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x54\x8e\x31\xce\xc2\x30\x0c\x85\xe7\xbf\xa7\xf0\xd0\xa1\x95\xfa\xe7\x00\x48\x4c\x0c\x4c\x30\x00\x17\x08\xe9\x03\x32\x90\x04\xc7\xa0\xa2\x28\x77\xc7\x02\xa4\x8a\xc9\x96\xfc\xf9\x7d\x4f\x9e\x09\xb4\x07\x3f\xbc\x03\xf9\x20\xe0\x93\xd5\xad\x34\xa5\xb0\x0d\x67\x50\xeb\x69\xb1\x24\xf3\x45\xcc\x06\x72\x89\x63\xae\xb5\xf9\x2b\xa5\xf5\x66\x0d\xd9\xda\x2b\x6a\xed\x9c\x4c\xe4\xa2\x26\x4c\x62\x56\x9f\x39\x68\x22\xa5\xa3\x79\x93\x3b\xdc\xee\xc8\x72\x50\xe1\xfc\xd5\x53\x37\xdf\x73\x8a\x21\xe3\x17\x18\x08\xcc\x91\x7b\xed\xf3\x4f\x08\xa3\x8a\x6b\xf3\x0a\x00\x00\xff\xff\xfa\x73\x13\xd8\xb5\x00\x00\x00")
+
+func template_filesPartial_templateServiceInterfaceBytes() ([]byte, error) {
+	return bindataRead(
+		_template_filesPartial_templateServiceInterface,
+		"template_files/partial_template/service.interface",
+	)
+}
+
+func template_filesPartial_templateServiceInterface() (*asset, error) {
+	bytes, err := template_filesPartial_templateServiceInterfaceBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "template_files/partial_template/service.interface", size: 181, mode: os.FileMode(436), modTime: time.Unix(1467994540, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _template_filesPartial_templateServiceMethod = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x6c\x8d\xc1\x0a\x82\x40\x10\x86\xcf\xee\x53\xcc\x51\x41\xd6\x27\xe8\xd4\xa1\x5b\x87\xea\x1e\xba\xfc\xc1\x82\x8e\xdb\xce\x18\xc6\xe2\xbb\xb7\x60\x21\x42\xa7\x19\xe6\x9f\xef\xfb\x4d\xd3\x50\x4a\xf6\x04\x3d\xb7\x03\x96\x85\xfc\x10\x7a\x0c\x60\x15\xba\x22\xbe\xbc\x83\x35\x8f\x89\x1d\x95\x42\x5d\x2b\xde\x7d\xaf\xd5\x0e\x2b\x9d\xce\xe4\x46\x56\xcc\x6a\x8f\xeb\xac\xc9\x33\x85\xce\xe6\xbf\x0b\x9e\x13\x44\x6f\xef\x80\x8d\xa9\xa8\xfc\xa5\x12\x46\x16\xec\xe3\x9a\x10\xe3\x18\xab\x64\x8a\x3b\x1d\x28\x17\xac\x8b\x67\x53\x44\xe8\x14\x37\xf9\x3f\x3c\x65\x01\xfb\xde\x2c\xe6\x13\x00\x00\xff\xff\x63\x20\x89\x35\xe3\x00\x00\x00")
+
+func template_filesPartial_templateServiceMethodBytes() ([]byte, error) {
+	return bindataRead(
+		_template_filesPartial_templateServiceMethod,
+		"template_files/partial_template/service.method",
+	)
+}
+
+func template_filesPartial_templateServiceMethod() (*asset, error) {
+	bytes, err := template_filesPartial_templateServiceMethodBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "template_files/partial_template/service.method", size: 227, mode: os.FileMode(436), modTime: time.Unix(1467922204, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -316,26 +357,6 @@ func template_filesServerServiceGo() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "template_files/server/service.go", size: 924, mode: os.FileMode(436), modTime: time.Unix(1468006440, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _template_filesServiceInterface = []byte("\x1f\x8b\x08\x00\x00\x09\x6e\x88\x00\xff\x54\x8e\x31\xce\xc2\x30\x0c\x85\xe7\xbf\xa7\xf0\xd0\xa1\x95\xfa\xe7\x00\x48\x4c\x0c\x4c\x30\x00\x17\x08\xe9\x03\x32\x90\x04\xc7\xa0\xa2\x28\x77\xc7\x02\xa4\x8a\xc9\x96\xfc\xf9\x7d\x4f\x9e\x09\xb4\x07\x3f\xbc\x03\xf9\x20\xe0\x93\xd5\xad\x34\xa5\xb0\x0d\x67\x50\xeb\x69\xb1\x24\xf3\x45\xcc\x06\x72\x89\x63\xae\xb5\xf9\x2b\xa5\xf5\x66\x0d\xd9\xda\x2b\x6a\xed\x9c\x4c\xe4\xa2\x26\x4c\x62\x56\x9f\x39\x68\x22\xa5\xa3\x79\x93\x3b\xdc\xee\xc8\x72\x50\xe1\xfc\xd5\x53\x37\xdf\x73\x8a\x21\xe3\x17\x18\x08\xcc\x91\x7b\xed\xf3\x4f\x08\xa3\x8a\x6b\xf3\x0a\x00\x00\xff\xff\xfa\x73\x13\xd8\xb5\x00\x00\x00")
-
-func template_filesServiceInterfaceBytes() ([]byte, error) {
-	return bindataRead(
-		_template_filesServiceInterface,
-		"template_files/service.interface",
-	)
-}
-
-func template_filesServiceInterface() (*asset, error) {
-	bytes, err := template_filesServiceInterfaceBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "template_files/service.interface", size: 181, mode: os.FileMode(436), modTime: time.Unix(1467994540, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -402,9 +423,10 @@ var _bindata = map[string]func() (*asset, error){
 	"template_files/DONOTEDIT/transport_grpc.go": template_filesDonoteditTransport_grpcGo,
 	"template_files/DONOTEDIT/transport_http.go": template_filesDonoteditTransport_httpGo,
 	"template_files/client/client_handler.go": template_filesClientClient_handlerGo,
-	"template_files/handler.method": template_filesHandlerMethod,
+	"template_files/partial_template/client_handler.method": template_filesPartial_templateClient_handlerMethod,
+	"template_files/partial_template/service.interface": template_filesPartial_templateServiceInterface,
+	"template_files/partial_template/service.method": template_filesPartial_templateServiceMethod,
 	"template_files/server/service.go": template_filesServerServiceGo,
-	"template_files/service.interface": template_filesServiceInterface,
 }
 
 // AssetDir returns the file names below a certain
@@ -474,11 +496,14 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"client": &bintree{nil, map[string]*bintree{
 			"client_handler.go": &bintree{template_filesClientClient_handlerGo, map[string]*bintree{}},
 		}},
-		"handler.method": &bintree{template_filesHandlerMethod, map[string]*bintree{}},
+		"partial_template": &bintree{nil, map[string]*bintree{
+			"client_handler.method": &bintree{template_filesPartial_templateClient_handlerMethod, map[string]*bintree{}},
+			"service.interface": &bintree{template_filesPartial_templateServiceInterface, map[string]*bintree{}},
+			"service.method": &bintree{template_filesPartial_templateServiceMethod, map[string]*bintree{}},
+		}},
 		"server": &bintree{nil, map[string]*bintree{
 			"service.go": &bintree{template_filesServerServiceGo, map[string]*bintree{}},
 		}},
-		"service.interface": &bintree{template_filesServiceInterface, map[string]*bintree{}},
 	}},
 }}
 

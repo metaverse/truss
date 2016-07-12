@@ -4,14 +4,12 @@ import (
 	"bytes"
 	"go/ast"
 	"go/format"
-	"go/parser"
-	"go/printer"
-	"go/token"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/TuneLab/gob/protoc-gen-gokit-base/astmodifier"
 	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
 	"github.com/TuneLab/gob/protoc-gen-gokit-base/util"
 
@@ -56,7 +54,6 @@ type stringsTemplateMethods struct {
 // New returns a new generator which generates grpc gateway files.
 func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	var service *descriptor.Service
-
 	log.WithField("File Count", len(files)).Info("Files are being processed")
 
 	for _, file := range files {
@@ -106,78 +103,56 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
 
-	g.printAllServices()
-
 	wd, _ := os.Getwd()
-	servicePath := wd + "/server/service.go"
+
+	var clientHandlerExists bool
 	clientPath := wd + "/client/client_handler.go"
+	if _, err := os.Stat(clientPath); err == nil {
+		clientHandlerExists = true
+	}
+
+	var serviceHandlerExists bool
+	servicePath := wd + "/server/service.go"
+	if _, err := os.Stat(servicePath); err == nil {
+		serviceHandlerExists = true
+	}
+
 	for _, templateFilePath := range g.templateFileNames() {
+		if filepath.Ext(templateFilePath) != ".go" {
+			log.WithField("Template file", templateFilePath).Debug("Skipping rendering non-buildable partial template")
+			continue
+		}
+
 		var generatedFilePath string
 		var generatedCode string
 
 		// If service.go does not exist, generate all files
 		// If template file is not service.go then generate the file
 		// If service.go exists and the template file is service.go then skip
-		if _, err := os.Stat(clientPath); err == nil && filepath.Base(templateFilePath) == "client_handler.go" {
-			log.Info("client/client_handler.go exists")
-			continue
-		}
-		if _, err := os.Stat(servicePath); os.IsNotExist(err) || filepath.Base(templateFilePath) != "service.go" {
-			if filepath.Ext(templateFilePath) != ".go" {
-				log.WithField("Template file", templateFilePath).Debug("Skipping rendering non-buildable partial template")
-				continue
-			}
-
-			// Remove "template_files/" so that generated files do not include that directory
-			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
-
-			generatedCode = g.applyTemplate(templateFilePath, g.templateExec)
-
-			generatedCode = formatCode(generatedCode)
-		} else {
-
+		if filepath.Base(templateFilePath) == "service.go" && serviceHandlerExists {
 			log.Info("server/service.go exists")
-			// Steps that this block of code executes
-			// 1. service.go is parsed into an Ast and stored in fileAst
-			// 2. We create a map of methods in the protobuf file
-			// 3. We create a walker which walks the ast, saving methods it finds, also deleting the service interface as it will be retemplated
-			// 4. The ast is pretty printed into a buffer
-			// 5. For every handler that is in the protobuf but not in service.go we template in a handler for that method
-			// 6. The service interface template is added to the end
-			// 7. The file is formatted
 
-			fset := token.NewFileSet()
-			fileAst, _ := parser.ParseFile(fset, servicePath, nil, 0)
-			if err != nil {
-				log.WithError(err).Fatal("server/service.go could not be parsed by go/parser into AST")
-			}
-
-			protobufMethods := make(map[string]bool)
+			var serviceFunctions []string
 			for _, meth := range g.templateExec.Service.Methods {
-				protobufMethods[meth.GetName()] = true
+				serviceFunctions = append(serviceFunctions, meth.GetName())
 			}
+			serviceFunctions = append(serviceFunctions, "NewBasicService")
+			astMod := astmodifier.New(servicePath)
 
-			walker := &methodVisitor{
-				handlerMethods:  make(map[string]bool),
-				protobufMethods: protobufMethods,
-			}
+			astMod.RemoveFunctions(serviceFunctions)
+			astMod.RemoveInterface("Service")
 
-			ast.Walk(walker, fileAst)
+			log.WithField("Code", astMod.String()).Debug("Server service handlers before template")
 
-			serviceCode := bytes.NewBuffer(nil)
+			currentFuncs := astMod.IndexFunctions()
+			code := astMod.Buffer()
 
-			err = printer.Fprint(serviceCode, fset, fileAst)
-			if err != nil {
-				panic(err)
-			}
-
-			log.WithField("Code", serviceCode.String()).Debug("Server service handlers before template")
 			for _, meth := range g.templateExec.Service.Methods {
 				methName := meth.GetName()
-				if walker.handlerMethods[methName] == false {
+				if currentFuncs[methName] == false {
 					log.WithField("Method", methName).Info("Rendering template for method")
-					templateOut := g.applyTemplate("template_files/partial_template/handler.method", meth)
-					serviceCode.WriteString(templateOut)
+					templateOut := g.applyTemplate("template_files/partial_template/service.method", meth)
+					code.WriteString(templateOut)
 				} else {
 					log.WithField("Method", methName).Info("Handler method already exists")
 				}
@@ -185,11 +160,48 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 
 			templateOut := g.applyTemplate("template_files/partial_template/service.interface", g.templateExec)
 
-			serviceCode.WriteString(templateOut)
+			code.WriteString(templateOut)
 
 			generatedFilePath = "server/service.go"
 
-			generatedCode = formatCode(serviceCode.String())
+			generatedCode = formatCode(code.String())
+		} else if filepath.Base(templateFilePath) == "client_handler.go" && clientHandlerExists {
+			log.Info("client/client_handler.go exists")
+
+			var serviceFunctions []string
+			for _, meth := range g.templateExec.Service.Methods {
+				serviceFunctions = append(serviceFunctions, meth.GetName())
+			}
+			astMod := astmodifier.New(clientPath)
+
+			astMod.RemoveFunctions(serviceFunctions)
+
+			log.WithField("Code", astMod.String()).Debug("Client handlers before template")
+
+			currentFuncs := astMod.IndexFunctions()
+			code := astMod.Buffer()
+
+			for _, meth := range g.templateExec.Service.Methods {
+				methName := meth.GetName()
+				if currentFuncs[methName] == false {
+					log.WithField("Method", methName).Info("Rendering template for method")
+					templateOut := g.applyTemplate("template_files/partial_template/client_handler.method", meth)
+					code.WriteString(templateOut)
+				} else {
+					log.WithField("Method", methName).Info("Handler method already exists")
+				}
+			}
+
+			generatedFilePath = "client/client_handler.go"
+
+			generatedCode = formatCode(code.String())
+		} else {
+			// Remove "template_files/" so that generated files do not include that directory
+			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
+
+			generatedCode = g.applyTemplate(templateFilePath, g.templateExec)
+
+			generatedCode = formatCode(generatedCode)
 		}
 
 		curResponseFile := plugin.CodeGeneratorResponse_File{
@@ -202,10 +214,6 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 
 	return codeGenFiles, nil
 }
-
-//func (g *generator) removeFunctions(codePath string, toRemove []string) string {
-
-//}
 
 func (g *generator) applyTemplate(templateFilePath string, executor interface{}) string {
 
