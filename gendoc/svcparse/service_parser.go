@@ -3,7 +3,6 @@ package svcparse
 import (
 	"fmt"
 	"io"
-	//"unicode/utf8"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
 )
@@ -173,10 +172,10 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 
 }
 
-func ParseHttpBindings(lex *SvcLexer) ([]*doctree.ServiceHttpBinding, error) {
+func ParseHttpBindings(lex *SvcLexer) ([]*doctree.MethodHttpBinding, error) {
 
-	rv := make([]*doctree.ServiceHttpBinding, 0)
-	new_opt := &doctree.ServiceHttpBinding{}
+	rv := make([]*doctree.MethodHttpBinding, 0)
+	new_opt := &doctree.MethodHttpBinding{}
 
 	tk, val := lex.GetTokenIgnoreWhitespace()
 	// If there's a comment before the declaration of a new HttpBinding, then

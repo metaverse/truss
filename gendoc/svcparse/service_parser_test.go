@@ -39,7 +39,6 @@ service Example_Service {
 }
 `)
 	lex := NewSvcLexer(r)
-	//t.Logf("%v", lex.Buf)
 	svc, err := ParseService(lex)
 
 	if err != nil {
@@ -68,7 +67,6 @@ service Example_Service {
 }
 `)
 	lex := NewSvcLexer(r)
-	//t.Logf("%v", lex.Buf)
 	svc, err := ParseService(lex)
 
 	if err != nil {
@@ -97,8 +95,8 @@ service Example_Service {
 }
 `)
 	lex := NewSvcLexer(r)
-	t.Logf("%v", lex.Scn.Buf)
-	t.Logf("%v", lex.Buf)
+	//t.Logf("%v", lex.Scn.Buf)
+	//t.Logf("%v", lex.Buf)
 	svc, err := ParseService(lex)
 
 	if err != nil {
@@ -139,8 +137,8 @@ service Example_Service {
 }
 `)
 	lex := NewSvcLexer(r)
-	t.Logf("%v", lex.Scn.Buf)
-	t.Logf("%v", lex.Buf)
+	//t.Logf("%v", lex.Scn.Buf)
+	//t.Logf("%v", lex.Buf)
 	svc, err := ParseService(lex)
 
 	if err != nil {
@@ -149,6 +147,7 @@ service Example_Service {
 	if svc == nil {
 		t.Fatalf("Returned service is nil\n")
 	}
+	t.Logf("%v\n", svc.Describe(0))
 }
 
 func TestMultipleRpcWithStream(t *testing.T) {
@@ -172,8 +171,8 @@ service FlowCombination {
 }
 `)
 	lex := NewSvcLexer(r)
-	t.Logf("%v", lex.Scn.Buf)
-	t.Logf("%v", lex.Buf)
+	//t.Logf("%v", lex.Scn.Buf)
+	//t.Logf("%v", lex.Buf)
 	svc, err := ParseService(lex)
 
 	if err != nil {
@@ -182,4 +181,5 @@ service FlowCombination {
 	if svc == nil {
 		t.Fatalf("Returned service is nil\n")
 	}
+	t.Logf("%v\n", svc.Describe(0))
 }

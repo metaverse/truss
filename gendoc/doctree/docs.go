@@ -38,6 +38,15 @@ func strRepeat(in string, count int) string {
 	return rv
 }
 
+func nameLink(in string) string {
+	if !strings.Contains(in, ".") {
+		return in
+	}
+	split := strings.Split(in, ".")
+	name := split[len(split)-1]
+	return fmt.Sprintf("[%v](#%v)", name, name)
+}
+
 // Describable offers an interface for traversing a Doctree and finding
 // information from the nodes within it.
 type Describable interface {
@@ -52,7 +61,7 @@ type Describable interface {
 	// within a tree of Describable structs, allowing it to print it's
 	// information with proper indentation. If called recursively, allows for
 	// printing of a structured tree-style view of a tree of Describables.
-	describe(int) string
+	Describe(int) string
 	describeMarkdown(int) string
 	// GetByName allows one to query a Describable to see if it has a child
 	// Describable in any of it's collections.
@@ -84,7 +93,7 @@ func (self *describable) SetName(s string) {
 	self.Name = s
 }
 
-func (self *describable) describe(depth int) string {
+func (self *describable) Describe(depth int) string {
 	rv := prindent(depth, "Name: %v\n", self.Name)
 	rv += prindent(depth, "Desc: %v\n", self.Description)
 	return rv
@@ -117,11 +126,11 @@ type MicroserviceDefinition struct {
 	Files []*ProtoFile
 }
 
-func (self *MicroserviceDefinition) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *MicroserviceDefinition) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	for idx, file := range self.Files {
 		rv += prindent(depth, "File %v:\n", idx)
-		rv += file.describe(depth + 1)
+		rv += file.Describe(depth + 1)
 	}
 	return rv
 }
@@ -168,7 +177,7 @@ func (self *MicroserviceDefinition) SetComment(namepath []string, comment_body s
 // String kicks off the recursive call to `describe` within the tree of
 // Describables, returning a string showing the structured view of the tree.
 func (self *MicroserviceDefinition) String() string {
-	return self.describe(0)
+	return self.Describe(0)
 }
 
 func (self *MicroserviceDefinition) Markdown() string {
@@ -182,19 +191,19 @@ type ProtoFile struct {
 	Services []*ProtoService
 }
 
-func (self *ProtoFile) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *ProtoFile) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	for idx, svc := range self.Services {
 		rv += prindent(depth, "Service %v:\n", idx)
-		rv += svc.describe(depth + 1)
+		rv += svc.Describe(depth + 1)
 	}
 	for idx, msg := range self.Messages {
 		rv += prindent(depth, "Message %v:\n", idx)
-		rv += msg.describe(depth + 1)
+		rv += msg.Describe(depth + 1)
 	}
 	for idx, enum := range self.Enums {
 		rv += prindent(depth, "Enum %v:\n", idx)
-		rv += enum.describe(depth + 1)
+		rv += enum.Describe(depth + 1)
 	}
 	return rv
 }
@@ -249,11 +258,11 @@ type ProtoMessage struct {
 	Fields []*MessageField
 }
 
-func (self *ProtoMessage) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *ProtoMessage) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	for idx, field := range self.Fields {
 		rv += prindent(depth, "Field %v:\n", idx)
-		rv += field.describe(depth + 1)
+		rv += field.Describe(depth + 1)
 	}
 	return rv
 }
@@ -280,7 +289,7 @@ func (self *ProtoMessage) describeMarkdown(depth int) string {
 	for _, f := range self.Fields {
 		safe_desc := f.GetDescription()
 		safe_desc = strings.Replace(safe_desc, "\n", "", -1)
-		rv += fmt.Sprintf("| %v | %v | %v | %v |\n", f.GetName(), f.Type.Name, f.Number, safe_desc)
+		rv += fmt.Sprintf("| %v | %v | %v | %v |\n", f.GetName(), nameLink(f.Type.Name), f.Number, safe_desc)
 	}
 	rv += "\n"
 	return rv
@@ -302,11 +311,11 @@ type MessageField struct {
 	Number int
 }
 
-func (self *MessageField) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *MessageField) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	rv += prindent(depth, "Number: %v\n", self.Number)
 	rv += prindent(depth, "Type:\n")
-	rv += self.Type.describe(depth + 1)
+	rv += self.Type.Describe(depth + 1)
 	return rv
 }
 
@@ -315,11 +324,11 @@ type ProtoEnum struct {
 	Values []*EnumValue
 }
 
-func (self *ProtoEnum) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *ProtoEnum) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	for idx, val := range self.Values {
 		rv += prindent(depth, "Value %v:\n", idx)
-		rv += val.describe(depth + 1)
+		rv += val.Describe(depth + 1)
 	}
 	return rv
 }
@@ -340,8 +349,8 @@ type EnumValue struct {
 	Number int
 }
 
-func (self *EnumValue) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *EnumValue) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	rv += prindent(depth, "Number: %v\n", self.Number)
 	return rv
 }
@@ -356,11 +365,11 @@ type ProtoService struct {
 	Methods []*ServiceMethod
 }
 
-func (self *ProtoService) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *ProtoService) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	for idx, meth := range self.Methods {
 		rv += prindent(depth, "Method %v:\n", idx)
-		rv += meth.describe(depth + 1)
+		rv += meth.Describe(depth + 1)
 	}
 	return rv
 }
@@ -368,13 +377,19 @@ func (self *ProtoService) describe(depth int) string {
 func (self *ProtoService) describeMarkdown(depth int) string {
 	rv := self.describable.describeMarkdown(depth)
 
-	rv += "| Name | Request Type | Response Type | Description|\n"
+	rv += "| Method Name | Request Type | Response Type | Description|\n"
 	rv += "| ---- | ---- | ------------ | -----------|\n"
 	for _, meth := range self.Methods {
-		req_link := fmt.Sprintf("[%v](#%v)", meth.RequestType.GetName(), meth.RequestType.GetName())
-		res_link := fmt.Sprintf("[%v](#%v)", meth.ResponseType.GetName(), meth.ResponseType.GetName())
+		req_link := nameLink(meth.RequestType.GetName())
+		res_link := nameLink(meth.ResponseType.GetName())
 
 		rv += prindent(0, "| %v | %v | %v | %v |\n", meth.GetName(), req_link, res_link, meth.GetDescription())
+	}
+	rv += "\n"
+	rv += prindent(0, "%v %v - Http Methods\n\n", strRepeat("#", depth), self.Name)
+
+	for _, meth := range self.Methods {
+		rv += meth.describeMarkdown(depth + 1)
 	}
 	return rv
 }
@@ -392,29 +407,30 @@ type ServiceMethod struct {
 	describable
 	RequestType  *ProtoMessage
 	ResponseType *ProtoMessage
-	HttpBindings []*ServiceHttpBinding
+	HttpBindings []*MethodHttpBinding
 }
 
-func (self *ServiceMethod) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *ServiceMethod) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	rv += prindent(depth, "RequestType: %v\n", self.RequestType.GetName())
 	rv += prindent(depth, "ResponseType: %v\n", self.ResponseType.GetName())
-	rv += prindent(depth, "ServiceHttpBinding:\n")
+	rv += prindent(depth, "MethodHttpBinding:\n")
 
 	for _, bind := range self.HttpBindings {
-		rv += bind.describe(depth + 1)
+		rv += bind.Describe(depth + 1)
 	}
 	return rv
 }
 
 func (self *ServiceMethod) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
+	//rv := self.describable.describeMarkdown(depth)
+	rv := ""
 
-	rv += prindent(0, "[RequestType: %v](#%v)\n\n", self.RequestType.GetName(), self.RequestType.GetName())
-	rv += prindent(0, "[ResponseType: %v](#%v)\n\n", self.ResponseType.GetName(), self.ResponseType.GetName())
+	//rv += prindent(0, "[RequestType: %v](#%v)\n\n", self.RequestType.GetName(), self.RequestType.GetName())
+	//rv += prindent(0, "[ResponseType: %v](#%v)\n\n", self.ResponseType.GetName(), self.ResponseType.GetName())
 
 	for _, bind := range self.HttpBindings {
-		rv += bind.describeMarkdown(depth + 1)
+		rv += bind.describeMarkdown(depth)
 	}
 
 	return rv
@@ -430,42 +446,63 @@ func (self *ServiceMethod) GetByName(name string) Describable {
 	return nil
 }
 
-type ServiceHttpBinding struct {
+type MethodHttpBinding struct {
 	describable
+	Verb   string
+	Path   string
 	Fields []*BindingField
+	Params []*HttpParameter
 }
 
-func (self *ServiceHttpBinding) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *MethodHttpBinding) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	for _, field := range self.Fields {
-		rv += field.describe(depth + 1)
+		rv += field.Describe(depth + 1)
 	}
 	return rv
 }
 
-func (self *ServiceHttpBinding) describeMarkdown(depth int) string {
-	rv := ""
+func (self *MethodHttpBinding) describeMarkdown(depth int) string {
+	//rv := ""
+	rv := prindent(0, "%v %v `%v`\n\n", strRepeat("#", depth), strings.ToUpper(self.Verb), self.Path)
 
-	for _, field := range self.Fields {
-		rv += prindent(0, "- '%v' : '%v'\n", field.Kind, field.Value)
-		if field.GetDescription() != "" {
-			rv += prindent(1, "- %v\n", field.GetDescription())
-		}
+	rv += self.GetDescription() + "\n\n"
+
+	rv += "| Parameter Name | Location | Type |\n"
+	rv += "| ---- | ---- | ------------ |\n"
+	for _, param := range self.Params {
+
+		rv += prindent(0, "| %v | %v | %v |\n", param.GetName(), param.Location, nameLink(param.Type))
 	}
 	rv += "\n"
 
 	return rv
 }
 
+// BindingField represents a single field within an `option` annotation for an
+// rpc method. For example, an rpc method may have an http annotation with
+// fields like `get: "/example/path"`. Each of those fields is represented by a
+// `BindingField`. The `Kind` field is the left side of the option field, and
+// the `Value` is the right hand side of the option field.
 type BindingField struct {
 	describable
 	Kind  string
 	Value string
 }
 
-func (self *BindingField) describe(depth int) string {
-	rv := self.describable.describe(depth)
+func (self *BindingField) Describe(depth int) string {
+	rv := self.describable.Describe(depth)
 	rv += prindent(depth, "Kind: %v\n", self.Kind)
 	rv += prindent(depth, "Value: %v\n", self.Value)
 	return rv
+}
+
+// HttpParameter contains information for one parameter of an http binding. It
+// is created by contextualizing all of the `BindingField`'s within a
+// `MethodHttpBinding`, with each `HttpParameter` corresponding to one of the
+// fields in the input message for the given rpc method.
+type HttpParameter struct {
+	describable
+	Location string
+	Type     string
 }

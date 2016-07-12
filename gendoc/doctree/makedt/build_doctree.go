@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/gob/gendoc/doctree/httpopts"
 	"github.com/TuneLab/gob/gendoc/svcparse"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
@@ -142,4 +143,6 @@ func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 			meth.HttpBindings = pmeth.HttpBindings
 		}
 	}
+	// Assemble the http parameters for each http binding
+	httpopts.Assemble(dt)
 }
