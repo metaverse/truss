@@ -43,106 +43,112 @@ We invoke `$ truss` from `.`
 Four stages of generation happen.
 
 1. The `foobar` directory is made and gRPC `google.api.http` annotation dependencies are created
-```
-.
-├── foobar
-│   └── DONOTEDIT
-│       └── third_party
-│           └── googleapis
-│               └── google
-│                   └── api
-│                       ├── annotations.pb.go
-│                       ├── annotations.proto
-│                       ├── http.pb.go
-│                       └── http.proto
-└─── microservice.proto
-```
+
+	```
+	.
+	├── foobar
+	│   └── DONOTEDIT
+	│       └── third_party
+	│           └── googleapis
+	│               └── google
+	│                   └── api
+	│                       ├── annotations.pb.go
+	│                       ├── annotations.proto
+	│                       ├── http.pb.go
+	│                       └── http.proto
+	└─── microservice.proto
+	```
 
 2. The `microservice.proto` file is parsed by the grpc go_out plugin for protoc which generated golang code for grpc communication as well as interfaces and structs for the *service* and all *messages*.
-```
-$ PWD=$(pwd)
-$ TRUSSIMPORT=${pwd#$GOPATH/src/}
-$ TRUSSGOOGLEAPI=foobar/DONOTEDIT/third_party/googleapis
 
-$ protoc -I/usr/local/include -I. \
-	-I$pwd/$TRUSSGOOGLEAPI \
-	--go_out=Mgoogle/api/annotations.proto=$TRUSSIMPORT/$TRUSSGOOGLEAPI/google/api, \
-	plugins=grpc:./foobar/DONOTEDIT/compiledpb \
-	microservice.proto
+	```
+	$ PWD=$(pwd)
+	$ TRUSSIMPORT=${pwd#$GOPATH/src/}
+	$ TRUSSGOOGLEAPI=foobar/DONOTEDIT/third_party/googleapis
 
-```
-Which gives us the directory structure
-```
-.
-├── foobar
-│   └── DONOTEDIT
-│       ├── compiledpb
-│       │   └── microservice.pb.go
-│       └── third_party
-│           └── ...
-└── microservice.proto
-```
+	$ protoc -I/usr/local/include -I. \
+		-I$pwd/$TRUSSGOOGLEAPI \
+		--go_out=Mgoogle/api/annotations.proto=$TRUSSIMPORT/$TRUSSGOOGLEAPI/google/api, \
+		plugins=grpc:./foobar/DONOTEDIT/compiledpb \
+		microservice.proto
+
+	```
+	Which gives us the directory structure
+	```
+	.
+	├── foobar
+	│   └── DONOTEDIT
+	│       ├── compiledpb
+	│       │   └── microservice.pb.go
+	│       └── third_party
+	│           └── ...
+	└── microservice.proto
+	```
+
 3. The `pb/service.proto` file is parsed by the documentation generator which generated Markdown and html documentation for the *service* and all *messages*
-```
-$ protoc -I/usr/local/include -I. \
-	-I$pwd/$TRUSSGOOGLEAPI \
-	--truss_gendoc_out=./foobar/docs \
-	microservice.proto
-```
-```
-.
-├── foobar
-│   ├── docs
-│   │   ├── foobar.html
-│   │   └── foobar.md
-│   └── DONOTEDIT
-│       ├── compiledpb
-│       │   └── ...
-│       └── third_party
-│           └── ...
-└── service.proto
-```
+
+	```
+	$ protoc -I/usr/local/include -I. \
+		-I$pwd/$TRUSSGOOGLEAPI \
+		--truss_gendoc_out=./foobar/docs \
+		microservice.proto
+	```
+	```
+	.
+	├── foobar
+	│   ├── docs
+	│   │   ├── foobar.html
+	│   │   └── foobar.md
+	│   └── DONOTEDIT
+	│       ├── compiledpb
+	│       │   └── ...
+	│       └── third_party
+	│           └── ...
+	└── service.proto
+	```
+
 4. The `pb/service.proto` file is parsed by the service/client generator which generates the golang server and client implementation of the *service*
 
-```
-$ protoc -I/usr/local/include -I. \
-	-I$pwd/$TRUSSGOOGLEAPI \
-	--truss_gokit_out=./foobar/DONOTEDIT \
-	microservice.proto
-```
-```
-.
-├── foobar
-│   ├── bin
-│   │   ├── cliclient_foobar
-│   │   └── foobarsvc
-│   ├── client
-│   │   └── clienthandler.go
-│   ├── docs
-│   │   └── ...
-│   ├── server
-│   │   └── servicehandler.go
-│   └── DONOTEDIT
-│       ├── client
-│       │   ├── grpc
-│       │   │   └── client.go
-│       │   └── http
-│       │       └── client.go
-│       ├── cmd
-│       │   ├── addcli
-│       │   │   └── main.go
-│       │   └── addsvc
-│       │       └── main.go
-│       ├── compiledpb
-│       │   └── ...
-│       ├── doc.go
-│       ├── endpoints.go
-│       ├── third_party
-│       │   └── ...
-│       ├── transport_grpc.go
-│       └── transport_http.go
-└── microservice.proto
-```
+	```
+	$ protoc -I/usr/local/include -I. \
+		-I$pwd/$TRUSSGOOGLEAPI \
+		--truss_gokit_out=./foobar/DONOTEDIT \
+		microservice.proto
+	```
+	```
+	.
+	├── foobar
+	│   ├── bin
+	│   │   ├── cliclient_foobar
+	│   │   └── foobarsvc
+	│   ├── client
+	│   │   └── clienthandler.go
+	│   ├── docs
+	│   │   └── ...
+	│   ├── server
+	│   │   └── servicehandler.go
+	│   └── DONOTEDIT
+	│       ├── client
+	│       │   ├── grpc
+	│       │   │   └── client.go
+	│       │   └── http
+	│       │       └── client.go
+	│       ├── cmd
+	│       │   ├── addcli
+	│       │   │   └── main.go
+	│       │   └── addsvc
+	│       │       └── main.go
+	│       ├── compiledpb
+	│       │   └── ...
+	│       ├── doc.go
+	│       ├── endpoints.go
+	│       ├── third_party
+	│       │   └── ...
+	│       ├── transport_grpc.go
+	│       └── transport_http.go
+	└── microservice.proto
+	```
+
 ## TODO:
 
 Provide errors for:
