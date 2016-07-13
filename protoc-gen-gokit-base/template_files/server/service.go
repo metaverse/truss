@@ -29,7 +29,10 @@ type basicService struct{}
 func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
-	return pb.{{$i.ResponseType.GetName}}{}, nil
+	response := pb.{{$i.ResponseType.GetName}}{
+		//
+	}
+	return response, nil
 }
 {{end}}
 

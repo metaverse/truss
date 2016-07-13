@@ -9,6 +9,9 @@ import (
 // {{$i.GetName}} implements Service.
 func {{$i.GetName}}(in []string) (pb.{{$i.RequestType.GetName}}, error){
 	_ = in
-	return pb.{{$i.RequestType.GetName}}{}, nil
+	request := pb.{{$i.RequestType.GetName}}{
+		//
+	}
+	return request, nil
 }
 {{end}}
