@@ -1,9 +1,7 @@
 package httpopts
 
 import (
-	"fmt"
 	"github.com/TuneLab/gob/gendoc/doctree"
-	"os"
 	"regexp"
 	"strings"
 )
@@ -31,7 +29,6 @@ func Assemble(dt doctree.Doctree) {
 }
 
 func contextualizeBinding(meth *doctree.ServiceMethod, binding *doctree.MethodHttpBinding) error {
-	fmt.Fprintf(os.Stderr, "RequestType: %v\n", meth.RequestType.Describe(0))
 	msg := meth.RequestType
 
 	// Find the verb and the path

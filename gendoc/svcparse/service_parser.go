@@ -28,7 +28,7 @@ func fastForwardTill(lex *SvcLexer, delim string) error {
 func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
 	tk, val := lex.GetTokenIgnoreWhitespace()
 	if tk == EOF {
-		return nil, io.EOF
+		return nil, io.ErrUnexpectedEOF
 	}
 	if tk != IDENT && val != "service" {
 		return nil, parseErr("'service' identifier", lex.GetLineNumber(), val)
