@@ -1,3 +1,19 @@
+// Svcparse, which stands for "service parser" will parse the 'service'
+// declarations within a provided protobuf and associate comments within that
+// file with the various components of the service. Specifically, it handles
+// google's httpoptions and the association of those comments. This is
+// necessary because while it is possible to derive the structure of
+// httpbindings for a service using the mainline protoc, it will not allow
+// access to comments associated with components of those options.
+//
+// Thus this parser was written to associate comments on http bindings with
+// their components, since those comments are used for documentation.
+//
+// NOTE
+//
+// Currently, this parser assumes that it's input does contain EXACTLY ONE
+// valid service definition. Providing an input file that does not contain a
+// service definition will return an error.
 package svcparse
 
 import (
@@ -25,6 +41,8 @@ func fastForwardTill(lex *SvcLexer, delim string) error {
 	}
 }
 
+// ParseService will parse a proto file and return the the doctree
+// representation of that service.
 func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
 	tk, val := lex.GetTokenIgnoreWhitespace()
 	if tk == EOF {

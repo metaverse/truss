@@ -3,6 +3,7 @@ package makedt
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
@@ -12,25 +13,53 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
-func lastName(in string) string {
-	sl := strings.Split(in, ".")
-	return sl[len(sl)-1]
+// Finds the package name of the proto files named on the command line
+func findDoctreePackage(req *plugin.CodeGeneratorRequest) string {
+	for _, cmd_file := range req.GetFileToGenerate() {
+		for _, proto_file := range req.GetProtoFile() {
+			if proto_file.GetName() == cmd_file {
+				return proto_file.GetPackage()
+			}
+		}
+	}
+	return ""
+}
+
+// Finds a message given a fully qualified name to that message.
+func findMessage(md *doctree.MicroserviceDefinition, new_file *doctree.ProtoFile, path string) (*doctree.ProtoMessage, error) {
+	if path[0] == '.' {
+		parts := strings.Split(path, ".")
+		for _, file := range md.Files {
+			for _, msg := range file.Messages {
+				if parts[2] == msg.GetName() {
+					return msg, nil
+				}
+			}
+		}
+		for _, msg := range new_file.Messages {
+			if parts[2] == msg.GetName() {
+				return msg, nil
+			}
+		}
+	} else {
+		for _, msg := range new_file.Messages {
+			if path == msg.GetName() {
+				return msg, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("Couldn't find message.")
+
 }
 
 // New accepts a Protobuf CodeGeneratorRequest and returns a Doctree struct
 func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 	dt := doctree.MicroserviceDefinition{}
+	dt.SetName(findDoctreePackage(req))
 	for _, file := range req.ProtoFile {
 		// Check if this file is one we even should examine, and if it's not,
 		// skip it
-		fname := file.GetName()
-		should_examine := false
-		for _, goodf := range req.FileToGenerate {
-			if fname == goodf {
-				should_examine = true
-			}
-		}
-		if should_examine == false {
+		if file.GetPackage() != findDoctreePackage(req) {
 			continue
 		}
 
@@ -38,14 +67,6 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 		// creation in the Doctree
 		new_file := doctree.ProtoFile{}
 		new_file.Name = file.GetName()
-
-		if dt.Name == "" {
-			dt.Name = *file.Package
-		} else {
-			if dt.Name != *file.Package {
-				panic("Package name of specified protobuf definitions differ.")
-			}
-		}
 
 		// Add enums to this file
 		for _, enum := range file.EnumType {
@@ -97,16 +118,16 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 
 				// Set this methods request and responses to point to existing
 				// Message types
-				req_msg := new_file.GetByName(lastName(*meth.InputType))
-				if req_msg == nil {
+				req_msg, err := findMessage(&dt, &new_file, *meth.InputType)
+				if req_msg == nil || err != nil {
 					panic(fmt.Sprintf("Couldn't find message type for '%v'\n", *meth.InputType))
 				}
-				resp_msg := new_file.GetByName(lastName(*meth.OutputType))
-				if req_msg == nil {
+				resp_msg, err := findMessage(&dt, &new_file, *meth.OutputType)
+				if resp_msg == nil || err != nil {
 					panic(fmt.Sprintf("Couldn't find message type for '%v'\n", *meth.OutputType))
 				}
-				n_meth.RequestType = req_msg.(*doctree.ProtoMessage)
-				n_meth.ResponseType = resp_msg.(*doctree.ProtoMessage)
+				n_meth.RequestType = req_msg
+				n_meth.ResponseType = resp_msg
 
 				n_svc.Methods = append(n_svc.Methods, &n_meth)
 			}
@@ -125,29 +146,68 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 	return &dt, nil
 }
 
+// Searches all descendent directories for a file with name `fname`.
+func searchFileName(fname string) string {
+	fpath := ""
+	visitor := func(path string, info os.FileInfo, err error) error {
+		if info.Name() == fname {
+			fpath = path
+		}
+		return nil
+	}
+	_ = filepath.Walk("./", visitor)
+	return fpath
+}
+
 // Parse the protobuf files for comments surrounding http options, then add
 // those to the Doctree in place.
 func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
-	for _, fname := range req.FileToGenerate {
-		f, err := os.Open(fname)
-		if err != nil {
-			cwd, _ := os.Getwd()
-			fmt.Fprintf(os.Stderr, "From current directory '%v', error opening file '%v', '%v'\n", cwd, fname, err)
-			panic(err)
-		}
-		lex := svcparse.NewSvcLexer(f)
-		parsed_svc, err := svcparse.ParseService(lex)
 
-		if err != nil {
-			panic(err)
-		}
+	fname := FindServiceFile(req)
+	full_path := searchFileName(fname)
 
-		svc := dt.GetByName(fname).GetByName(parsed_svc.GetName()).(*doctree.ProtoService)
-		for _, pmeth := range parsed_svc.Methods {
-			meth := svc.GetByName(pmeth.GetName()).(*doctree.ServiceMethod)
-			meth.HttpBindings = pmeth.HttpBindings
-		}
+	f, err := os.Open(full_path)
+	if err != nil {
+		cwd, _ := os.Getwd()
+		fmt.Fprintf(os.Stderr, "From current directory '%v', error opening file '%v', '%v'\n", cwd, full_path, err)
+		panic(err)
 	}
+	lex := svcparse.NewSvcLexer(f)
+	parsed_svc, err := svcparse.ParseService(lex)
+
+	if err != nil {
+		panic(err)
+	}
+
+	svc := dt.GetByName(fname).GetByName(parsed_svc.GetName()).(*doctree.ProtoService)
+	for _, pmeth := range parsed_svc.Methods {
+		meth := svc.GetByName(pmeth.GetName()).(*doctree.ServiceMethod)
+		meth.HttpBindings = pmeth.HttpBindings
+	}
+
 	// Assemble the http parameters for each http binding
 	httpopts.Assemble(dt)
+}
+
+// Searches through the files in the request and returns the path to the first
+// one which contains a service declaration. If no file in the request contains
+// a service, returns an empty string.
+func FindServiceFile(req *plugin.CodeGeneratorRequest) string {
+	svc_files := []string{}
+	// Since the names of proto files in FileDescriptorProto's don't contain
+	// the path, we have to find the first one with a service, then find it's
+	// actual relative path by searching the slice `FileToGenerate`.
+	for _, file := range req.GetProtoFile() {
+		if len(file.GetService()) > 0 {
+			svc_files = append(svc_files, file.GetName())
+		}
+	}
+	for _, file := range req.GetFileToGenerate() {
+		for _, svc_f := range svc_files {
+			if strings.Contains(file, svc_f) {
+				return file
+			}
+		}
+	}
+	return ""
 }
