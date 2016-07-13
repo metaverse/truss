@@ -131,7 +131,8 @@ func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 	for _, fname := range req.FileToGenerate {
 		f, err := os.Open(fname)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error opening file '%v', '%v'\n", fname, err)
+			cwd, _ := os.Getwd()
+			fmt.Fprintf(os.Stderr, "From current directory '%v', error opening file '%v', '%v'\n", cwd, fname, err)
 			panic(err)
 		}
 		lex := svcparse.NewSvcLexer(f)
