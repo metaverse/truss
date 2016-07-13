@@ -1,6 +1,7 @@
 # truss
 
-The `$ truss` binary reads in gRPC files that define a single gRPC *service* and outputs:
+The `truss` binary reads in gRPC files that define a single gRPC *service* and outputs:
+
 1. Markdown and html documentation based on comments in the gRPC files.
 2. Golang code for a gokit microservice that includes:
 	- Logging
@@ -18,9 +19,9 @@ The `$ truss` binary reads in gRPC files that define a single gRPC *service* and
 
 ### Requirements
 
-`$ truss` must:
-- Be invoked from some directory within your $GOPATH
-- Be passed .proto file paths that:
+`truss` must:
+- Be invoked from some directory within your `$GOPATH/src`
+- Be passed `.proto` file paths that:
 	- Do not contain "." or ".." components and must be relative, not be absolute (so, the file cannot lie outside the directory `$ truss` was invoked from).
 	- Use "/" as the path separator, not "\".
 
@@ -40,6 +41,7 @@ We invoke `$ truss` from `.`
 `$ truss microservice.proto`  
   
 Four stages of generation happen.
+
 1. The `foobar` directory is made and gRPC `google.api.http` annotation dependencies are created
 ```
 .
@@ -58,14 +60,14 @@ Four stages of generation happen.
 
 2. The `microservice.proto` file is parsed by the grpc go_out plugin for protoc which generated golang code for grpc communication as well as interfaces and structs for the *service* and all *messages*.
 ```
-$ GOCODE=$GOPATH/src
 $ PWD=$(pwd)
-$ TRUSSIMPORT=${pwd#$GOCODE/}
+$ TRUSSIMPORT=${pwd#$GOPATH/src/}
 $ TRUSSGOOGLEAPI=foobar/DONOTEDIT/third_party/googleapis
 
 $ protoc -I/usr/local/include -I. \
-	-I$pwd/$TRUSSGOOGLEAPI
-	--go_out=Mgoogle/api/annotations.proto=$TRUSSIMPORT/$TRUSSGOOGLEAPI/google/api,plugins=grpc:./foobar/DONOTEDIT/compiledpb
+	-I$pwd/$TRUSSGOOGLEAPI \
+	--go_out=Mgoogle/api/annotations.proto=$TRUSSIMPORT/$TRUSSGOOGLEAPI/google/api, \
+	plugins=grpc:./foobar/DONOTEDIT/compiledpb \
 	microservice.proto
 
 ```
@@ -75,7 +77,7 @@ Which gives us the directory structure
 ├── foobar
 │   └── DONOTEDIT
 │       ├── compiledpb
-│       │   └── service.pb.go
+│       │   └── microservice.pb.go
 │       └── third_party
 │           └── ...
 └── microservice.proto
@@ -83,8 +85,8 @@ Which gives us the directory structure
 3. The `pb/service.proto` file is parsed by the documentation generator which generated Markdown and html documentation for the *service* and all *messages*
 ```
 $ protoc -I/usr/local/include -I. \
-	-I$pwd/$TRUSSGOOGLEAPI
-	--truss_gendoc_out=./foobar/docs
+	-I$pwd/$TRUSSGOOGLEAPI \
+	--truss_gendoc_out=./foobar/docs \
 	microservice.proto
 ```
 ```
@@ -104,8 +106,8 @@ $ protoc -I/usr/local/include -I. \
 
 ```
 $ protoc -I/usr/local/include -I. \
-	-I$pwd/$TRUSSGOOGLEAPI
-	--truss_gokit_out=./foobar/DONOTEDIT
+	-I$pwd/$TRUSSGOOGLEAPI \
+	--truss_gokit_out=./foobar/DONOTEDIT \
 	microservice.proto
 ```
 ```
