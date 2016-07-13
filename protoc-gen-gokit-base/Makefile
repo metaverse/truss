@@ -31,6 +31,8 @@ OK_COLOR=\e[38;5;118m
 RUN_MSG=\n$(OK_COLOR)PLUGIN BUILT... GENERATING SERVICE:$(NO_COLOR)\n
 BUILD_GENERATE_MSG=\n$(OK_COLOR)SERVICED GENERATED... BUILDING:$(NO_COLOR)\n
 
+PROTOFILES=pb/*.proto
+
 all: build-generated-code
 
 # -ignore swp ignores vim swap files
@@ -48,11 +50,13 @@ code-generation: $(PLUGIN)
 			-I$(GOPATH)/src \
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
      		--go_out=Mgoogle/api/annotations.proto=$(GOOGLE_HTTP_API_DIR)/google/api,plugins=grpc:$(NON_EDITABLE_OUTPUT)/ \
-			pb/*.proto
+			$(PROTOFILES)
 	@echo -e '$(RUN_MSG)'
 	# The plugin is copied into the output directory so that it can be called from within that directory
 	cp $(PLUGIN) $(OUTPUT)
 	# Currently the plugin assumes that the output directory of the plugin is the current directory (.), otherwise it will fail
+	mkdir -p $(OUTPUT)/pb
+	cp $(PROTOFILES) $(OUTPUT)/pb/
 	cd $(OUTPUT) && \
 	protoc -I/usr/local/include -I. \
      	   -I.. \
@@ -60,7 +64,7 @@ code-generation: $(PLUGIN)
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
 		   --plugin=$(PLUGIN) \
 		   --$(NAME)_out=logtostderr=true:. \
-		   ../pb/*.proto
+		   $(PROTOFILES)
 
 build-generated-code: code-generation
 	@echo -e '$(BUILD_GENERATE_MSG)'
