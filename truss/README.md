@@ -39,7 +39,7 @@ Lets say we have a `microservice.proto` file. With the defined *service* named `
 We invoke `$ truss` from `.`  
 `$ truss microservice.proto`  
   
-Four stages of generation happen.
+Five stages of generation happen.
 
 1. The `service` directory is made and gRPC `google.api.http` annotation dependencies are created
 
@@ -117,9 +117,6 @@ Four stages of generation happen.
 	```
 	.
 	├── service
-	│   ├── bin
-	│   │   ├── cliclient
-	│   │   └── foobar
 	│   ├── client
 	│   │   └── clienthandler.go
 	│   ├── docs
@@ -133,9 +130,43 @@ Four stages of generation happen.
 	│       │   └── http
 	│       │       └── client.go
 	│       ├── cmd
-	│       │   ├── addcli
+	│       │   ├── cliclient
 	│       │   │   └── main.go
-	│       │   └── addsvc
+	│       │   └── svc
+	│       │       └── main.go
+	│       ├── compiledpb
+	│       │   └── ...
+	│       ├── doc.go
+	│       ├── endpoints.go
+	│       ├── third_party
+	│       │   └── ...
+	│       ├── transport_grpc.go
+	│       └── transport_http.go
+	└── microservice.proto
+	```
+5. Finally, the services are built
+	```
+	.
+	├── service
+	│   ├── bin
+	│   │   ├── cliclient
+	│   │   └── svc
+	│   ├── client
+	│   │   └── clienthandler.go
+	│   ├── docs
+	│   │   └── ...
+	│   ├── server
+	│   │   └── servicehandler.go
+	│   └── DONOTEDIT
+	│       ├── client
+	│       │   ├── grpc
+	│       │   │   └── client.go
+	│       │   └── http
+	│       │       └── client.go
+	│       ├── cmd
+	│       │   ├── cliclient
+	│       │   │   └── main.go
+	│       │   └── svc
 	│       │       └── main.go
 	│       ├── compiledpb
 	│       │   └── ...
