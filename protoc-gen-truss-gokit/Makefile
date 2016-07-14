@@ -1,5 +1,5 @@
 
-NAME=gokit-base
+NAME=truss-gokit
 
 PLUGIN=protoc-gen-$(NAME)
 
