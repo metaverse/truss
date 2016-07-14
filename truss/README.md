@@ -22,8 +22,7 @@ The `truss` binary reads in gRPC files that define a single gRPC *service* and o
 `truss` must:
 - Be invoked from some directory within your `$GOPATH/src`
 - Be passed `.proto` file paths that:
-	- Do not contain "." or ".." components and must be relative, not be absolute (so, the file cannot lie outside the directory `$ truss` was invoked from).
-	- Use "/" as the path separator, not "\".
+	- Are withing the current directory
 
 ### Generated file structure
 
@@ -42,11 +41,11 @@ We invoke `$ truss` from `.`
   
 Four stages of generation happen.
 
-1. The `foobar` directory is made and gRPC `google.api.http` annotation dependencies are created
+1. The `service` directory is made and gRPC `google.api.http` annotation dependencies are created
 
 	```
 	.
-	├── foobar
+	├── service
 	│   └── DONOTEDIT
 	│       └── third_party
 	│           └── googleapis
@@ -76,7 +75,7 @@ Four stages of generation happen.
 	Which gives us the directory structure
 	```
 	.
-	├── foobar
+	├── service
 	│   └── DONOTEDIT
 	│       ├── compiledpb
 	│       │   └── microservice.pb.go
@@ -85,20 +84,20 @@ Four stages of generation happen.
 	└── microservice.proto
 	```
 
-3. The `pb/service.proto` file is parsed by the documentation generator which generated Markdown and html documentation for the *service* and all *messages*
+3. The `microservice.proto` file is parsed by the documentation generator which generated Markdown and html documentation for the *service* and all *messages*
 
 	```
 	$ protoc -I/usr/local/include -I. \
 		-I$pwd/$TRUSSGOOGLEAPI \
-		--truss_gendoc_out=./foobar/docs \
+		--truss_gendoc_out=./service/docs \
 		microservice.proto
 	```
 	```
 	.
-	├── foobar
+	├── service
 	│   ├── docs
-	│   │   ├── foobar.html
-	│   │   └── foobar.md
+	│   │   ├── docs.html
+	│   │   └── docs.md
 	│   └── DONOTEDIT
 	│       ├── compiledpb
 	│       │   └── ...
@@ -107,20 +106,20 @@ Four stages of generation happen.
 	└── service.proto
 	```
 
-4. The `pb/service.proto` file is parsed by the service/client generator which generates the golang server and client implementation of the *service*
+4. The `microservice.proto` file is parsed by the service/client generator which generates the golang server and client implementation of the *service*
 
 	```
 	$ protoc -I/usr/local/include -I. \
 		-I$pwd/$TRUSSGOOGLEAPI \
-		--truss_gokit_out=./foobar/DONOTEDIT \
+		--truss_gokit_out=./service/DONOTEDIT \
 		microservice.proto
 	```
 	```
 	.
-	├── foobar
+	├── service
 	│   ├── bin
-	│   │   ├── cliclient_foobar
-	│   │   └── foobarsvc
+	│   │   ├── cliclient
+	│   │   └── foobar
 	│   ├── client
 	│   │   └── clienthandler.go
 	│   ├── docs
