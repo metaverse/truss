@@ -57,8 +57,9 @@ func main() {
 	doc, _ := makedt.New(request)
 	response := doc.Markdown()
 
-	out_fname := outputDir(doc) + "/docs.md"
-	response_file := str_to_response(response, out_fname)
+	outputDirName := outputDir(doc)
+	outputFileName := outputDirName + "/docs/" + outputDirName + ".md"
+	response_file := str_to_response(response, outputFileName)
 	output_struct := &plugin.CodeGeneratorResponse{File: []*plugin.CodeGeneratorResponse_File{response_file}}
 
 	buf, err := proto.Marshal(output_struct)

@@ -8,14 +8,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/TuneLab/gob/protoc-gen-gokit-base/astmodifier"
-	templateFileAssets "github.com/TuneLab/gob/protoc-gen-gokit-base/template"
+	"github.com/TuneLab/gob/protoc-gen-truss-gokit/astmodifier"
+	templateFileAssets "github.com/TuneLab/gob/protoc-gen-truss-gokit/template"
 
-	"github.com/gengo/grpc-gateway/protoc-gen-grpc-gateway/descriptor"
+	"github.com/TuneLab/gob/gendoc/doctree"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
 	log "github.com/Sirupsen/logrus"
-	_ "github.com/davecgh/go-spew/spew"
 )
 
 func init() {
@@ -24,8 +23,8 @@ func init() {
 }
 
 type generator struct {
-	reg               *descriptor.Registry
-	files             []*descriptor.File
+	files             []*doctree.ProtoFile
+	outputDirName     string
 	templateFileNames func() []string
 	templateFile      func(string) ([]byte, error)
 	templateExec      templateExecutor
@@ -39,7 +38,7 @@ type templateExecutor struct {
 	// Import path for generated packages
 	GeneratedImport string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	Service *descriptor.Service
+	Service *doctree.ProtoService
 	// Contains the strings.ToLower() method for lowercasing Service names, methods, and fields
 	Strings stringsTemplateMethods
 }
@@ -50,8 +49,8 @@ type stringsTemplateMethods struct {
 }
 
 // New returns a new generator which generates grpc gateway files.
-func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
-	var service *descriptor.Service
+func New(files []*doctree.ProtoFile, outputDirName string) *generator {
+	var service *doctree.ProtoService
 	log.WithField("File Count", len(files)).Info("Files are being processed")
 
 	for _, file := range files {
@@ -74,19 +73,22 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	wd, _ := os.Getwd()
 	goPath := os.Getenv("GOPATH")
 	baseImportPath := strings.TrimPrefix(wd, goPath+"/src/")
+	serviceImportPath := baseImportPath + "/" + outputDirName
+	log.WithField("Output dir", outputDirName).Info("Output directory")
+	log.WithField("serviceImportPath", serviceImportPath).Info("Service path")
 	// import path for generated code that the user can edit
-	handlerImportPath := baseImportPath
+	handlerImportPath := serviceImportPath
 	// import path for generated code that user should not edit
-	generatedImportPath := baseImportPath + "/DONOTEDIT"
+	generatedImportPath := serviceImportPath + "/DONOTEDIT"
 
-	// Attaching the strings.ToLower method so that it can be used in template execution
+	// Attaching the strings.ToLower method so that it can be used in templae execution
 	stringsMethods := stringsTemplateMethods{
 		ToLower: strings.ToLower,
 	}
 
 	return &generator{
-		reg:               reg,
 		files:             files,
+		outputDirName:     outputDirName,
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
 		templateExec: templateExecutor{
@@ -98,19 +100,19 @@ func New(reg *descriptor.Registry, files []*descriptor.File) *generator {
 	}
 }
 
-func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin.CodeGeneratorResponse_File, error) {
+func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_File, error) {
 	var codeGenFiles []*plugin.CodeGeneratorResponse_File
 
 	wd, _ := os.Getwd()
 
 	var clientHandlerExists bool
-	clientPath := wd + "/client/client_handler.go"
+	clientPath := wd + "/" + g.outputDirName + "/client/client_handler.go"
 	if _, err := os.Stat(clientPath); err == nil {
 		clientHandlerExists = true
 	}
 
 	var serviceHandlerExists bool
-	servicePath := wd + "/server/service.go"
+	servicePath := wd + "/" + g.outputDirName + "/server/service.go"
 	if _, err := os.Stat(servicePath); err == nil {
 		serviceHandlerExists = true
 	}
@@ -174,10 +176,16 @@ func (g *generator) GenerateResponseFiles(targets []*descriptor.File) ([]*plugin
 			// Remove "template_files/" so that generated files do not include that directory
 			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
 
+			if strings.Contains(generatedFilePath, "cmd") {
+				generatedFilePath = strings.Replace(generatedFilePath, "servicenamesvc", g.outputDirName+"svc", -1)
+				generatedFilePath = strings.Replace(generatedFilePath, "cliclient_servicename", "cliclient_"+g.outputDirName, -1)
+			}
+
 			generatedCode = g.applyTemplate(templateFilePath, g.templateExec)
 
 			generatedCode = formatCode(generatedCode)
 		}
+		generatedFilePath = g.outputDirName + "/" + generatedFilePath
 
 		curResponseFile := plugin.CodeGeneratorResponse_File{
 			Name:    &generatedFilePath,
