@@ -3,6 +3,7 @@ package makedt
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -10,8 +11,17 @@ import (
 	"github.com/TuneLab/gob/gendoc/doctree/httpopts"
 	"github.com/TuneLab/gob/gendoc/svcparse"
 
+	log "github.com/Sirupsen/logrus"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
+
+func init() {
+	// Output to stderr instead of stdout, could also be a file.
+	log.SetOutput(os.Stderr)
+
+	// Only log the warning severity or above.
+	log.SetLevel(log.InfoLevel)
+}
 
 // Finds the package name of the proto files named on the command line
 func findDoctreePackage(req *plugin.CodeGeneratorRequest) string {
@@ -148,15 +158,16 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 
 // Searches all descendent directories for a file with name `fname`.
 func searchFileName(fname string) string {
-	fpath := ""
+	fname = path.Base(fname)
+	foundPath := ""
 	visitor := func(path string, info os.FileInfo, err error) error {
 		if info.Name() == fname {
-			fpath = path
+			foundPath = path
 		}
 		return nil
 	}
 	_ = filepath.Walk("./", visitor)
-	return fpath
+	return foundPath
 }
 
 // Parse the protobuf files for comments surrounding http options, then add
@@ -169,14 +180,17 @@ func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 	f, err := os.Open(full_path)
 	if err != nil {
 		cwd, _ := os.Getwd()
-		fmt.Fprintf(os.Stderr, "From current directory '%v', error opening file '%v', '%v'\n", cwd, full_path, err)
-		panic(err)
+		log.Warnf("From current directory '%v', error opening file '%v', '%v'\n", cwd, full_path, err)
+		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
+		return
 	}
 	lex := svcparse.NewSvcLexer(f)
 	parsed_svc, err := svcparse.ParseService(lex)
 
 	if err != nil {
-		panic(err)
+		log.Warnf("Error found while parsing file '%v': '%v\n'", full_path, err)
+		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
+		return
 	}
 
 	svc := dt.GetByName(fname).GetByName(parsed_svc.GetName()).(*doctree.ProtoService)

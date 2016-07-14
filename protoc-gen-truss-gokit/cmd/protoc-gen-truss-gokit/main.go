@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -32,11 +31,10 @@ func main() {
 	request, err := parseReq(os.Stdin)
 
 	prototree, _ := makedt.New(request)
-	outputDirName := outputDir(prototree)
 
 	prototreeDefinition := prototree.(*doctree.MicroserviceDefinition)
 
-	g := generator.New(prototreeDefinition.Files, outputDirName)
+	g := generator.New(prototreeDefinition.Files, "service")
 
 	codeGenFiles, _ := g.GenerateResponseFiles()
 
@@ -50,17 +48,4 @@ func main() {
 	if _, err := os.Stdout.Write(buf); err != nil {
 		os.Exit(1)
 	}
-}
-
-// Returns name of the output directory for the 'docs.md' file. For now, is the
-// name of the only service in the given package.
-func outputDir(dt doctree.Doctree) string {
-	md := dt.(*doctree.MicroserviceDefinition)
-	svc_name := ""
-	for _, file := range md.Files {
-		for _, svc := range file.Services {
-			svc_name = svc.GetName()
-		}
-	}
-	return svc_name
 }
