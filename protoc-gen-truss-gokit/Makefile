@@ -6,10 +6,11 @@ PLUGIN=protoc-gen-$(NAME)
 PLUGIN_CMD_DIR=./cmd/$(PLUGIN)
 
 OUTPUT=./generate
+TRUSS_GOKIT_GEN_DIR=service
 NON_EDITABLE_OUTPUT=./$(TRUSS_GOKIT_GEN_DIR)/DONOTEDIT
 
-GENERATED_SERVICE=$(TRUSS_GOKIT_GEN_DIR)svc
-GENERATED_SERVICE_CLIENT=cliclient_$(TRUSS_GOKIT_GEN_DIR)
+GENERATED_SERVICE=svc
+GENERATED_SERVICE_CLIENT=cliclient
 
 GENERATED_OUT_BIN_DIR=$(NON_EDITABLE_OUTPUT)/cmd/$(GENERATED_SERVICE)
 GENERATED_CLIENT_OUT_BIN_DIR=$(NON_EDITABLE_OUTPUT)/cmd/$(GENERATED_SERVICE_CLIENT)
@@ -47,7 +48,6 @@ code-generation: $(PLUGIN)
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
 		   --$(NAME)_out=logtostderr=true:. \
 		   $(PROTOFILES)
-	$(eval TRUSS_GOKIT_GEN_DIR=`ag --ignore "template*" --ignore "Makefile" --ignore "generator" --ignore "astmodifier" -g server/service.go | cut -d "/" -f1`)
 	mkdir -p $(NON_EDITABLE_OUTPUT)/pb
 	mkdir -p $(NON_EDITABLE_OUTPUT)/third_party/googleapis
 	cp -r $(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) $(NON_EDITABLE_OUTPUT)/third_party/googleapis/
@@ -62,12 +62,10 @@ build-generated-code: code-generation
 	go build $(GENERATED_CLIENT_OUT_BIN_DIR)/...
 
 clean:
-	# This is only for me, I know this is bad
-	$(eval TRUSS_GOKIT_GEN_DIR=`ag --ignore "template*" --ignore "Makefile" --ignore "generator" --ignore "astmodifier" -g server/service.go | cut -d "/" -f1`)
 	rm -f $(PLUGIN)
 	rm -f $(GENERATED_SERVICE)
 	rm -f $(GENERATED_SERVICE_CLIENT)
-	ag --ignore "template*" --ignore "Makefile" --ignore "generator" --ignore "astmodifier" -g server/service.go | cut -d "/" -f1 | xargs rm -r
+	rm -rf $(TRUSS_GOKIT_GEN_DIR)
 
 test:
 	git --no-pager diff --color=always --no-index original/ $(OUTPUT)

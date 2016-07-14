@@ -176,11 +176,6 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 			// Remove "template_files/" so that generated files do not include that directory
 			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
 
-			if strings.Contains(generatedFilePath, "cmd") {
-				generatedFilePath = strings.Replace(generatedFilePath, "servicenamesvc", g.outputDirName+"svc", -1)
-				generatedFilePath = strings.Replace(generatedFilePath, "cliclient_servicename", "cliclient_"+g.outputDirName, -1)
-			}
-
 			generatedCode = g.applyTemplate(templateFilePath, g.templateExec)
 
 			generatedCode = formatCode(generatedCode)
