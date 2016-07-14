@@ -2,13 +2,31 @@ package doctree
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
+
+func init() {
+	// Output to stderr instead of stdout, could also be a file.
+	log.SetOutput(os.Stderr)
+
+	// Only log the warning severity or above.
+	log.SetLevel(log.InfoLevel)
+}
+
+// cleanStr make strings nicely printable
+func cleanStr(s string) string {
+	cleanval := strings.Replace(s, "\n", "\\n", -1)
+	cleanval = strings.Replace(cleanval, "\t", "\\t", -1)
+	cleanval = strings.Replace(cleanval, "\"", "\\\"", -1)
+	return cleanval
+}
 
 // Parses a protobuf string to return the 'label' of the field, if it exists.
 func protoFieldLabel(proto_tag string) string {
@@ -112,7 +130,11 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 // interface, garunteeing that it has a Name, a Description (comments about the
 // node), and a GetByName method which allows you to query that node for any
 // child nodes with the name you specify.
-func buildNamePath(path []int32, node reflect.Value) []string {
+func buildNamePath(path []int32, node reflect.Value) ([]string, error) {
+	log.WithFields(log.Fields{
+		"path": path,
+		"node": node.Type().String(),
+	}).Info("buildNamePath called with")
 	var st_name string
 	switch node.Kind() {
 	case reflect.String:
@@ -121,7 +143,8 @@ func buildNamePath(path []int32, node reflect.Value) []string {
 		node = node.Elem()
 	default:
 		if node.Kind() != reflect.Struct {
-			panic(fmt.Sprintf("walkNextStruct expected struct, found '%v'", node.Kind()))
+			err := fmt.Errorf("walkNextStruct expected struct, found '%v'", node.Kind())
+			return nil, err
 		} else {
 			st_name = *node.FieldByName("Name").Interface().(*string)
 		}
@@ -130,31 +153,37 @@ func buildNamePath(path []int32, node reflect.Value) []string {
 	// Derive special information about this location, since it is the terminus
 	// of the path
 	if len(path) == 0 {
-		return []string{st_name}
+		return []string{st_name}, nil
 	}
 
 	field, _, err := getProtobufField(int(path[0]), node)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// If the path ends here, then the path is indicating this field, and not
 	// anything more specific
 	if len(path) == 1 {
-		panic(fmt.Sprintf("Comment somehow attached to a field label, time to panic!\n%v\n%v", path, node))
-		return []string{""}
+		err := fmt.Errorf("Comment somehow attached to a field label, time to panic!\n%v\n%v", path, node)
+		return nil, err
 	}
 
 	// Since everything after this point is assuming that field is a slice, if
 	// it's not we recurse
 	if field.Kind() != reflect.Slice {
-		rv := buildNamePath(path[1:], field)
-		return append([]string{st_name}, rv...)
+		log.WithFields(log.Fields{
+			"field_type": field.Type().String(),
+		}).Info("The given field is not a slice, recursing")
+		rv, err := buildNamePath(path[1:], field)
+		if err != nil {
+			return nil, err
+		}
+		return append([]string{st_name}, rv...), nil
 	}
 
 	if int(path[1]) >= field.Len() {
-		panic(fmt.Sprintf("Second item in path ('%v') is longer than length of current field ('%v').", path[1], field.Len()))
-		return []string{""}
+		err := fmt.Errorf("Second item in path ('%v') is longer than length of current field ('%v').", path[1], field.Len())
+		return nil, err
 	}
 	next_node := getCollectionIndex(field, int(path[1]))
 
@@ -166,8 +195,14 @@ func buildNamePath(path []int32, node reflect.Value) []string {
 		clean_next = next_node
 	}
 
-	rv := buildNamePath(path[2:], clean_next)
-	return append([]string{st_name}, rv...)
+	log.WithFields(log.Fields{
+		"field_type": field.Type().String(),
+	}).Info("The given field is a slice")
+	rv, err := buildNamePath(path[2:], clean_next)
+	if err != nil {
+		return nil, err
+	}
+	return append([]string{st_name}, rv...), nil
 }
 
 // Takes a comment and scrubs it of any extraneous artifacts (newlines, extra
@@ -207,15 +242,26 @@ func AssociateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 			// all sourcelocations with comments must point to concrete things,
 			// so only recurse on those.
 			if len(lead) > 1 || len(location.LeadingDetachedComments) > 1 {
+				lf := log.Fields{
+					"location":                 location.GetPath(),
+					"leading comment":          cleanStr(lead),
+					"leading detached comment": location.LeadingDetachedComments,
+				}
 
 				// Only known case where a comment is attached not to an
 				// instance of a struct, but to a field directly. And it's when
 				// you comment on the package declaration itself.
 				if len(location.Path) == 1 {
+					log.WithFields(lf).Info("Comment describes package name")
 					dt.SetDescription(scrubComments(lead))
 				} else {
-					name_path := buildNamePath(location.Path, reflect.ValueOf(*file))
-					dt.SetComment(name_path, scrubComments(lead))
+					log.WithFields(lf).Info("Comment is attached to some location, finding")
+					name_path, err := buildNamePath(location.Path, reflect.ValueOf(*file))
+					if err != nil {
+						log.Warnf("Couldn't place comment '%v' due to error traversing tree: %v\n", cleanStr(lead), err)
+					} else {
+						dt.SetComment(name_path, scrubComments(lead))
+					}
 				}
 			}
 		}

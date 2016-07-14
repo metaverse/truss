@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
 	"github.com/TuneLab/gob/gendoc/doctree/makedt"
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
