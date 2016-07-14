@@ -24,7 +24,7 @@ import (
 )
 
 func parseErr(expected string, line int, val string) error {
-	err := fmt.Errorf("Parser expected %v in line '%v', instead found '%v'\n", expected, line, val)
+	err := fmt.Errorf("Parser expected %v in line '%v', instead found '%v'", expected, line, val)
 	return err
 }
 
@@ -34,7 +34,7 @@ func fastForwardTill(lex *SvcLexer, delim string) error {
 	for {
 		tk, val := lex.GetTokenIgnoreWhitespace()
 		if tk == EOF || tk == ILLEGAL {
-			return fmt.Errorf("In fastForwardTill found token of type '%v' and val '%v'\n", tk, val)
+			return fmt.Errorf("In fastForwardTill found token of type '%v' and val '%v'", tk, val)
 		} else if val == delim {
 			return nil
 		}

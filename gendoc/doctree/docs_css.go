@@ -14,7 +14,7 @@ body{
     line-height      : 1.5;
     margin           : 2em 3em;
     text-align       :left;
-    font-size        : 1.2em;
+    font-size        : 16px;
     padding          : 0 100px 0 100px;
 
     width         : 1024px;
@@ -32,6 +32,7 @@ h1 {
 }
 h2{
     margin-bottom : 1em;
+    padding-top   : 0.5em;
     color         : #333;
     font-size     : 36px;
 }
@@ -69,6 +70,7 @@ pre code {
 table {
 	border-collapse: collapse; border-spacing: 0;
 	width: 100%;
+	margin-bottom : 3em;
 }
 td, th {
 	vertical-align: top; padding: 4px 10px; border: 1px solid #bbb;
