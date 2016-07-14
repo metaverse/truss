@@ -1,5 +1,6 @@
 # truss
 
+
 The `truss` binary reads in gRPC files that define a single gRPC *service* and outputs:
 
 1. Markdown and html documentation based on comments in the gRPC files.
@@ -15,14 +16,22 @@ The `truss` binary reads in gRPC files that define a single gRPC *service* and o
 	- no-op handler methods for each *service* rpc, ready for marshalling command line arguments into a request object
 4. An web based api explorer (through naive swagger generation)
 
-## Implementation details
+## Install
 
-### Requirements
+```
+$ go get github.com/TuneLab/gob/truss/cmd/...
+$ go install github.com/TuneLab/gob/truss/cmd/...
+$ truss microservice.md
+```
+
+## Requirements
 
 `truss` must:
 - Be invoked from some directory within your `$GOPATH/src`
 - Be passed `.proto` file paths that:
 	- Are withing the current directory
+
+## Implementation details
 
 ### Generated file structure
 
