@@ -40,29 +40,22 @@ gobindata:
 	go-bindata -pkg template -o ./template/template.go -ignore swp template_files/...
 
 $(PLUGIN): gobindata
-	go build ./cmd/protoc-gen-gokit-base
+	go install ./cmd/protoc-gen-gokit-base
 
 code-generation: $(PLUGIN)
-	mkdir -p $(NON_EDITABLE_OUTPUT)
 	mkdir -p $(NON_EDITABLE_OUTPUT)/pb
+	mkdir -p $(NON_EDITABLE_OUTPUT)/third_party/googleapis
+	cp -r $(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) $(NON_EDITABLE_OUTPUT)/third_party/googleapis/
 	protoc  -I/usr/local/include -I. \
-	   		-I.. \
-			-I$(GOPATH)/src \
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
      		--go_out=Mgoogle/api/annotations.proto=$(GOOGLE_HTTP_API_DIR)/google/api,plugins=grpc:$(NON_EDITABLE_OUTPUT)/ \
 			$(PROTOFILES)
 	@echo -e '$(RUN_MSG)'
-	# The plugin is copied into the output directory so that it can be called from within that directory
-	cp $(PLUGIN) $(OUTPUT)
-	# Currently the plugin assumes that the output directory of the plugin is the current directory (.), otherwise it will fail
 	mkdir -p $(OUTPUT)/pb
 	cp $(PROTOFILES) $(OUTPUT)/pb/
 	cd $(OUTPUT) && \
 	protoc -I/usr/local/include -I. \
-     	   -I.. \
-	   	   -I$(GOPATH)/src \
      		-I$(GOPATH)/src/$(GOOGLE_HTTP_API_DIR) \
-		   --plugin=$(PLUGIN) \
 		   --$(NAME)_out=logtostderr=true:. \
 		   $(PROTOFILES)
 
