@@ -30,19 +30,6 @@ func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 	return req, nil
 }
 
-// Returns name of the output directory for the 'docs.md' file. For now, is the
-// name of the only service in the given package.
-func outputDir(dt doctree.Doctree) string {
-	md := dt.(*doctree.MicroserviceDefinition)
-	svc_name := ""
-	for _, file := range md.Files {
-		for _, svc := range file.Services {
-			svc_name = svc.GetName()
-		}
-	}
-	return svc_name
-}
-
 func main() {
 	flag.Parse()
 
@@ -57,7 +44,7 @@ func main() {
 	doc, _ := makedt.New(request)
 	response := doc.Markdown()
 
-	out_fname := outputDir(doc) + "/docs.md"
+	out_fname := "service/docs.md"
 	response_file := str_to_response(response, out_fname)
 	output_struct := &plugin.CodeGeneratorResponse{File: []*plugin.CodeGeneratorResponse_File{response_file}}
 

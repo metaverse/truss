@@ -148,15 +148,16 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 
 // Searches all descendent directories for a file with name `fname`.
 func searchFileName(fname string) string {
-	fpath := ""
+	fname = path.Base(fname)
+	foundPath := ""
 	visitor := func(path string, info os.FileInfo, err error) error {
 		if info.Name() == fname {
-			fpath = path
+			foundPath = path
 		}
 		return nil
 	}
 	_ = filepath.Walk("./", visitor)
-	return fpath
+	return foundPath
 }
 
 // Parse the protobuf files for comments surrounding http options, then add
