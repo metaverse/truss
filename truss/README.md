@@ -144,7 +144,9 @@ Five stages of generation happen.
 	│       └── transport_http.go
 	└── microservice.proto
 	```
+
 5. Finally, the services are built
+
 	```
 	.
 	├── service
