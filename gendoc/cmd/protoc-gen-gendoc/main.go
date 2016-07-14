@@ -44,7 +44,7 @@ func main() {
 	doc, _ := makedt.New(request)
 	response := doc.Markdown()
 
-	out_fname := "service/docs.md"
+	out_fname := "service/docs/docs.md"
 	response_file := str_to_response(response, out_fname)
 	output_struct := &plugin.CodeGeneratorResponse{File: []*plugin.CodeGeneratorResponse_File{response_file}}
 
