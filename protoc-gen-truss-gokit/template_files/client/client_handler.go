@@ -1,7 +1,7 @@
 package clienthandler
 
 import (
-	"{{.GeneratedImport -}} /pb"
+	pb "{{.GeneratedImport -}} /pb"
 )
 
 

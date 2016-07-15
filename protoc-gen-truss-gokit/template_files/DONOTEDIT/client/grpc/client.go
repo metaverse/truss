@@ -24,7 +24,7 @@ import (
 	// This Service
 	handler "{{$HandlerImport -}} /server"
 	addsvc "{{$GeneratedImport -}}"
-	"{{$GeneratedImport -}} /pb"
+	pb "{{$GeneratedImport -}} /pb"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the
@@ -47,7 +47,7 @@ func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger)
 			"{{$i.GetName}}",
 			addsvc.EncodeGRPC{{$i.GetName}}Request,
 			addsvc.DecodeGRPC{{$i.GetName}}Response,
-			pb.{{$i.GetName}}Reply{},
+			pb.{{$i.ResponseType.GetName}}{},
 			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "{{$i.GetName}}", logger)),
 		).Endpoint()
 		{{call $strings.ToLower $i.GetName}}Endpoint = opentracing.TraceClient(tracer, "{{$i.GetName}}")({{call $strings.ToLower $i.GetName}}Endpoint)

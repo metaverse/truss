@@ -37,7 +37,7 @@ import (
 	// This Service
 	handler "{{$HandlerImport -}} /server"
 	"{{$GeneratedImport -}} "
-	"{{$GeneratedImport -}} /pb"
+	pb "{{$GeneratedImport -}} /pb"
 
 )
 
@@ -201,7 +201,7 @@ func main() {
 
 		srv := addsvc.MakeGRPCServer(ctx, endpoints, tracer, logger)
 		s := grpc.NewServer()
-		pb.RegisterAddServer(s, srv)
+		pb.Register{{$Service.GetName}}Server(s, srv)
 
 		logger.Log("addr", *grpcAddr)
 		errc <- s.Serve(ln)

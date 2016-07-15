@@ -16,7 +16,7 @@ import (
 	_ "github.com/go-kit/kit/metrics"
 
 	"{{.HandlerImport -}} /server"
-	"{{.GeneratedImport -}} /pb"
+	pb "{{.GeneratedImport -}} /pb"
 )
 
 // Endpoints collects all of the endpoints that compose an add service. It's

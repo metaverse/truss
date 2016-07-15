@@ -25,7 +25,6 @@ import (
 	// This Service
 	handler "{{$HandlerImport -}} /server"
 	clientHandler "{{$HandlerImport -}} /client"
-	_ "{{$GeneratedImport -}} /pb"
 	grpcclient "{{$GeneratedImport -}} /client/grpc"
 	//httpclient "{{$GeneratedImport -}} /client/http"
 )

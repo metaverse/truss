@@ -12,7 +12,7 @@ import (
 	_ "github.com/go-kit/kit/log"
 	_ "github.com/go-kit/kit/metrics"
 
-	"{{.GeneratedImport -}} /pb"
+	pb "{{.GeneratedImport -}} /pb"
 )
 
 
