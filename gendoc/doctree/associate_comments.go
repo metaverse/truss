@@ -134,7 +134,7 @@ func buildNamePath(path []int32, node reflect.Value) ([]string, error) {
 	log.WithFields(log.Fields{
 		"path": path,
 		"node": node.Type().String(),
-	}).Info("buildNamePath called with")
+	}).Debug("buildNamePath called with")
 	var st_name string
 	switch node.Kind() {
 	case reflect.String:
@@ -173,7 +173,7 @@ func buildNamePath(path []int32, node reflect.Value) ([]string, error) {
 	if field.Kind() != reflect.Slice {
 		log.WithFields(log.Fields{
 			"field_type": field.Type().String(),
-		}).Info("The given field is not a slice, recursing")
+		}).Debug("The given field is not a slice, recursing")
 		rv, err := buildNamePath(path[1:], field)
 		if err != nil {
 			return nil, err
@@ -197,7 +197,7 @@ func buildNamePath(path []int32, node reflect.Value) ([]string, error) {
 
 	log.WithFields(log.Fields{
 		"field_type": field.Type().String(),
-	}).Info("The given field is a slice")
+	}).Debug("The given field is a slice")
 	rv, err := buildNamePath(path[2:], clean_next)
 	if err != nil {
 		return nil, err
@@ -252,13 +252,13 @@ func AssociateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 				// instance of a struct, but to a field directly. And it's when
 				// you comment on the package declaration itself.
 				if len(location.Path) == 1 {
-					log.WithFields(lf).Info("Comment describes package name")
+					log.WithFields(lf).Debug("Comment describes package name")
 					dt.SetDescription(scrubComments(lead))
 				} else {
-					log.WithFields(lf).Info("Comment is attached to some location, finding")
+					log.WithFields(lf).Debug("Comment is attached to some location, finding")
 					name_path, err := buildNamePath(location.Path, reflect.ValueOf(*file))
 					if err != nil {
-						log.Warnf("Couldn't place comment '%v' due to error traversing tree: %v\n", cleanStr(lead), err)
+						log.Debugf("Couldn't place comment '%v' due to error traversing tree: %v", cleanStr(lead), err)
 					} else {
 						dt.SetComment(name_path, scrubComments(lead))
 					}

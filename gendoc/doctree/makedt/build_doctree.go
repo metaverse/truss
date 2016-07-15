@@ -188,7 +188,7 @@ func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 	parsed_svc, err := svcparse.ParseService(lex)
 
 	if err != nil {
-		log.Warnf("Error found while parsing file '%v': '%v\n'", full_path, err)
+		log.Warnf("Error found while parsing file '%v': %v", full_path, err)
 		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
 		return
 	}
