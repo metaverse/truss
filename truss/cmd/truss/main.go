@@ -21,6 +21,10 @@ var workingDirectory string
 var genImportPath string
 var GOPATH string
 
+var generatePbGoCmd string
+var generateDocsCmd string
+var generateGoKitCmd string
+
 func init() {
 	log.SetLevel(log.DebugLevel)
 
@@ -33,6 +37,10 @@ func init() {
 	GOPATH = os.Getenv("GOPATH")
 
 	genImportPath = strings.TrimPrefix(workingDirectory, GOPATH+"/src/")
+
+	generatePbGoCmd = "--go_out=Mgoogle/api/annotations.proto=" + genImportPath + GOOGLE_API_HTTP_IMPORT_PATH + "/google/api,plugins=grpc:./service/DONOTEDIT/compiledpb"
+	generateDocsCmd = "--gendoc_out=."
+	generateGoKitCmd = "--truss-gokit_out=."
 }
 
 func main() {
@@ -68,21 +76,24 @@ func main() {
 		log.WithField("DirPath", "service/DONOTEDIT/compiledpb").WithError(err).Fatal("Cannot create directories")
 	}
 
-	protoc(definitionPath)
+	protoc(definitionPath, generatePbGoCmd)
+	protoc(definitionPath, generateDocsCmd)
+	protoc(definitionPath, generateGoKitCmd)
 }
 
-func protoc(definitionPath string) error {
+func protoc(definitionPath string, command string) error {
 
 	protocExec := exec.Command(
 		"protoc",
 		"-I/usr/local/include",
 		"-I.",
 		"-I"+workingDirectory+GOOGLE_API_HTTP_IMPORT_PATH,
-		"--go_out=Mgoogle/api/annotations.proto="+genImportPath+GOOGLE_API_HTTP_IMPORT_PATH+"/google/api,plugins=grpc:./service/DONOTEDIT/compiledpb",
+		command,
 		definitionPath,
 	)
 
 	val, err := protocExec.Output()
+	fmt.Println(strings.Join(protocExec.Args, " "))
 
 	if err != nil {
 		log.WithFields(log.Fields{
