@@ -258,7 +258,7 @@ func AssociateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
 					log.WithFields(lf).Debug("Comment is attached to some location, finding")
 					name_path, err := buildNamePath(location.Path, reflect.ValueOf(*file))
 					if err != nil {
-						log.Warnf("Couldn't place comment '%v' due to error traversing tree: %v", cleanStr(lead), err)
+						log.Debugf("Couldn't place comment '%v' due to error traversing tree: %v", cleanStr(lead), err)
 					} else {
 						dt.SetComment(name_path, scrubComments(lead))
 					}
