@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package mventitiespb;
+
+message PartnerGetByIdRequest {
+  int64 id = 1;
+}
+
+message PartnerGetByIdsRequest {
+  repeated int64 ids = 1;
+}
+
+message PartnerGetByRefIdRequest {
+  int64 ref_id = 1;
+  string ref_type = 2;
+  string ref_id_sub = 3;
+}
+
+message PartnerGetByClientVendorRequest {
+  int64 client_id = 1;
+  int64 vendor_id = 2;
+}
+
+message PartnerGetByClientVendorNameRequest {
+  int64 client_id = 1;
+  string vendor_name = 2;
+}
+
+message PartnerCreateRequest {
+  int64 client_id = 1;
+  int64 vendor_id = 2;
+  
+  string name = 3;
+  int64 ref_id = 4;
+  string ref_type = 5;  
+  string ref_id_sub = 6;
+}
+
+message PartnerEntities {
+  repeated PartnerEntity results = 1;
+}
+
+message PartnerEntity {
+  int64 id = 1;
+  int64 ref_id = 2;
+  string ref_type = 3;
+  string ref_id_sub = 4;
+  int64 client_id = 5;
+  int64 vendor_id = 6;
+  
+  string name = 7;
+
+  string created = 8;
+  string modified = 9;
+  string deleted = 10;
+}

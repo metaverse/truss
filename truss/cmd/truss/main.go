@@ -17,32 +17,46 @@ import (
 const GENERATED_PATH = "service"
 const GOOGLE_API_HTTP_IMPORT_PATH = "/service/DONOTEDIT/third_party/googleapis"
 
-var workingDirectory string
-var genImportPath string
-var GOPATH string
+type globalStruct struct {
+	workingDirectory string
+	genImportPath    string
+	GOPATH           string
+	generatePbGoCmd  string
+	generateDocsCmd  string
+	generateGoKitCmd string
+}
 
-var generatePbGoCmd string
-var generateDocsCmd string
-var generateGoKitCmd string
+var global globalStruct
 
+// We build up environment knowledge here
+// 1. Get working directory
+// 2. Get $GOPATH
+// 3. Use 1,2 to build path for golang imports for this package
+// 4. Build 3 proto commands to invoke
 func init() {
 	log.SetLevel(log.DebugLevel)
 
 	var err error
-	workingDirectory, err = os.Getwd()
+	global.workingDirectory, err = os.Getwd()
 	if err != nil {
 		log.WithError(err).Fatal("Cannot get working directory")
 	}
 
-	GOPATH = os.Getenv("GOPATH")
+	global.GOPATH = os.Getenv("GOPATH")
 
-	genImportPath = strings.TrimPrefix(workingDirectory, GOPATH+"/src/")
+	// From `$GOPATH/src/org/user/thing` get `org/user/thing` from importing in golang
+	global.genImportPath = strings.TrimPrefix(global.workingDirectory, global.GOPATH+"/src/")
 
-	generatePbGoCmd = "--go_out=Mgoogle/api/annotations.proto=" + genImportPath + GOOGLE_API_HTTP_IMPORT_PATH + "/google/api,plugins=grpc:./service/DONOTEDIT/pb"
-	generateDocsCmd = "--gendoc_out=."
-	generateGoKitCmd = "--truss-gokit_out=."
+	// Generate grpc golang code
+	global.generatePbGoCmd = "--go_out=Mgoogle/api/annotations.proto=" + global.genImportPath + GOOGLE_API_HTTP_IMPORT_PATH + "/google/api,plugins=grpc:./service/DONOTEDIT/pb"
+	// Generate documentation
+	global.generateDocsCmd = "--gendoc_out=."
+	// Generate gokit-base service
+	global.generateGoKitCmd = "--truss-gokit_out=."
+
 }
 
+// Stages are documented in README.md
 func main() {
 	flag.Parse()
 
@@ -51,11 +65,38 @@ func main() {
 		os.Exit(1)
 	}
 
-	definitionPath := flag.Arg(0)
+	definitionPaths := flag.Args()
 
+	// Stage 1
+	global.buildDirectories()
+	global.outputGoogleImport()
+
+	// Stage 2, 3, 4
+	global.protoc(definitionPaths, global.generatePbGoCmd)
+	global.protoc(definitionPaths, global.generateDocsCmd)
+	global.protoc(definitionPaths, global.generateGoKitCmd)
+
+	// Stage 5
+	goBuild("server", "./service/DONOTEDIT/cmd/svc/...")
+	goBuild("cliclient", "./service/DONOTEDIT/cmd/cliclient/...")
+
+}
+
+// buildDirectories puts the following directories in place
+// .
+// └── service
+//     ├── bin
+//     └── DONOTEDIT
+//         ├── pb
+//         └── third_party
+//             └── googleapis
+//                 └── google
+//                     └── api
+func (g globalStruct) buildDirectories() {
+	// third_party created by going through assets in data
+	// and creating directoires that are not there
 	for _, filePath := range data.AssetNames() {
-		fileBytes, _ := data.Asset(filePath)
-		fullPath := workingDirectory + "/" + filePath
+		fullPath := g.workingDirectory + "/" + filePath
 
 		dirPath := filepath.Dir(fullPath)
 
@@ -63,30 +104,34 @@ func main() {
 		if err != nil {
 			log.WithField("DirPath", dirPath).WithError(err).Fatal("Cannot create directories")
 		}
-
-		err = ioutil.WriteFile(fullPath, fileBytes, 0666)
-		if err != nil {
-			log.WithField("FilePath", fullPath).WithError(err).Fatal("Cannot create ")
-		}
 	}
 
+	// Create the directory where protoc will store the compiled .pb.go files
 	err := os.MkdirAll("service/DONOTEDIT/pb", 0777)
 	if err != nil {
 		log.WithField("DirPath", "service/DONOTEDIT/pb").WithError(err).Fatal("Cannot create directories")
 	}
-	protoc(definitionPath, generatePbGoCmd)
 
-	protoc(definitionPath, generateDocsCmd)
-	protoc(definitionPath, generateGoKitCmd)
-
+	// Create the directory where go build will put the compiled binaries
 	err = os.MkdirAll("service/bin", 0777)
 	if err != nil {
 		log.WithField("DirPath", "service/bin").WithError(err).Fatal("Cannot create directories")
 	}
+}
 
-	goBuild("server", "./service/DONOTEDIT/cmd/svc/...")
-	goBuild("cliclient", "./service/DONOTEDIT/cmd/cliclient/...")
+// outputGoogleImport places imported and required google.api.http protobuf option files
+// into their required directories as part of stage one generation
+func (g globalStruct) outputGoogleImport() {
+	// Output files that are stored in data package
+	for _, filePath := range data.AssetNames() {
+		fileBytes, _ := data.Asset(filePath)
+		fullPath := g.workingDirectory + "/" + filePath
 
+		err := ioutil.WriteFile(fullPath, fileBytes, 0666)
+		if err != nil {
+			log.WithField("FilePath", fullPath).WithError(err).Fatal("Cannot create ")
+		}
+	}
 }
 
 func goBuild(name string, path string) {
@@ -110,15 +155,19 @@ func goBuild(name string, path string) {
 	}
 }
 
-func protoc(definitionPath string, command string) {
+func (g globalStruct) protoc(definitionPaths []string, command string) {
+	cmdArgs := []string{
+		"-I/usr/local/include",
+		"-I.",
+		"-I" + g.workingDirectory + GOOGLE_API_HTTP_IMPORT_PATH,
+		command,
+	}
+	// Append each definition file path to the end of that command args
+	cmdArgs = append(cmdArgs, definitionPaths...)
 
 	protocExec := exec.Command(
 		"protoc",
-		"-I/usr/local/include",
-		"-I.",
-		"-I"+workingDirectory+GOOGLE_API_HTTP_IMPORT_PATH,
-		command,
-		definitionPath,
+		cmdArgs...,
 	)
 
 	log.WithField("cmd", strings.Join(protocExec.Args, " ")).Info("protoc")
@@ -130,13 +179,4 @@ func protoc(definitionPath string, command string) {
 			"input":  protocExec.Args,
 		}).WithError(err).Fatal("Protoc call failed")
 	}
-
-}
-
-func check(err error) {
-	if err != nil {
-		log.WithError(err).Warn("Error")
-		os.Exit(1)
-	}
-
 }

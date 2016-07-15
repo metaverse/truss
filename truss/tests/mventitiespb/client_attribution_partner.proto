@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package mventitiespb;
+
+message ClientAttributionPartnerGetByIdRequest {
+  int64 id = 1;
+}
+
+message ClientAttributionPartnerGetByIdsRequest {
+  repeated int64 ids = 1;
+}
+
+message ClientAttributionPartnerGetByPartnerRefIdRequest {
+  int64 partner_ref_id = 1;
+  string partner_ref_type = 2;
+}
+
+message ClientAttributionPartnerFindRequest {
+  string where = 1;
+  repeated string args = 2;
+  string order_by = 3;
+  int64 limit = 4;
+  int64 offset = 5;  
+}
+
+message ClientAttributionPartnerCreateRequest {
+  int64 client_id = 1;
+  int64 vendor_id = 2;
+  int64 partner_ref_id = 3;
+  string partner_ref_type = 4;  
+  string name = 5;
+}
+
+message ClientAttributionPartnerUpdateRequest {
+  int64 id = 1;
+  int64 client_id = 2;
+  int64 vendor_id = 3;
+  int64 partner_ref_id = 4;
+  string partner_ref_type = 5;  
+  string name = 6;
+}
+
+message ClientAttributionPartnerEntities {
+  repeated ClientAttributionPartnerEntity results = 1;
+}
+
+message ClientAttributionPartnerEntity {
+  int64 id = 1;
+  int64 client_id = 2;
+  int64 vendor_id = 3;
+  int64 partner_ref_id = 4;
+  string partner_ref_type = 5;  
+  string name = 6;
+  string created = 7;
+  string modified = 8;
+  string deleted = 9;
+}
+
+

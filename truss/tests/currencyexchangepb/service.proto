@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package currencyexchangepb;
+import "exchange_rate.proto";
+import "google/api/annotations.proto";
+
+service CurrencyExchangeService {
+  rpc ExchangeRateGetRate(ExchangeRateGetRateRequest) returns (ExchangeRateGetRateResponse) {
+		option (google.api.http) = {
+			get: "/rate/query"
+		};
+	}
+  rpc ExchangeRateConvert(ExchangeRateConvertRequest) returns (ExchangeRateConvertResponse) {
+		option (google.api.http) = {
+			get: "/rate/query"
+		};
+	}
+  rpc Status(StatusRequest) returns (StatusResponse) {}
+  rpc Ping(PingRequest) returns (PingResponse) {}
+}
+
+enum ServiceStatus {
+  FAIL = 0;
+  OK = 1;
+}
+
+message StatusRequest {
+  bool full = 1;
+}
+
+message StatusResponse {
+  ServiceStatus status = 1;
+}
+
+message PingRequest {}
+
+message PingResponse {
+  ServiceStatus status = 1;
+}

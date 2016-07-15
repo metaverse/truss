@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package mvchronopb;
+
+// NotificationRequest is the minumum data needed to
+// create and bootstrap a Task that the scheduler will
+// being to dispatch work for
+message NotificationRequest {
+  int64 client_id = 1;
+  int64 partner_id = 2;
+  int64 vendor_id = 3;
+  string credentials_ref_id = 4;
+  string status = 5;
+}
+
+// NotificationResponse return a success
+// field on whether the notification was recieved
+message NotificationResponse {
+  string task_id = 1;
+}
+
+message RetryRequest {
+  int64 job_id = 1;
+}
+
+message RetryResponse {
+
+}
