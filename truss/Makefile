@@ -12,5 +12,5 @@ clean:
 	rm -r service
 
 test:
-	truss microservice.proto
+	truss addsvc.proto
 

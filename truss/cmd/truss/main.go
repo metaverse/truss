@@ -38,7 +38,7 @@ func init() {
 
 	genImportPath = strings.TrimPrefix(workingDirectory, GOPATH+"/src/")
 
-	generatePbGoCmd = "--go_out=Mgoogle/api/annotations.proto=" + genImportPath + GOOGLE_API_HTTP_IMPORT_PATH + "/google/api,plugins=grpc:./service/DONOTEDIT/compiledpb"
+	generatePbGoCmd = "--go_out=Mgoogle/api/annotations.proto=" + genImportPath + GOOGLE_API_HTTP_IMPORT_PATH + "/google/api,plugins=grpc:./service/DONOTEDIT/pb"
 	generateDocsCmd = "--gendoc_out=."
 	generateGoKitCmd = "--truss-gokit_out=."
 }
@@ -52,7 +52,6 @@ func main() {
 	}
 
 	definitionPath := flag.Arg(0)
-	fmt.Println(definitionPath)
 
 	for _, filePath := range data.AssetNames() {
 		fileBytes, _ := data.Asset(filePath)
@@ -71,17 +70,47 @@ func main() {
 		}
 	}
 
-	err := os.MkdirAll("service/DONOTEDIT/compiledpb", 0777)
+	err := os.MkdirAll("service/DONOTEDIT/pb", 0777)
 	if err != nil {
-		log.WithField("DirPath", "service/DONOTEDIT/compiledpb").WithError(err).Fatal("Cannot create directories")
+		log.WithField("DirPath", "service/DONOTEDIT/pb").WithError(err).Fatal("Cannot create directories")
 	}
-
 	protoc(definitionPath, generatePbGoCmd)
+
 	protoc(definitionPath, generateDocsCmd)
 	protoc(definitionPath, generateGoKitCmd)
+
+	err = os.MkdirAll("service/bin", 0777)
+	if err != nil {
+		log.WithField("DirPath", "service/bin").WithError(err).Fatal("Cannot create directories")
+	}
+
+	goBuild("server", "./service/DONOTEDIT/cmd/svc/...")
+	goBuild("cliclient", "./service/DONOTEDIT/cmd/cliclient/...")
+
 }
 
-func protoc(definitionPath string, command string) error {
+func goBuild(name string, path string) {
+
+	goBuildExec := exec.Command(
+		"go",
+		"build",
+		"-o",
+		"service/bin/"+name,
+		path,
+	)
+
+	log.WithField("cmd", strings.Join(goBuildExec.Args, " ")).Info("go build")
+	val, err := goBuildExec.Output()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"output": string(val),
+			"input":  goBuildExec.Args,
+		}).WithError(err).Fatal("Protoc call failed")
+	}
+}
+
+func protoc(definitionPath string, command string) {
 
 	protocExec := exec.Command(
 		"protoc",
@@ -92,8 +121,8 @@ func protoc(definitionPath string, command string) error {
 		definitionPath,
 	)
 
+	log.WithField("cmd", strings.Join(protocExec.Args, " ")).Info("protoc")
 	val, err := protocExec.Output()
-	fmt.Println(strings.Join(protocExec.Args, " "))
 
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -101,8 +130,6 @@ func protoc(definitionPath string, command string) error {
 			"input":  protocExec.Args,
 		}).WithError(err).Fatal("Protoc call failed")
 	}
-
-	return nil
 
 }
 
