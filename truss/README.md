@@ -19,9 +19,8 @@ The `truss` binary reads in gRPC files that define a single gRPC *service* and o
 ## Install
 
 ```
-$ go get github.com/TuneLab/gob/truss/cmd/...
-$ go install github.com/TuneLab/gob/truss/cmd/...
-$ truss microservice.md
+$ go get -u -v github.com/TuneLab/gob/...
+
 ```
 
 ## Requirements

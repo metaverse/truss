@@ -123,7 +123,7 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 	}
 	serviceFunctions = append(serviceFunctions, "NewBasicService")
 	for _, templateFilePath := range g.templateFileNames() {
-		if filepath.Ext(templateFilePath) != ".go" {
+		if filepath.Ext(templateFilePath) != ".gotemplate" {
 			log.WithField("Template file", templateFilePath).Debug("Skipping rendering non-buildable partial template")
 			continue
 		}
@@ -131,7 +131,7 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 		var generatedFilePath string
 		var generatedCode string
 
-		if filepath.Base(templateFilePath) == "service.go" && serviceHandlerExists {
+		if filepath.Base(templateFilePath) == "service.gotemplate" && serviceHandlerExists {
 			log.Info("server/service.go exists")
 			astMod := astmodifier.New(servicePath)
 
@@ -154,7 +154,7 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 			generatedFilePath = "server/service.go"
 			generatedCode = formatCode(code.String())
 
-		} else if filepath.Base(templateFilePath) == "client_handler.go" && clientHandlerExists {
+		} else if filepath.Base(templateFilePath) == "client_handler.gotemplate" && clientHandlerExists {
 			log.Info("client/client_handler.go exists")
 			astMod := astmodifier.New(clientPath)
 
@@ -175,6 +175,9 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 		} else {
 			// Remove "template_files/" so that generated files do not include that directory
 			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
+
+			// Change file path from .gotemplate to .go
+			generatedFilePath = strings.TrimSuffix(generatedFilePath, "template")
 
 			generatedCode = g.applyTemplate(templateFilePath, g.templateExec)
 
