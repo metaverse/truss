@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package gendocunittests;
+import "google/api/annotations.proto";
+
+// A totally empty message, for use in these basic RPC definitions
+message Empty {}
+
+service ExampleService {
+	rpc ExampleCommentTrailingThree(Empty) returns (Empty) {
+		option (google.api.http) = {
+			// Some example comment
+			get: "/ExampleGet"
+			body: "*"
+
+			additional_bindings {
+				post: "/ExamplePost"
+			}
+			// Testing comments
+		};
+	}
+
+	rpc ExampleCommentTrailingTwo(Empty) returns (Empty) {
+		option (google.api.http) = {
+			// another example comment
+			get: "/ExampleGet"
+			body: "*"
+
+			additional_bindings {
+				post: "/ExamplePost"
+			}
+		};
+		// Nested two deep
+	}
+
+	rpc ExampleCommentTrailingOne(Empty) returns (Empty) {
+		option (google.api.http) = {
+			// Some example comment
+			get: "/ExampleGet"
+			body: "*"
+
+			additional_bindings {
+				post: "/ExamplePost"
+			}
+		};
+	}
+	// Nested one deep
+
+	rpc RpcEmptyStream(Empty) returns (stream Empty) {
+		option (google.api.http) = {
+			post: "/rpc/empty/stream"
+		};
+	}
+	rpc StreamEmptyRpc(stream Empty) returns (Empty) {
+		option (google.api.http) = {
+			post: "/stream/empty/rpc"
+		};
+	}
+	rpc StreamEmptyStream(stream Empty) returns (stream Empty) {
+		option (google.api.http) = {
+			post: "/stream/empty/stream"
+		};
+	}
+
+}
+
+
