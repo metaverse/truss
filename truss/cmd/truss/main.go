@@ -143,6 +143,11 @@ func goBuild(name string, path string) {
 		"service/bin/"+name,
 		path,
 	)
+	env := os.Environ()
+	env = append(env, "CGO_ENABLED=0")
+	goBuildExec.Env = env
+
+	goBuildExec.Stderr = os.Stderr
 
 	log.WithField("cmd", strings.Join(goBuildExec.Args, " ")).Info("go build")
 	val, err := goBuildExec.Output()
@@ -151,13 +156,12 @@ func goBuild(name string, path string) {
 		log.WithFields(log.Fields{
 			"output": string(val),
 			"input":  goBuildExec.Args,
-		}).WithError(err).Fatal("Protoc call failed")
+		}).WithError(err).Fatal("go build failed")
 	}
 }
 
 func (g globalStruct) protoc(definitionPaths []string, command string) {
 	cmdArgs := []string{
-		"-I/usr/local/include",
 		"-I.",
 		"-I" + g.workingDirectory + GOOGLE_API_HTTP_IMPORT_PATH,
 		command,
@@ -169,6 +173,8 @@ func (g globalStruct) protoc(definitionPaths []string, command string) {
 		"protoc",
 		cmdArgs...,
 	)
+
+	protocExec.Stderr = os.Stderr
 
 	log.WithField("cmd", strings.Join(protocExec.Args, " ")).Info("protoc")
 	val, err := protocExec.Output()
