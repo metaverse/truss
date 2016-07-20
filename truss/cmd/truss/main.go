@@ -134,7 +134,30 @@ func (g globalStruct) outputGoogleImport() {
 	}
 }
 
+// goBuild calls the `$ go get ` to install dependenices
+// and then calls `$ go build service/bin/$name $path`
+// to put the iterating binaries in the correct place
 func goBuild(name string, path string) {
+
+	goGetExec := exec.Command(
+		"go",
+		"get",
+		"-d",
+		"-v",
+		path,
+	)
+
+	goGetExec.Stderr = os.Stderr
+
+	log.WithField("cmd", strings.Join(goGetExec.Args, " ")).Info("go get")
+	val, err := goGetExec.Output()
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"output": string(val),
+			"input":  goGetExec.Args,
+		}).WithError(err).Fatal("go get failed")
+	}
 
 	goBuildExec := exec.Command(
 		"go",
@@ -150,7 +173,7 @@ func goBuild(name string, path string) {
 	goBuildExec.Stderr = os.Stderr
 
 	log.WithField("cmd", strings.Join(goBuildExec.Args, " ")).Info("go build")
-	val, err := goBuildExec.Output()
+	val, err = goBuildExec.Output()
 
 	if err != nil {
 		log.WithFields(log.Fields{

@@ -7,4 +7,5 @@ set -x #echo on
 go get github.com/TuneLab/gob/...
 cd protoc-gen-truss-gokit && \
 make && \
-make clean
+make clean && \
+cd -
