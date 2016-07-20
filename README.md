@@ -27,6 +27,8 @@ To use this software, you must:
 
 BETA
 
+NOTE: On all branches except `docker` `CGO_ENBALED=1` which means that the built docker image will compile dynamically linked for musl-libc rather than glibc, so it won't work on most computers. `# git checkout docker` for an image that may be behind but will build go binaries that are statically linked. Though you can always `go build` the generated microservice yourself.
+
 To build the docker image
 `$ docker build -t tunelab/gob/truss .`
 
