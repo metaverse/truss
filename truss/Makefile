@@ -5,12 +5,20 @@ gobindata:
 	cd data && \
 	go-bindata -pkg data -o data.go -ignore swp service/...
 
+# Install truss and all dependencies 
 truss: gobindata
-	go install github.com/TuneLab/gob/truss/cmd/...
+	go install github.com/TuneLab/gob/...
 
+# Remove the truss binary
 clean:
-	rm -r service
+	rm $GOBIN/truss
 
+# Run truss on all proto files in all dirs in ./tests/
 test:
-	truss addsvc.proto
+	./tests/test.sh ./tests/
+
+# Remove the dir named `service/` in all dirs in ./tests/
+testclean:
+	./tests/cleantest.sh ./tests/
+
 
