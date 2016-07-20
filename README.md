@@ -23,3 +23,14 @@ To use this software, you must:
 - `$ go get -u google.golang.org/grpc`
 - `$ go get -u github.com/TuneLab/gob/...`
 
+## Docker
+
+BETA
+
+To build the docker image
+`$ docker build -t tunelab/gob/truss .`
+
+To use the docker image as `truss` on .proto files
+`$ docker run -it --rm --name test -v $PWD:/gopath/src/microservice -w /gopath/src/microservice tunelab/gob/truss *.proto`
+
+
