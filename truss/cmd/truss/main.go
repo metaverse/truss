@@ -143,9 +143,9 @@ func goBuild(name string, path string) {
 		"service/bin/"+name,
 		path,
 	)
-	env := os.Environ()
-	env = append(env, "CGO_ENABLED=0")
-	goBuildExec.Env = env
+	//env := os.Environ()
+	//env = append(env, "CGO_ENABLED=0")
+	//goBuildExec.Env = env
 
 	goBuildExec.Stderr = os.Stderr
 
