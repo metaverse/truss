@@ -3,7 +3,6 @@ package clientarggen
 import (
 	"fmt"
 	"strings"
-
 	//log "github.com/Sirupsen/logrus"
 	"github.com/TuneLab/gob/gendoc/doctree"
 )
@@ -50,12 +49,12 @@ func (self *MethodArgs) FunctionArgs() string {
 // CallArgs returns a string for the variables to pass to a function
 // implementing this method. Example:
 //
-//     request, _ := clientHandler.Sum(*ASum, *BSum)
+//     request, _ := clientHandler.Sum(ASum,  BSum)
 //                                     └──────────┘
 func (self *MethodArgs) CallArgs() string {
 	tmp := []string{}
 	for _, a := range self.Args {
-		tmp = append(tmp, fmt.Sprintf("*%s", a.FlagArg))
+		tmp = append(tmp, fmt.Sprintf("%s", a.FlagArg))
 	}
 	return strings.Join(tmp, ", ")
 }
@@ -130,15 +129,17 @@ func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.GoType, "int32"):
-		fType = "%s = flag.Int(\"%s\", 0, %s)"
+		fType = "%s = *flag.Int(\"%s\", 0, %s)"
 	case strings.Contains(a.GoType, "int64"):
-		fType = "%s = flag.Int64(\"%s\", 0, %s)"
+		fType = "%s = *flag.Int64(\"%s\", 0, %s)"
 	case strings.Contains(a.GoType, "bool"):
-		fType = "%s = flag.Bool(\"%s\", false, %s)"
-	case strings.Contains(a.GoType, "float"):
-		fType = "%s = flag.Float64(\"%s\", 0.0, %s)"
+		fType = "%s = *flag.Bool(\"%s\", false, %s)"
+	case strings.Contains(a.GoType, "float32"):
+		fType = "%s = float32(*flag.Float64(\"%s\", 0.0, %s))"
+	case strings.Contains(a.GoType, "float64"):
+		fType = "%s = *flag.Float64(\"%s\", 0.0, %s)"
 	case strings.Contains(a.GoType, "string"):
-		fType = "%s = flag.String(\"%s\", \"\", %s)"
+		fType = "%s = *flag.String(\"%s\", \"\", %s)"
 	}
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
 }
