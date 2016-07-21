@@ -1,7 +1,5 @@
 {{ with $templateExecutor := .}}
-{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
 {{ with $strings := $templateExecutor.Strings}}
-{{ with $Service := $templateExecutor.Service}}
 package addsvc
 
 // This file provides server-side bindings for the gRPC transport.
@@ -16,18 +14,18 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	pb "{{$GeneratedImport -}} /pb"
+	pb "{{$templateExecutor.GeneratedImport -}} /pb"
 )
 
 
 // MakeGRPCServer makes a set of endpoints available as a gRPC AddServer.
-func MakeGRPCServer(ctx context.Context, endpoints Endpoints, tracer stdopentracing.Tracer, logger log.Logger) pb.{{$Service.GetName}}Server {
+func MakeGRPCServer(ctx context.Context, endpoints Endpoints, tracer stdopentracing.Tracer, logger log.Logger) pb.{{$templateExecutor.Service.GetName}}Server {
 	options := []grpctransport.ServerOption{
 		grpctransport.ServerErrorLogger(logger),
 	}
 	return &grpcServer{
-		// {{ call $strings.ToLower $Service.GetName }}
-	{{range $i := $Service.Methods}}
+		// {{ call $strings.ToLower $templateExecutor.Service.GetName }}
+	{{range $i := $templateExecutor.Service.Methods}}
 		{{call $strings.ToLower $i.GetName}}: grpctransport.NewServer(
 			ctx,
 			endpoints.{{$i.GetName}}Endpoint,
@@ -40,13 +38,13 @@ func MakeGRPCServer(ctx context.Context, endpoints Endpoints, tracer stdopentrac
 }
 
 type grpcServer struct {
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 	{{call $strings.ToLower $i.GetName}}   grpctransport.Handler
 {{- end}}
 }
 
 // Methods
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 func (s *grpcServer) {{$i.GetName}}(ctx context.Context, req *pb.{{$i.RequestType.GetName}}) (*pb.{{$i.ResponseType.GetName}}, error) {
 	_, rep, err := s.{{call $strings.ToLower $i.GetName}}.ServeGRPC(ctx, req)
 	if err != nil {
@@ -57,7 +55,7 @@ func (s *grpcServer) {{$i.GetName}}(ctx context.Context, req *pb.{{$i.RequestTyp
 {{end}}
 
 // Server Decode
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 // DecodeGRPC{{$i.GetName}}Request is a transport/grpc.DecodeRequestFunc that converts a
 // gRPC {{call $strings.ToLower $i.GetName}} request to a user-domain {{call $strings.ToLower $i.GetName}} request. Primarily useful in a server.
 func DecodeGRPC{{$i.GetName}}Request(_ context.Context, grpcReq interface{}) (interface{}, error) {
@@ -68,7 +66,7 @@ func DecodeGRPC{{$i.GetName}}Request(_ context.Context, grpcReq interface{}) (in
 
 
 // Client Decode
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 // DecodeGRPC{{$i.GetName}}Response is a transport/grpc.DecodeResponseFunc that converts a
 // gRPC {{call $strings.ToLower $i.GetName}} reply to a user-domain {{call $strings.ToLower $i.GetName}} response. Primarily useful in a client.
 func DecodeGRPC{{$i.GetName}}Response(_ context.Context, grpcReply interface{}) (interface{}, error) {
@@ -78,7 +76,7 @@ func DecodeGRPC{{$i.GetName}}Response(_ context.Context, grpcReply interface{}) 
 {{end}}
 
 // Server Encode
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 // EncodeGRPC{{$i.GetName}}Response is a transport/grpc.EncodeResponseFunc that converts a
 // user-domain {{call $strings.ToLower $i.GetName}} response to a gRPC {{call $strings.ToLower $i.GetName}} reply. Primarily useful in a server.
 func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (interface{}, error) {
@@ -89,7 +87,7 @@ func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (
 
 
 // Client Decode
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 // EncodeGRPC{{$i.GetName}}Request is a transport/grpc.EncodeRequestFunc that converts a
 // user-domain {{call $strings.ToLower $i.GetName}} request to a gRPC {{call $strings.ToLower $i.GetName}} request. Primarily useful in a client.
 func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (interface{}, error) {
@@ -97,7 +95,6 @@ func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (in
 	return &req, nil
 }
 {{end}}
-{{end}}
-{{end}}
-{{end}}
+
+{{- end}}
 {{end}}

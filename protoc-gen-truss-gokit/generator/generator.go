@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 	log.SetOutput(os.Stderr)
 }
 
@@ -133,7 +133,7 @@ func (g *generator) updateServiceMethods(svcPath string, svcFuncs []string) (out
 	// Index the handler functions, apply handler template for all function in service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
-	code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/service.method", currentFuncs, code)
+	code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/service.methods", currentFuncs, code)
 
 	// Insert updated Service interface
 	outBuf := g.applyTemplate("template_files/partial_template/service.interface", g.templateExec)
@@ -162,7 +162,7 @@ func (g *generator) updateClientMethods(clientPath string, svcFuncs []string) (o
 	// service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
-	code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/client_handler.method", currentFuncs, code)
+	code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/client_handler.methods", currentFuncs, code)
 
 	// Get file ready to write
 	outPath = "client/client_handler.go"
@@ -229,21 +229,32 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 }
 
 func (g *generator) applyTemplateForMissingServiceMethods(templateFilePath string, functionIndex map[string]bool, code *bytes.Buffer) *bytes.Buffer {
+	var methodsToTemplate []*doctree.ServiceMethod
 	for _, meth := range g.templateExec.Service.Methods {
 		methName := meth.GetName()
 		if functionIndex[methName] == false {
+			methodsToTemplate = append(methodsToTemplate, meth)
 			log.WithField("Method", methName).Info("Rendering template for method")
-			templateOut := g.applyTemplate(templateFilePath, meth)
-			code.WriteString(templateOut)
 		} else {
 			log.WithField("Method", methName).Info("Handler method already exists")
 		}
 	}
+
+	// Create temporary templateExec with only the methods we want to append
+	// We must also dereference the templateExec's Service and change our newly created
+	// Service's pointer to it's messages to be methodsToTemplate
+	templateExecWithOnlyMissingMethods := g.templateExec
+	tempService := *g.templateExec.Service
+	tempService.Methods = methodsToTemplate
+	templateExecWithOnlyMissingMethods.Service = &tempService
+
+	// Apply the template and write it to code
+	templateOut := g.applyTemplate(templateFilePath, templateExecWithOnlyMissingMethods)
+	code.WriteString(templateOut)
 	return code
 }
 
 func (g *generator) applyTemplate(templateFilePath string, executor interface{}) string {
-
 	templateBytes, _ := g.templateFile(templateFilePath)
 	templateString := string(templateBytes)
 	codeTemplate := template.Must(template.New(templateFilePath).Parse(templateString))

@@ -1,8 +1,5 @@
 {{ with $templateExecutor := .}}
-{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
-{{ with $HandlerImport := $templateExecutor.HandlerImport}}
 {{ with $strings := $templateExecutor.Strings}}
-{{ with $Service := $templateExecutor.Service}}
 // Package grpc provides a gRPC client for the add service.
 package grpc
 
@@ -22,9 +19,9 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	handler "{{$HandlerImport -}} /server"
-	addsvc "{{$GeneratedImport -}}"
-	pb "{{$GeneratedImport -}} /pb"
+	handler "{{$templateExecutor.HandlerImport -}} /server"
+	addsvc "{{$templateExecutor.GeneratedImport -}}"
+	pb "{{$templateExecutor.GeneratedImport -}} /pb"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the
@@ -38,12 +35,12 @@ func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger)
 
 	limiter := ratelimit.NewTokenBucketLimiter(jujuratelimit.NewBucketWithRate(100, 100))
 
-{{range $i := $Service.Methods}}
+{{range $i := $templateExecutor.Service.Methods}}
 	var {{call $strings.ToLower $i.GetName}}Endpoint endpoint.Endpoint
 	{
 		{{call $strings.ToLower $i.GetName}}Endpoint = grpctransport.NewClient(
 			conn,
-			"{{$Service.GetName}}",
+			"{{$templateExecutor.Service.GetName}}",
 			"{{$i.GetName}}",
 			addsvc.EncodeGRPC{{$i.GetName}}Request,
 			addsvc.DecodeGRPC{{$i.GetName}}Response,
@@ -60,13 +57,10 @@ func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger)
 {{end}}
 
 	return addsvc.Endpoints{
-	{{range $i := $Service.Methods}}
+	{{range $i := $templateExecutor.Service.Methods}}
 		{{$i.GetName}}Endpoint:    {{call $strings.ToLower $i.GetName}}Endpoint,
 	{{- end}}
 	}
 }
-{{end}}
-{{end}}
-{{end}}
 {{end}}
 {{end}}

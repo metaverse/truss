@@ -1,4 +1,6 @@
+{{ with $templateExecutor := .}}
 // Package http provides an HTTP client for the add service.
+
 package http
 
 import (
@@ -18,7 +20,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	// This Service
-	"{{.GeneratedImport -}}"
+	"{{$templateExecutor.GeneratedImport -}}"
 )
 
 // New returns an AddService backed by an HTTP server living at the remote
@@ -86,3 +88,4 @@ func copyURL(base *url.URL, path string) *url.URL {
 	next.Path = path
 	return &next
 }
+{{end}}

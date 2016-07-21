@@ -1,8 +1,5 @@
 {{ with $templateExecutor := .}}
-{{ with $GeneratedImport := $templateExecutor.GeneratedImport}}
-{{ with $HandlerImport := $templateExecutor.HandlerImport}}
 {{ with $strings := $templateExecutor.Strings}}
-{{ with $Service := $templateExecutor.Service}}
 package main
 
 import (
@@ -35,9 +32,9 @@ import (
 	//"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
-	handler "{{$HandlerImport -}} /server"
-	"{{$GeneratedImport -}} "
-	pb "{{$GeneratedImport -}} /pb"
+	handler "{{$templateExecutor.HandlerImport -}} /server"
+	"{{$templateExecutor.GeneratedImport -}} "
+	pb "{{$templateExecutor.GeneratedImport -}} /pb"
 
 )
 
@@ -136,7 +133,7 @@ func main() {
 	}
 
 	// Endpoint domain.
-	{{range $i := $Service.Methods}}
+	{{range $i := $templateExecutor.Service.Methods}}
 	var {{call $strings.ToLower $i.GetName}}Endpoint endpoint.Endpoint
 	{
 		//{{call $strings.ToLower $i.GetName}}Duration := duration.With(metrics.Field{Key: "method", Value: "{{$i.GetName}}})"
@@ -149,7 +146,7 @@ func main() {
 	}
 	{{end}}
 	endpoints := addsvc.Endpoints{
-	{{range $i := $Service.Methods}}
+	{{range $i := $templateExecutor.Service.Methods}}
 		{{$i.GetName}}Endpoint:    {{call $strings.ToLower $i.GetName}}Endpoint,
 	{{- end}}
 	}
@@ -201,7 +198,7 @@ func main() {
 
 		srv := addsvc.MakeGRPCServer(ctx, endpoints, tracer, logger)
 		s := grpc.NewServer()
-		pb.Register{{$Service.GetName}}Server(s, srv)
+		pb.Register{{$templateExecutor.Service.GetName}}Server(s, srv)
 
 		logger.Log("addr", *grpcAddr)
 		errc <- s.Serve(ln)
@@ -210,8 +207,5 @@ func main() {
 	// Run!
 	logger.Log("exit", <-errc)
 }
-{{end}}
-{{end}}
-{{end}}
 {{end}}
 {{end}}
