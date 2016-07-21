@@ -1,21 +1,22 @@
 {{ with $templateExecutor := .}}
-{{ with $strings := $templateExecutor.Strings}}
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{$i.GetName}} implements Service.
-func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.FunctionArgs}}{{end}}) (pb.{{$i.RequestType.GetName}}, error){
+func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (pb.{{GoName $i.RequestType.GetName}}, error){
 {{ with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
-{{range $param := $meth.Args -}}
-{{if not $param.IsBaseType}}
+	{{- range $param := $meth.Args -}}
+		{{- if not $param.IsBaseType}}
 		// Add custom business logic for interpreting {{$param.FlagArg}},
-{{end -}}
-{{end -}}
+		{{- end -}}
+	{{- end -}}
 {{end}}
-	request := pb.{{$i.RequestType.GetName}}{
+	request := pb.{{GoName $i.RequestType.GetName}}{
 {{ with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
-{{range $param := $meth.Args -}}
-		{{call $strings.Title $param.Name}} : {{$param.FlagArg}},
-{{end -}}
+	{{range $param := $meth.Args -}}
+		{{- if $param.IsBaseType}}
+		{{GoName $param.Name}} : {{GoName $param.FlagArg}},
+		{{- end -}}
+	{{end -}}
 {{end}}
 	}
 	return request, nil
@@ -23,4 +24,3 @@ func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetNam
 {{end}}
 
 {{- end}}
-{{end}}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/TuneLab/gob/gendoc/doctree"
 	"github.com/TuneLab/gob/protoc-gen-truss-gokit/generator/clientarggen"
+	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
 	log "github.com/Sirupsen/logrus"
@@ -31,6 +32,7 @@ type generator struct {
 	outputDirName     string
 	templateFileNames func() []string
 	templateFile      func(string) ([]byte, error)
+	templateFuncMap   template.FuncMap
 	templateExec      templateExecutor
 }
 
@@ -42,19 +44,8 @@ type templateExecutor struct {
 	// Import path for generated packages
 	GeneratedImport string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	Service *doctree.ProtoService
-	// Contains the strings.ToLower() method for lowercasing Service names, methods, and fields
-	Strings    stringsTemplateMethods
+	Service    *doctree.ProtoService
 	ClientArgs *clientarggen.ClientServiceArgs
-}
-
-// Contains string utility methods. This struct is to be embeded into the
-// struct which is executed by the template, thus allowing the template to
-// access whatever functions are included in this struct. Currently only
-// intended to wrap strings.ToLower().
-type stringsTemplateMethods struct {
-	ToLower func(string) string
-	Title   func(string) string
 }
 
 // New returns a new generator which generates grpc gateway files.
@@ -62,6 +53,7 @@ func New(files []*doctree.ProtoFile, outputDirName string) *generator {
 	var service *doctree.ProtoService
 	log.WithField("File Count", len(files)).Info("Files are being processed")
 
+	// Find the service to be attached to the templateExecutor
 	for _, file := range files {
 
 		log.WithFields(log.Fields{
@@ -79,21 +71,32 @@ func New(files []*doctree.ProtoFile, outputDirName string) *generator {
 		log.Fatal("No service discovered, aborting...")
 	}
 
+	// Get the working directory and the go import paths for the working directory
+	// e.g.
+	// Working directory: (wd)
+	// /home/adamryman/projects/go/src/github.com/TuneLab/gob/protoc-gen-truss-gokit/
+	// $GOPATH: (goPath)
+	// /home/adamryman/projects/go/
+	// So strings.TrimPrefix(wd, goPath+"/src/") = github.com/TuneLab/gob/protoc-gen-truss-gokit
 	wd, _ := os.Getwd()
 	goPath := os.Getenv("GOPATH")
-	baseImportPath := strings.TrimPrefix(wd, goPath+"/src/")
-	serviceImportPath := baseImportPath + "/" + outputDirName
-	log.WithField("Output dir", outputDirName).Info("Output directory")
-	log.WithField("serviceImportPath", serviceImportPath).Info("Service path")
-	// import path for generated code that the user can edit
-	handlerImportPath := serviceImportPath
-	// import path for generated code that user should not edit
-	generatedImportPath := serviceImportPath + "/DONOTEDIT"
+	wdImportString := strings.TrimPrefix(wd, goPath+"/src/")
 
-	// Attaching the strings.ToLower method so that it can be used in templae execution
-	stringsMethods := stringsTemplateMethods{
-		ToLower: strings.ToLower,
-		Title:   strings.Title,
+	// Then add onto the wdImportString the outputDirName to get our baseImportString
+	baseImportString := wdImportString + "/" + outputDirName
+
+	log.WithField("Output dir", outputDirName).Info("Output directory")
+	log.WithField("serviceImportPath", baseImportString).Info("Service path")
+
+	// import path for generated code with handlers that the user can edit
+	handlerImportString := baseImportString
+	// import path for generated code that user should not edit
+	generatedImportString := baseImportString + "/DONOTEDIT"
+
+	funcMap := template.FuncMap{
+		"ToLower": strings.ToLower,
+		"Title":   strings.Title,
+		"GoName":  generatego.CamelCase,
 	}
 
 	return &generator{
@@ -101,11 +104,11 @@ func New(files []*doctree.ProtoFile, outputDirName string) *generator {
 		outputDirName:     outputDirName,
 		templateFileNames: templateFileAssets.AssetNames,
 		templateFile:      templateFileAssets.Asset,
+		templateFuncMap:   funcMap,
 		templateExec: templateExecutor{
-			HandlerImport:   handlerImportPath,
-			GeneratedImport: generatedImportPath,
+			HandlerImport:   handlerImportString,
+			GeneratedImport: generatedImportString,
 			Service:         service,
-			Strings:         stringsMethods,
 			ClientArgs:      clientarggen.New(service),
 		},
 	}
@@ -260,7 +263,7 @@ func (g *generator) applyTemplateForMissingServiceMethods(templateFilePath strin
 func (g *generator) applyTemplate(templateFilePath string, executor interface{}) string {
 	templateBytes, _ := g.templateFile(templateFilePath)
 	templateString := string(templateBytes)
-	codeTemplate := template.Must(template.New(templateFilePath).Parse(templateString))
+	codeTemplate := template.Must(template.New(templateFilePath).Funcs(g.templateFuncMap).Parse(templateString))
 
 	outputBuffer := bytes.NewBuffer(nil)
 	err := codeTemplate.Execute(outputBuffer, executor)
