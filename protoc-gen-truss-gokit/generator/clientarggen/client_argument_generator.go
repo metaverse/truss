@@ -129,9 +129,11 @@ func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.GoType, "int32"):
-		fType = "%s = *flag.Int(\"%s\", 0, %s)"
+		fType = "%s = int32(*flag.Int(\"%s\", 0, %s))"
 	case strings.Contains(a.GoType, "int64"):
 		fType = "%s = *flag.Int64(\"%s\", 0, %s)"
+	case strings.Contains(a.GoType, "int"):
+		fType = "%s = *flag.Int(\"%s\", 0, %s)"
 	case strings.Contains(a.GoType, "bool"):
 		fType = "%s = *flag.Bool(\"%s\", false, %s)"
 	case strings.Contains(a.GoType, "float32"):
