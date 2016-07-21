@@ -4,6 +4,10 @@
 # COULD BE DANGEROUS
 for dir in "$1"*
 do
+	# Ignore non-directories
+	if [ ! -d "$dir" ]; then
+		continue
+	fi
 	echo "$dir"
-	rm -r "$dir"/service 2>/dev/null
+	rm -rf "$dir"/service
 done

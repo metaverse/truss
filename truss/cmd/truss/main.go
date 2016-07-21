@@ -35,6 +35,9 @@ var global globalStruct
 // 4. Build 3 proto commands to invoke
 func init() {
 	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
 
 	var err error
 	global.workingDirectory, err = os.Getwd()

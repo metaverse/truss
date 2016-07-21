@@ -20,6 +20,9 @@ import (
 func init() {
 	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stderr)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
 }
 
 type generator struct {
