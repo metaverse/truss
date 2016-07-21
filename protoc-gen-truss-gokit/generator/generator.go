@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.DebugLevel)
 	log.SetOutput(os.Stderr)
 }
 
@@ -201,7 +201,7 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 
 		if filepath.Base(templateFilePath) == "service.gotemplate" && fileExists(servicePath) {
 			// If there's an existing service file, update its contents
-			generatedFilePath, generatedCode = g.updateServiceMethods(clientPath, serviceFunctions)
+			generatedFilePath, generatedCode = g.updateServiceMethods(servicePath, serviceFunctions)
 
 		} else if filepath.Base(templateFilePath) == "client_handler.gotemplate" && fileExists(clientPath) {
 			// If there's an existing client_handler file, update its contents
