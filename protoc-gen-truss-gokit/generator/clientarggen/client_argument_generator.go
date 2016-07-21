@@ -136,7 +136,7 @@ func createFlagConvertFunc(a ClientArg) string {
 	case strings.Contains(a.GoType, "bool"):
 		fType = "%s = flag.Bool(\"%s\", false, %s)"
 	case strings.Contains(a.GoType, "float"):
-		fType = "%s = flag.Float64\"%s\", 0.0, %s)"
+		fType = "%s = flag.Float64(\"%s\", 0.0, %s)"
 	case strings.Contains(a.GoType, "string"):
 		fType = "%s = flag.String(\"%s\", \"\", %s)"
 	}

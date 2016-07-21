@@ -43,7 +43,7 @@ func main() {
 	)
 
 	var (
-{{$templateExecutor.ClientArgs.AllFlags}}
+		{{$templateExecutor.ClientArgs.AllFlags}}
 	)
 	flag.Parse()
 
