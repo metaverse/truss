@@ -309,6 +309,9 @@ type MessageField struct {
 	describable
 	Type   FieldType
 	Number int
+	// Label is one of either "LABEL_OPTIONAL", "LABEL_REPEATED", or
+	// "LABEL_REQUIRED"
+	Label string
 }
 
 func (self *MessageField) Describe(depth int) string {

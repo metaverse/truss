@@ -12,6 +12,7 @@ import (
 	"github.com/TuneLab/gob/gendoc/svcparse"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 )
 
@@ -115,6 +116,12 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 				if new_field.Type.Name == "" {
 					new_field.Type.Name = field.Type.String()
 				}
+				// The label we get back is a number, translate it to a human
+				// readable string
+				label := int32(field.GetLabel())
+				label_name := descriptor.FieldDescriptorProto_Label_name[label]
+				new_field.Label = label_name
+
 				new_msg.Fields = append(new_msg.Fields, &new_field)
 			}
 			new_file.Messages = append(new_file.Messages, &new_msg)
