@@ -1,4 +1,6 @@
+{{ with $templateExecutor := .}}
 
+{{range $i := $templateExecutor.Service.Methods}}
 // {{.GetName}} implements Service.
 func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{.RequestType.GetName}}) (pb.{{.ResponseType.GetName}}, error){
 	_ = ctx
@@ -8,3 +10,6 @@ func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{.RequestType.Get
 	}
 	return response, nil
 }
+{{end}}
+
+{{- end}}

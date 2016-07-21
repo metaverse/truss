@@ -1,11 +1,5 @@
 {{ with $templateExecutor := .}}
 {{ with $strings := $templateExecutor.Strings}}
-package clienthandler
-
-import (
-	pb "{{$templateExecutor.GeneratedImport -}} /pb"
-)
-
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{$i.GetName}} implements Service.
@@ -28,5 +22,5 @@ func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetNam
 }
 {{end}}
 
-{{end}}
+{{- end}}
 {{end}}

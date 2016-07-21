@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.InfoLevel)
 	log.SetOutput(os.Stderr)
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors: true,
