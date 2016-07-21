@@ -1,5 +1,4 @@
 {{ with $templateExecutor := .}}
-{{ with $strings := $templateExecutor.Strings}}
 package main
 
 import (
@@ -134,20 +133,20 @@ func main() {
 
 	// Endpoint domain.
 	{{range $i := $templateExecutor.Service.Methods}}
-	var {{call $strings.ToLower $i.GetName}}Endpoint endpoint.Endpoint
+	var {{ToLower $i.GetName}}Endpoint endpoint.Endpoint
 	{
-		//{{call $strings.ToLower $i.GetName}}Duration := duration.With(metrics.Field{Key: "method", Value: "{{$i.GetName}}})"
-		//{{call $strings.ToLower $i.GetName}}Logger := log.NewContext(logger).With("method", "{{$i.GetName}})")
+		//{{ToLower $i.GetName}}Duration := duration.With(metrics.Field{Key: "method", Value: "{{$i.GetName}}})"
+		//{{ToLower $i.GetName}}Logger := log.NewContext(logger).With("method", "{{$i.GetName}})")
 
-		{{call $strings.ToLower $i.GetName}}Endpoint = addsvc.Make{{$i.GetName}}Endpoint(service)
-		//{{call $strings.ToLower $i.GetName}}Endpoint = opentracing.TraceServer(tracer, "{{$i.GetName}})")({{call $strings.ToLower $i.GetName}}Endpoint)
-		//{{call $strings.ToLower $i.GetName}}Endpoint = addsvc.EndpointInstrumentingMiddleware({{call $strings.ToLower $i.GetName}}Duration)({{call $strings.ToLower $i.GetName}}Endpoint)
-		//{{call $strings.ToLower $i.GetName}}Endpoint = addsvc.EndpointLoggingMiddleware({{call $strings.ToLower $i.GetName}}Logger)({{call $strings.ToLower $i.GetName}}Endpoint)
+		{{ToLower $i.GetName}}Endpoint = addsvc.Make{{$i.GetName}}Endpoint(service)
+		//{{ToLower $i.GetName}}Endpoint = opentracing.TraceServer(tracer, "{{$i.GetName}})")({{ToLower $i.GetName}}Endpoint)
+		//{{ToLower $i.GetName}}Endpoint = addsvc.EndpointInstrumentingMiddleware({{ToLower $i.GetName}}Duration)({{ToLower $i.GetName}}Endpoint)
+		//{{ToLower $i.GetName}}Endpoint = addsvc.EndpointLoggingMiddleware({{ToLower $i.GetName}}Logger)({{ToLower $i.GetName}}Endpoint)
 	}
 	{{end}}
 	endpoints := addsvc.Endpoints{
 	{{range $i := $templateExecutor.Service.Methods}}
-		{{$i.GetName}}Endpoint:    {{call $strings.ToLower $i.GetName}}Endpoint,
+		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
 	{{- end}}
 	}
 
@@ -207,5 +206,4 @@ func main() {
 	// Run!
 	logger.Log("exit", <-errc)
 }
-{{end}}
-{{end}}
+{{- end}}

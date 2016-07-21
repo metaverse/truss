@@ -1,5 +1,4 @@
 {{ with $templateExecutor := .}}
-{{ with $strings := $templateExecutor.Strings}}
 package clienthandler
 
 import (
@@ -9,7 +8,7 @@ import (
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{$i.GetName}} implements Service.
-func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.FunctionArgs}}{{end}}) (pb.{{$i.RequestType.GetName}}, error){
+func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.FunctionArgs}}{{end}}) (pb.{{GoName $i.RequestType.GetName}}, error){
 {{ with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
 {{range $param := $meth.Args -}}
 {{if not $param.IsBaseType}}
@@ -17,10 +16,10 @@ func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetNam
 {{end -}}
 {{end -}}
 {{end}}
-	request := pb.{{$i.RequestType.GetName}}{
+	request := pb.{{GoName $i.RequestType.GetName}}{
 {{ with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
 {{range $param := $meth.Args -}}
-		{{call $strings.Title $param.Name}} : {{$param.FlagArg}},
+		{{Title $param.Name}} : {{$param.FlagArg}},
 {{end -}}
 {{end}}
 	}
@@ -28,5 +27,4 @@ func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetNam
 }
 {{end}}
 
-{{end}}
 {{end}}

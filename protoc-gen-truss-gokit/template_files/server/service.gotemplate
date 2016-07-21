@@ -26,10 +26,10 @@ type basicService struct{}
 
 {{range $i := .Service.Methods}}
 // {{$i.GetName}} implements Service.
-func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error){
+func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
-	response := pb.{{$i.ResponseType.GetName}}{
+	response := pb.{{GoName $i.ResponseType.GetName}}{
 		//
 	}
 	return response, nil
@@ -38,6 +38,6 @@ func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType
 
 type Service interface {
 {{range $i := .Service.Methods}}
-	{{$i.GetName}}(ctx context.Context, in pb.{{$i.RequestType.GetName}}) (pb.{{$i.ResponseType.GetName}}, error)
+	{{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error)
 {{- end}}
 }

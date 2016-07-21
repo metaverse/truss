@@ -1,5 +1,4 @@
 {{ with $templateExecutor := .}}
-{{ with $strings := $templateExecutor.Strings}}
 // Package grpc provides a gRPC client for the add service.
 package grpc
 
@@ -36,31 +35,30 @@ func New(conn *grpc.ClientConn, tracer stdopentracing.Tracer, logger log.Logger)
 	limiter := ratelimit.NewTokenBucketLimiter(jujuratelimit.NewBucketWithRate(100, 100))
 
 {{range $i := $templateExecutor.Service.Methods}}
-	var {{call $strings.ToLower $i.GetName}}Endpoint endpoint.Endpoint
+	var {{ToLower $i.GetName}}Endpoint endpoint.Endpoint
 	{
-		{{call $strings.ToLower $i.GetName}}Endpoint = grpctransport.NewClient(
+		{{ToLower $i.GetName}}Endpoint = grpctransport.NewClient(
 			conn,
 			"{{$templateExecutor.Service.GetName}}",
 			"{{$i.GetName}}",
 			addsvc.EncodeGRPC{{$i.GetName}}Request,
 			addsvc.DecodeGRPC{{$i.GetName}}Response,
-			pb.{{$i.ResponseType.GetName}}{},
+			pb.{{GoName $i.ResponseType.GetName}}{},
 			grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "{{$i.GetName}}", logger)),
 		).Endpoint()
-		{{call $strings.ToLower $i.GetName}}Endpoint = opentracing.TraceClient(tracer, "{{$i.GetName}}")({{call $strings.ToLower $i.GetName}}Endpoint)
-		{{call $strings.ToLower $i.GetName}}Endpoint = limiter({{call $strings.ToLower $i.GetName}}Endpoint)
-		{{call $strings.ToLower $i.GetName}}Endpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
+		{{ToLower $i.GetName}}Endpoint = opentracing.TraceClient(tracer, "{{$i.GetName}}")({{ToLower $i.GetName}}Endpoint)
+		{{ToLower $i.GetName}}Endpoint = limiter({{ToLower $i.GetName}}Endpoint)
+		{{ToLower $i.GetName}}Endpoint = circuitbreaker.Gobreaker(gobreaker.NewCircuitBreaker(gobreaker.Settings{
 			Name:    "{{$i.GetName}}",
 			Timeout: 30 * time.Second,
-		}))({{call $strings.ToLower $i.GetName}}Endpoint)
+		}))({{ToLower $i.GetName}}Endpoint)
 	}
 {{end}}
 
 	return addsvc.Endpoints{
 	{{range $i := $templateExecutor.Service.Methods}}
-		{{$i.GetName}}Endpoint:    {{call $strings.ToLower $i.GetName}}Endpoint,
+		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
 	{{- end}}
 	}
 }
-{{end}}
-{{end}}
+{{- end}}

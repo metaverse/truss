@@ -1,5 +1,4 @@
 {{ with $templateExecutor := .}}
-{{ with $strings := $templateExecutor.Strings}}
 package main
 
 import (
@@ -40,7 +39,7 @@ func main() {
 		zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka Collector host:port")
 		appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
 		lightstepToken = flag.String("lightstep.token", "", "Enable LightStep tracing via a LightStep access token")
-		method         = flag.String("method", "{{range $index, $i := $templateExecutor.Service.Methods}}{{if $index}}{{else}}{{call $strings.ToLower $i.GetName}}{{end}}{{end}}",	"{{range $index, $i := $templateExecutor.Service.Methods}}{{if $index}},{{end}}{{call $strings.ToLower $i.GetName}}{{end}}")
+		method         = flag.String("method", "{{range $index, $i := $templateExecutor.Service.Methods}}{{if $index}}{{else}}{{ToLower $i.GetName}}{{end}}{{end}}",	"{{range $index, $i := $templateExecutor.Service.Methods}}{{if $index}},{{end}}{{ToLower $i.GetName}}{{end}}")
 	)
 
 	var (
@@ -113,7 +112,7 @@ func main() {
 
 	switch *method {
 {{range $i := $templateExecutor.Service.Methods}}
-	case "{{call $strings.ToLower $i.GetName}}":
+	case "{{ToLower $i.GetName}}":
 		args := flag.Args()
 		request, _ := clientHandler.{{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
 		v, err := service.{{$i.GetName}}(context.Background(), request)
@@ -132,4 +131,3 @@ func main() {
 }
 
 {{- end}}
-{{end}}

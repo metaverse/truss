@@ -2,10 +2,10 @@
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{.GetName}} implements Service.
-func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{.RequestType.GetName}}) (pb.{{.ResponseType.GetName}}, error){
+func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{GoName .RequestType.GetName}}) (pb.{{GoName .ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
-	response := pb.{{.ResponseType.GetName}}{
+	response := pb.{{GoName .ResponseType.GetName}}{
 		//
 	}
 	return response, nil
