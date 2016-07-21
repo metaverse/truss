@@ -45,6 +45,10 @@ func main() {
 		lightstepToken = flag.String("lightstep.token", "", "Enable LightStep tracing via a LightStep access token")
 		method         = flag.String("method", "{{range $index, $i := $Service.Methods}}{{if $index}}{{else}}{{call $strings.ToLower $i.GetName}}{{end}}{{end}}",	"{{range $index, $i := $Service.Methods}}{{if $index}},{{end}}{{call $strings.ToLower $i.GetName}}{{end}}")
 	)
+
+	var (
+{{$templateExecutor.ClientArgs.AllFlags}}
+	)
 	flag.Parse()
 
 	if len(flag.Args()) != 2 {
@@ -114,7 +118,7 @@ func main() {
 {{range $i := $Service.Methods}}
 	case "{{call $strings.ToLower $i.GetName}}":
 		args := flag.Args()
-		request, _ := clientHandler.{{$i.GetName}}(flag.Args())
+		request, _ := clientHandler.{{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
 		v, err := service.{{$i.GetName}}(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
