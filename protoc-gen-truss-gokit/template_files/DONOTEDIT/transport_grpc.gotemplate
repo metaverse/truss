@@ -44,7 +44,7 @@ type grpcServer struct {
 
 // Methods
 {{range $i := $templateExecutor.Service.Methods}}
-func (s *grpcServer) {{$i.GetName}}(ctx context.Context, req *pb.{{GoName $i.RequestType.GetName}}) (*pb.{{GoName $i.ResponseType.GetName}}, error) {
+func (s *grpcServer) {{GoName $i.GetName}}(ctx context.Context, req *pb.{{GoName $i.RequestType.GetName}}) (*pb.{{GoName $i.ResponseType.GetName}}, error) {
 	_, rep, err := s.{{ToLower $i.GetName}}.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, err
