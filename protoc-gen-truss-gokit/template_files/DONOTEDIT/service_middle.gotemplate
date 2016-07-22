@@ -4,15 +4,15 @@ package addsvc
 // implementation. It also includes service middlewares.
 
 import (
-	_ "errors"
-	_ "time"
+	//_ "errors"
+	//_ "time"
 
-	_ "golang.org/x/net/context"
+	//_ "golang.org/x/net/context"
 
-	_ "github.com/go-kit/kit/log"
-	_ "github.com/go-kit/kit/metrics"
+	//_ "github.com/go-kit/kit/log"
+	//_ "github.com/go-kit/kit/metrics"
 
-	_ "{{.GeneratedImport -}} /pb"
+	//_ "{{.GeneratedImport -}} /pb"
 )
 
 // Middleware describes a service (as opposed to endpoint) middleware.

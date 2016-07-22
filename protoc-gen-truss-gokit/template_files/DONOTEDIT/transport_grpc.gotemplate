@@ -5,11 +5,11 @@ package addsvc
 // It utilizes the transport/grpc.Server.
 
 import (
-	stdopentracing "github.com/opentracing/opentracing-go"
+	//stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/tracing/opentracing"
+	//"github.com/go-kit/kit/log"
+	//"github.com/go-kit/kit/tracing/opentracing"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
@@ -18,10 +18,10 @@ import (
 
 
 // MakeGRPCServer makes a set of endpoints available as a gRPC AddServer.
-func MakeGRPCServer(ctx context.Context, endpoints Endpoints, tracer stdopentracing.Tracer, logger log.Logger) pb.{{GoName $templateExecutor.Service.GetName}}Server {
-	options := []grpctransport.ServerOption{
-		grpctransport.ServerErrorLogger(logger),
-	}
+func MakeGRPCServer(ctx context.Context, endpoints Endpoints/*, tracer stdopentracing.Tracer, logger log.Logger*/) pb.{{GoName $templateExecutor.Service.GetName}}Server {
+	//options := []grpctransport.ServerOption{
+		//grpctransport.ServerErrorLogger(logger),
+	//}
 	return &grpcServer{
 		// {{ ToLower $templateExecutor.Service.GetName }}
 	{{range $i := $templateExecutor.Service.Methods}}
@@ -30,7 +30,7 @@ func MakeGRPCServer(ctx context.Context, endpoints Endpoints, tracer stdopentrac
 			endpoints.{{$i.GetName}}Endpoint,
 			DecodeGRPC{{$i.GetName}}Request,
 			EncodeGRPC{{$i.GetName}}Response,
-			append(options,grpctransport.ServerBefore(opentracing.FromGRPCRequest(tracer, "{{$i.GetName}}", logger)))...,
+			//append(options,grpctransport.ServerBefore(opentracing.FromGRPCRequest(tracer, "{{$i.GetName}}", logger)))...,
 		),
 	{{- end}}
 	}

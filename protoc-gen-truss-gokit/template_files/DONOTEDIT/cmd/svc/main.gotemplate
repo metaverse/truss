@@ -9,23 +9,23 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
-	"strings"
+	//"strings"
 	"syscall"
 	//"time"
 
 	// 3d Party
-	lightstep "github.com/lightstep/lightstep-tracer-go"
-	stdopentracing "github.com/opentracing/opentracing-go"
-	zipkin "github.com/openzipkin/zipkin-go-opentracing"
-	stdprometheus "github.com/prometheus/client_golang/prometheus"
-	appdashot "github.com/sourcegraph/appdash/opentracing"
+	//lightstep "github.com/lightstep/lightstep-tracer-go"
+	//stdopentracing "github.com/opentracing/opentracing-go"
+	//zipkin "github.com/openzipkin/zipkin-go-opentracing"
+	//stdprometheus "github.com/prometheus/client_golang/prometheus"
+	//appdashot "github.com/sourcegraph/appdash/opentracing"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"sourcegraph.com/sourcegraph/appdash"
+	//"sourcegraph.com/sourcegraph/appdash"
 
 	// Go Kit
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
+	//"github.com/go-kit/kit/log"
 	//"github.com/go-kit/kit/metrics"
 	//"github.com/go-kit/kit/metrics/prometheus"
 	//"github.com/go-kit/kit/tracing/opentracing"
@@ -42,21 +42,21 @@ func main() {
 		debugAddr      = flag.String("debug.addr", ":8080", "Debug and metrics listen address")
 		//httpAddr       = flag.String("http.addr", ":8081", "HTTP listen address")
 		grpcAddr       = flag.String("grpc.addr", ":8082", "gRPC (HTTP) listen address")
-		zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka server host:port")
-		appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
-		lightstepToken = flag.String("lightstep.token", "", "Enable LightStep tracing via a LightStep access token")
+		//zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka server host:port")
+		//appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
+		//lightstepToken = flag.String("lightstep.token", "", "Enable LightStep tracing via a LightStep access token")
 	)
 	flag.Parse()
 
 	// Logging domain.
-	var logger log.Logger
-	{
-		logger = log.NewLogfmtLogger(os.Stdout)
-		logger = log.NewContext(logger).With("ts", log.DefaultTimestampUTC)
-		logger = log.NewContext(logger).With("caller", log.DefaultCaller)
-	}
-	logger.Log("msg", "hello")
-	defer logger.Log("msg", "goodbye")
+	//var logger log.Logger
+	//{
+		//logger = log.NewLogfmtLogger(os.Stdout)
+		//logger = log.NewContext(logger).With("ts", log.DefaultTimestampUTC)
+		//logger = log.NewContext(logger).With("caller", log.DefaultCaller)
+	//}
+	//logger.Log("msg", "hello")
+	//defer logger.Log("msg", "goodbye")
 
 	/*
 	// Metrics domain.
@@ -85,6 +85,7 @@ func main() {
 	}
 */
 	// Tracing domain.
+	/*
 	var tracer stdopentracing.Tracer
 	{
 		if *zipkinAddr != "" {
@@ -122,6 +123,7 @@ func main() {
 			tracer = stdopentracing.GlobalTracer() // no-op
 		}
 	}
+	*/
 
 	// Business domain.
 	var service handler.Service
@@ -163,7 +165,7 @@ func main() {
 
 	// Debug listener.
 	go func() {
-		logger := log.NewContext(logger).With("transport", "debug")
+		//logger := log.NewContext(logger).With("transport", "debug")
 
 		m := http.NewServeMux()
 		m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
@@ -171,9 +173,9 @@ func main() {
 		m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 		m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 		m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-		m.Handle("/metrics", stdprometheus.Handler())
+		//m.Handle("/metrics", stdprometheus.Handler())
 
-		logger.Log("addr", *debugAddr)
+		//logger.Log("addr", *debugAddr)
 		errc <- http.ListenAndServe(*debugAddr, m)
 	}()
 
@@ -187,7 +189,7 @@ func main() {
 
 	// gRPC transport.
 	go func() {
-		logger := log.NewContext(logger).With("transport", "gRPC")
+		//logger := log.NewContext(logger).With("transport", "gRPC")
 
 		ln, err := net.Listen("tcp", *grpcAddr)
 		if err != nil {
@@ -195,15 +197,15 @@ func main() {
 			return
 		}
 
-		srv := addsvc.MakeGRPCServer(ctx, endpoints, tracer, logger)
+		srv := addsvc.MakeGRPCServer(ctx, endpoints/*, tracer, logger*/)
 		s := grpc.NewServer()
 		pb.Register{{$templateExecutor.Service.GetName}}Server(s, srv)
 
-		logger.Log("addr", *grpcAddr)
+		//logger.Log("addr", *grpcAddr)
 		errc <- s.Serve(ln)
 	}()
 
 	// Run!
-	logger.Log("exit", <-errc)
+	//logger.Log("exit", <-errc)
 }
 {{- end}}
