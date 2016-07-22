@@ -47,11 +47,6 @@ func main() {
 	)
 	flag.Parse()
 
-	if len(flag.Args()) != 2 {
-		fmt.Fprintf(os.Stderr, "usage: addcli [flags] <a> <b>\n")
-		os.Exit(1)
-	}
-
 	// This is a demonstration client, which supports multiple tracers.
 	// Your clients will probably just use one tracer.
 	//var tracer stdopentracing.Tracer
