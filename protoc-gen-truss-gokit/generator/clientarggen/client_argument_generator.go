@@ -105,7 +105,7 @@ func New(svc *doctree.ProtoService) *ClientServiceArgs {
 
 			var gt string
 			var ok bool
-			if gt, ok = ProtoToGoTypeMap[field.Type.GetName()]; !ok {
+			if gt, ok = ProtoToGoTypeMap[field.Type.GetName()]; !ok || field.Label == "LABEL_REPEATED" {
 				gt = "string"
 				newArg.IsBaseType = false
 			} else {
