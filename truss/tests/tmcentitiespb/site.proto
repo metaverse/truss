@@ -37,4 +37,6 @@ message SiteEntity {
   int64 advertiser_id = 7;
   string mdhq_source_id = 8;
   string status = 9;
+  string ref_id = 10;
+  string logo_url_https = 11;
 }
