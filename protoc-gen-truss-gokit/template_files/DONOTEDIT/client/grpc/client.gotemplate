@@ -39,7 +39,7 @@ func New(conn *grpc.ClientConn/*, tracer stdopentracing.Tracer, logger log.Logge
 	{
 		{{ToLower $i.GetName}}Endpoint = grpctransport.NewClient(
 			conn,
-			"{{$templateExecutor.Service.GetName}}",
+			"{{TrimPrefix $templateExecutor.Service.FullyQualifiedName "."}}",
 			"{{$i.GetName}}",
 			addsvc.EncodeGRPC{{$i.GetName}}Request,
 			addsvc.DecodeGRPC{{$i.GetName}}Response,

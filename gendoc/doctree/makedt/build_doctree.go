@@ -131,6 +131,7 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 		for _, srvc := range file.Service {
 			n_svc := doctree.ProtoService{}
 			n_svc.Name = *srvc.Name
+			n_svc.FullyQualifiedName = "." + file.GetPackage() + "." + n_svc.Name
 
 			// Add methods to this service
 			for _, meth := range srvc.Method {

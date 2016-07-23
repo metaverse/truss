@@ -94,9 +94,10 @@ func New(files []*doctree.ProtoFile, outputDirName string) *generator {
 	generatedImportString := baseImportString + "/DONOTEDIT"
 
 	funcMap := template.FuncMap{
-		"ToLower": strings.ToLower,
-		"Title":   strings.Title,
-		"GoName":  generatego.CamelCase,
+		"ToLower":    strings.ToLower,
+		"Title":      strings.Title,
+		"GoName":     generatego.CamelCase,
+		"TrimPrefix": strings.TrimPrefix,
 	}
 
 	return &generator{

@@ -365,7 +365,8 @@ type FieldType struct {
 
 type ProtoService struct {
 	describable
-	Methods []*ServiceMethod
+	Methods            []*ServiceMethod
+	FullyQualifiedName string
 }
 
 func (self *ProtoService) Describe(depth int) string {
