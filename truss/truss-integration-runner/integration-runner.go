@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"os"
@@ -45,9 +46,11 @@ func main() {
 	// runRefs will be passed to all gorutines running communication tests
 	// and will be read to display output
 	runRefs := make(chan runReference)
-	// refCount is increased for every server/client call
+	// tasksCount is increased for every server/client call
 	// and decreased every time one is display, for exiting
-	refCount := 0
+	tasksCount := 0
+
+	done := make(chan bool)
 
 	// Loop through all directories in the running path
 	dirs, err := ioutil.ReadDir(workingDirectory)
@@ -56,29 +59,26 @@ func main() {
 		if !d.IsDir() {
 			continue
 		}
-		// Build the full path to this directory and the path to the client and server
-		// binaries within it
-		testPath := workingDirectory + "/" + d.Name()
-		log.WithField("Test path", testPath).Debug()
 
-		serverPath := testPath + RELATIVESERVERPATH
-		clientPath := testPath + RELATIVECLIENTPATH
+		// tests will be run on the fullpath to directory
+		testDir := workingDirectory + "/" + d.Name()
+		// On port relative to 8082, increasing by tasksCount
+		port := 8082 + tasksCount
 
-		// If the server and client binary exist then run them against eachother
-		if fileExists(serverPath) && fileExists(clientPath) {
-			port := 8082 + refCount
-			debugPort := 9082 + refCount
-			checkPort(port)
-			log.WithFields(log.Fields{
-				"testPath":  testPath,
-				"port":      port,
-				"debugPort": debugPort,
-			}).
-				Debug("LAUNCH")
-			go runServerAndClient(testPath, port, debugPort, runRefs)
-			refCount = refCount + 1
+		log.WithField("Service", d.Name()).Info("Starting integration test")
+
+		// Running the integration tests one at a time because truss running on all files at once
+		// seems to slow the system more than distribute the work
+		communicationTestRan := runTest(testDir, port, runRefs)
+
+		// If communication test ran, increase the running taskCount
+		if communicationTestRan {
+			tasksCount = tasksCount + 1
 		}
 	}
+
+	// exitWhenFinished calls os.Exit when it has received on chan `done` `tasksCount` number of times
+	go exitWhenFinished(tasksCount, done)
 
 	// range through the runRefs channel, display info if pass
 	// display warn with debug info if fail
@@ -90,11 +90,87 @@ func main() {
 		} else {
 			log.WithField("Service", filepath.Base(ref.path)).Info("Communication test passed")
 		}
-		refCount = refCount - 1
-		if refCount == 0 {
-			break
-		}
+		done <- true
 
+	}
+}
+
+// exitWhenFinished counts down from the passed tasksCount
+// every time something on chan done is received
+// when zero is reached, os.Exit is called
+func exitWhenFinished(tasksCount int, done chan bool) {
+	for _ = range done {
+		tasksCount = tasksCount - 1
+		if tasksCount == 0 {
+			os.Exit(0)
+		}
+	}
+}
+
+// runTest generates, builds, and runs truss services
+// testPath is the full path to the definition files
+// portRef is a reference port to launch services on
+// runRefs is a channel where references to client/server communication will be passed back
+// runTest returns a bool representing whether or not the client/server communication was tested
+func runTest(testPath string, portRef int, runRefs chan runReference) (communicationTestRan bool) {
+	// Build the full path to this directory and the path to the client and server
+	// binaries within it
+	log.WithField("Test path", testPath).Debug()
+
+	// Generate and build service
+	truss(testPath)
+
+	serverPath := testPath + RELATIVESERVERPATH
+	clientPath := testPath + RELATIVECLIENTPATH
+
+	// If the server and client binary exist then run them against each other
+	if fileExists(serverPath) && fileExists(clientPath) {
+		port := portRef
+		debugPort := portRef + 1000
+		checkPort(port)
+		log.WithFields(log.Fields{
+			"testPath":  testPath,
+			"port":      port,
+			"debugPort": debugPort,
+		}).
+			Debug("LAUNCH")
+		go runServerAndClient(testPath, port, debugPort, runRefs)
+		return true
+	}
+	return false
+}
+
+// truss calls truss on *.proto in path
+// Truss logs to Stdout when generation passes or fails
+func truss(path string) {
+	var protofiles []string
+	files, err := ioutil.ReadDir(path)
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(f.Name(), ".proto") {
+			protofiles = append(protofiles, f.Name())
+		}
+	}
+
+	trussExec := exec.Command(
+		"truss",
+		protofiles...,
+	)
+	trussExec.Dir = path
+
+	log.WithField("Path", path).Debug("Exec Truss")
+	val, err := trussExec.CombinedOutput()
+
+	if err != nil {
+		log.Warn(err)
+		log.Warn(trussExec.Args)
+		log.Warn(path)
+		log.WithField("Service", filepath.Base(path)).Warn("Truss generation FAILED")
+		log.Warnf("Truss Output:\n%v", string(val))
+	} else {
+		log.WithField("Service", filepath.Base(path)).Info("Truss generation passed")
 	}
 }
 
