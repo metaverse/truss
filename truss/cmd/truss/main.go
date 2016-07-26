@@ -70,19 +70,41 @@ func main() {
 
 	definitionPaths := flag.Args()
 
+	Stage1()
+
+	// Stage 2, 3, 4
+	Stage234(definitionPaths)
+
+	// Stage 5
+	Stage5()
+
+}
+
+func Stage1() {
 	// Stage 1
 	global.buildDirectories()
 	global.outputGoogleImport()
+}
 
-	// Stage 2, 3, 4
-	global.protoc(definitionPaths, global.generatePbGoCmd)
-	global.protoc(definitionPaths, global.generateDocsCmd)
-	global.protoc(definitionPaths, global.generateGoKitCmd)
+func Stage234(definitionPaths []string) {
+	genPbGoDone := make(chan bool)
+	genDocsDone := make(chan bool)
+	genGoKitDone := make(chan bool)
+	go global.protoc(definitionPaths, global.generatePbGoCmd, genPbGoDone)
+	go global.protoc(definitionPaths, global.generateDocsCmd, genDocsDone)
+	go global.protoc(definitionPaths, global.generateGoKitCmd, genGoKitDone)
+	<-genPbGoDone
+	<-genDocsDone
+	<-genGoKitDone
+}
 
-	// Stage 5
-	goBuild("server", "./service/DONOTEDIT/cmd/svc/...")
-	goBuild("cliclient", "./service/DONOTEDIT/cmd/cliclient/...")
-
+func Stage5() {
+	serverDone := make(chan bool)
+	clientDone := make(chan bool)
+	go goBuild("server", "./service/DONOTEDIT/cmd/svc/...", serverDone)
+	go goBuild("cliclient", "./service/DONOTEDIT/cmd/cliclient/...", clientDone)
+	<-serverDone
+	<-clientDone
 }
 
 // buildDirectories puts the following directories in place
@@ -140,7 +162,7 @@ func (g globalStruct) outputGoogleImport() {
 // goBuild calls the `$ go get ` to install dependenices
 // and then calls `$ go build service/bin/$name $path`
 // to put the iterating binaries in the correct place
-func goBuild(name string, path string) {
+func goBuild(name string, path string, done chan bool) {
 
 	goGetExec := exec.Command(
 		"go",
@@ -159,7 +181,7 @@ func goBuild(name string, path string) {
 		log.WithFields(log.Fields{
 			"output": string(val),
 			"input":  goGetExec.Args,
-		}).WithError(err).Fatal("go get failed")
+		}).WithError(err).Warn("go get failed")
 	}
 
 	goBuildExec := exec.Command(
@@ -184,9 +206,10 @@ func goBuild(name string, path string) {
 			"input":  goBuildExec.Args,
 		}).WithError(err).Fatal("go build failed")
 	}
+	done <- true
 }
 
-func (g globalStruct) protoc(definitionPaths []string, command string) {
+func (g globalStruct) protoc(definitionPaths []string, command string, done chan bool) {
 	cmdArgs := []string{
 		"-I.",
 		"-I" + g.workingDirectory + GOOGLE_API_HTTP_IMPORT_PATH,
@@ -211,4 +234,5 @@ func (g globalStruct) protoc(definitionPaths []string, command string) {
 			"input":  protocExec.Args,
 		}).WithError(err).Fatal("Protoc call failed")
 	}
+	done <- true
 }
