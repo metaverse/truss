@@ -108,14 +108,15 @@ func main() {
 	switch *method {
 {{range $i := $templateExecutor.Service.Methods}}
 	case "{{ToLower $i.GetName}}":
-		args := flag.Args()
 		request, _ := clientHandler.{{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
 		v, err := service.{{$i.GetName}}(context.Background(), request)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Println(args)
+		fmt.Println("Client Requested with:")
+		fmt.Println({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
+		fmt.Println("Server Responded with:")
 		fmt.Println(v)
 	{{end}}
 

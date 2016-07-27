@@ -2,9 +2,10 @@ package clientarggen
 
 import (
 	"fmt"
-	"strings"
-	//log "github.com/Sirupsen/logrus"
+	//	log "github.com/Sirupsen/logrus"
 	"github.com/TuneLab/gob/gendoc/doctree"
+	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
+	"strings"
 )
 
 // A collection of the necessary information for generating basic business
@@ -54,7 +55,7 @@ func (self *MethodArgs) FunctionArgs() string {
 func (self *MethodArgs) CallArgs() string {
 	tmp := []string{}
 	for _, a := range self.Args {
-		tmp = append(tmp, fmt.Sprintf("%s", a.FlagArg))
+		tmp = append(tmp, createFlagArg(*a))
 	}
 	return strings.Join(tmp, ", ")
 }
@@ -100,7 +101,8 @@ func New(svc *doctree.ProtoService) *ClientServiceArgs {
 			newArg := ClientArg{}
 			newArg.Name = field.GetName()
 			newArg.FlagName = fmt.Sprintf("%s.%s", strings.ToLower(meth.GetName()), strings.ToLower(field.GetName()))
-			newArg.FlagArg = fmt.Sprintf("%s%s", strings.Title(newArg.Name), strings.Title(meth.GetName()))
+			newArg.FlagArg = fmt.Sprintf("%s%s", generatego.CamelCase(newArg.Name), generatego.CamelCase(meth.GetName()))
+
 			newArg.ProtbufType = field.Type.GetName()
 
 			var gt string
@@ -129,19 +131,42 @@ func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.GoType, "int32"):
-		fType = "%s = int32(*flag.Int(\"%s\", 0, %s))"
+		fType = "%s = flag.Int(\"%s\", 0, %s)"
 	case strings.Contains(a.GoType, "int64"):
-		fType = "%s = *flag.Int64(\"%s\", 0, %s)"
+		fType = "%s = flag.Int64(\"%s\", 0, %s)"
 	case strings.Contains(a.GoType, "int"):
-		fType = "%s = *flag.Int(\"%s\", 0, %s)"
+		fType = "%s = flag.Int(\"%s\", 0, %s)"
 	case strings.Contains(a.GoType, "bool"):
-		fType = "%s = *flag.Bool(\"%s\", false, %s)"
+		fType = "%s = flag.Bool(\"%s\", false, %s)"
 	case strings.Contains(a.GoType, "float32"):
-		fType = "%s = float32(*flag.Float64(\"%s\", 0.0, %s))"
+		fType = "%s = flag.Float64(\"%s\", 0.0, %s)"
 	case strings.Contains(a.GoType, "float64"):
-		fType = "%s = *flag.Float64(\"%s\", 0.0, %s)"
+		fType = "%s = flag.Float64(\"%s\", 0.0, %s)"
 	case strings.Contains(a.GoType, "string"):
-		fType = "%s = *flag.String(\"%s\", \"\", %s)"
+		fType = "%s = flag.String(\"%s\", \"\", %s)"
 	}
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
+}
+
+// createFlagConvertFunc creates the go string for the flag invocation to parse
+// a command line argument into it's correct type
+func createFlagArg(a ClientArg) string {
+	fType := ""
+	switch {
+	case strings.Contains(a.GoType, "int32"):
+		fType = "int32(*%s)"
+	case strings.Contains(a.GoType, "int64"):
+		fType = "*%s"
+	case strings.Contains(a.GoType, "int"):
+		fType = "*%s"
+	case strings.Contains(a.GoType, "bool"):
+		fType = "*%s"
+	case strings.Contains(a.GoType, "float32"):
+		fType = "float32(*%s)"
+	case strings.Contains(a.GoType, "float64"):
+		fType = "*%s"
+	case strings.Contains(a.GoType, "string"):
+		fType = "*%s"
+	}
+	return fmt.Sprintf(fType, generatego.CamelCase(a.FlagArg))
 }
