@@ -6,7 +6,7 @@
 // service/DONOTEDIT/third_party/googleapis/google/api/http.proto
 // DO NOT EDIT!
 
-package data
+package template
 
 import (
 	"bytes"
@@ -86,7 +86,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiAnnotationsPbGo() (*asset, er
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.pb.go", size: 2514, mode: os.FileMode(436), modTime: time.Unix(1469133329, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.pb.go", size: 2514, mode: os.FileMode(436), modTime: time.Unix(1469748008, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -106,7 +106,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiAnnotationsProto() (*asset, e
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.proto", size: 927, mode: os.FileMode(436), modTime: time.Unix(1469133329, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.proto", size: 927, mode: os.FileMode(436), modTime: time.Unix(1469748008, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -126,7 +126,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiHttpPbGo() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.pb.go", size: 18398, mode: os.FileMode(436), modTime: time.Unix(1469133329, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.pb.go", size: 18398, mode: os.FileMode(436), modTime: time.Unix(1469748008, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -146,7 +146,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiHttpProto() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.proto", size: 9887, mode: os.FileMode(436), modTime: time.Unix(1469133329, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.proto", size: 9887, mode: os.FileMode(436), modTime: time.Unix(1469748008, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

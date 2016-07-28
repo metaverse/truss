@@ -1,17 +1,19 @@
 all: truss
 
-# -ignore swp ignores vim swap files
+# Generate go files containing the all template files in []byte form
 gobindata:
-	cd data && \
-	go-bindata -pkg data -o data.go -ignore swp service/...
+	go generate github.com/TuneLab/gob/...
 
 # Install truss and all dependencies 
 truss: gobindata
 	go install github.com/TuneLab/gob/...
 
-# Remove the truss binary
+# Remove the truss binarys
 clean:
-	rm $(GOBIN)/truss
+	rm -f $(GOPATH)/bin/truss
+	rm -f $(GOPATH)/bin/protoc-gen-truss-gokit
+	rm -f $(GOPATH)/bin/protoc-gen-truss-doc
+	rm -f $(GOPATH)/bin/truss-integration-runner
 
 # Run truss on all proto files in all dirs in ./tests/
 test:
