@@ -136,7 +136,7 @@ func template_filesDonoteditCmdCliclientMainGotemplate() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/DONOTEDIT/cmd/cliclient/main.gotemplate", size: 4407, mode: os.FileMode(436), modTime: time.Unix(1469581527, 0)}
+	info := bindataFileInfo{name: "template_files/DONOTEDIT/cmd/cliclient/main.gotemplate", size: 4407, mode: os.FileMode(436), modTime: time.Unix(1469646695, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -276,7 +276,7 @@ func template_filesClientClient_handlerGotemplate() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/client/client_handler.gotemplate", size: 947, mode: os.FileMode(436), modTime: time.Unix(1469645908, 0)}
+	info := bindataFileInfo{name: "template_files/client/client_handler.gotemplate", size: 947, mode: os.FileMode(436), modTime: time.Unix(1469646695, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -296,7 +296,7 @@ func template_filesPartial_templateClient_handlerMethods() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "template_files/partial_template/client_handler.methods", size: 865, mode: os.FileMode(436), modTime: time.Unix(1469645928, 0)}
+	info := bindataFileInfo{name: "template_files/partial_template/client_handler.methods", size: 865, mode: os.FileMode(436), modTime: time.Unix(1469646695, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

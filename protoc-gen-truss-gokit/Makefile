@@ -38,7 +38,7 @@ all: build-generated-code
 
 # -ignore swp ignores vim swap files
 gobindata:
-	go-bindata -pkg template -o ./template/template.go -ignore swp template_files/...
+	go generate ./...
 
 $(PLUGIN): gobindata
 	go install ./cmd/protoc-gen-truss-gokit

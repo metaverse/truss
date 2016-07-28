@@ -2,8 +2,7 @@ all: truss
 
 # -ignore swp ignores vim swap files
 gobindata:
-	cd data && \
-	go-bindata -pkg data -o data.go -ignore swp service/...
+	go generate ./...
 
 # Install truss and all dependencies 
 truss: gobindata

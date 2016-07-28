@@ -11,7 +11,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
-	"github.com/TuneLab/gob/truss/data"
+	templates "github.com/TuneLab/gob/truss/template"
 )
 
 const GENERATED_PATH = "service"
@@ -118,9 +118,9 @@ func Stage5() {
 //                 └── google
 //                     └── api
 func (g globalStruct) buildDirectories() {
-	// third_party created by going through assets in data
+	// third_party created by going through assets in template
 	// and creating directoires that are not there
-	for _, filePath := range data.AssetNames() {
+	for _, filePath := range templates.AssetNames() {
 		fullPath := g.workingDirectory + "/" + filePath
 
 		dirPath := filepath.Dir(fullPath)
@@ -147,9 +147,9 @@ func (g globalStruct) buildDirectories() {
 // outputGoogleImport places imported and required google.api.http protobuf option files
 // into their required directories as part of stage one generation
 func (g globalStruct) outputGoogleImport() {
-	// Output files that are stored in data package
-	for _, filePath := range data.AssetNames() {
-		fileBytes, _ := data.Asset(filePath)
+	// Output files that are stored in template package
+	for _, filePath := range templates.AssetNames() {
+		fileBytes, _ := templates.Asset(filePath)
 		fullPath := g.workingDirectory + "/" + filePath
 
 		err := ioutil.WriteFile(fullPath, fileBytes, 0666)
