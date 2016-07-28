@@ -47,11 +47,11 @@ are the main things to know about the internals of this project.
 
 - `truss` is the program which unites the functionality of all other components in this project, spending most of it's time executing other programs. It's source lives in the `truss/` directory.
 - `protoc-gen-truss-gokit` is a program and `protoc` plugin. It is responsible for creating and managing the files which make up your microservice. It's source lives in the `protoc-gen-truss-gokit/` directory.
-- `protoc-gen-gendoc` is a program and `protoc` plugin. It is responsible for creating documentation from the protobuf definition. It's source lives in the `gendoc/` directory.
+- `protoc-gen-truss-doc` is a program and `protoc` plugin. It is responsible for creating documentation from the protobuf definition. It's source lives in the `protoc-gen-truss-doc/` directory.
 
 Additional internal packages of note used by these programs are:
 
 - `astmodifier`, located in `protoc-gen-truss-gokit/astmodifier/`, used to modify go files in place, and used by `protoc-gen-truss-gokit`
-- `doctree`, located in `gendoc/doctree/`, which makes sense of the protobuf file passed to it by `protoc`, and is used by `protoc-gen-truss-gokit` and `protoc-gen-gendoc`
+- `doctree`, located in `gendoc/doctree/`, which makes sense of the protobuf file passed to it by `protoc`, and is used by `protoc-gen-truss-gokit` and `protoc-gen-truss-doc`
 
 

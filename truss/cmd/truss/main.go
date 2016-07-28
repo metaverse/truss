@@ -53,7 +53,7 @@ func init() {
 	// Generate grpc golang code
 	global.generatePbGoCmd = "--go_out=Mgoogle/api/annotations.proto=" + global.genImportPath + GOOGLE_API_HTTP_IMPORT_PATH + "/google/api,plugins=grpc:./service/DONOTEDIT/pb"
 	// Generate documentation
-	global.generateDocsCmd = "--gendoc_out=."
+	global.generateDocsCmd = "--truss-doc_out=."
 	// Generate gokit-base service
 	global.generateGoKitCmd = "--truss-gokit_out=."
 

@@ -97,7 +97,7 @@ Five stages of generation happen.
 	```
 	$ protoc -I/usr/local/include -I. \
 		-I$pwd/$TRUSSGOOGLEAPI \
-		--truss_gendoc_out=./service/docs \
+		--truss-doc_out=./service/docs \
 		microservice.proto
 	```
 	```
