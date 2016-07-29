@@ -28,7 +28,7 @@ protoc-gen-truss-gokit is a `protoc` plugin that from a grpc service definition:
 
 ### Structure
 
-`./template/template_files` contain go text/template files that represent a gokit microservice
+`./template/service` contain go text/template files that represent a gokit microservice
 
 `./astmodifier` provides functions to modify source code already generated and/or user modified. 
 

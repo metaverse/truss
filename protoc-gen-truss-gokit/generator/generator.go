@@ -140,10 +140,10 @@ func (g *generator) updateServiceMethods(svcPath string, svcFuncs []string) (out
 	// Index the handler functions, apply handler template for all function in service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
-	code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/service.methods", currentFuncs, code)
+	code = g.applyTemplateForMissingServiceMethods("service/partial_template/service.methods", currentFuncs, code)
 
 	// Insert updated Service interface
-	outBuf := g.applyTemplate("template_files/partial_template/service.interface", g.templateExec)
+	outBuf := g.applyTemplate("service/partial_template/service.interface", g.templateExec)
 	code.WriteString(outBuf)
 
 	// Get file ready to write
@@ -169,7 +169,7 @@ func (g *generator) updateClientMethods(clientPath string, svcFuncs []string) (o
 	// service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
-	code = g.applyTemplateForMissingServiceMethods("template_files/partial_template/client_handler.methods", currentFuncs, code)
+	code = g.applyTemplateForMissingServiceMethods("service/partial_template/client_handler.methods", currentFuncs, code)
 
 	// Get file ready to write
 	outPath = "client/client_handler.go"
@@ -216,7 +216,7 @@ func (g *generator) GenerateResponseFiles() ([]*plugin.CodeGeneratorResponse_Fil
 
 		} else {
 			// Remove "template_files/" so that generated files do not include that directory
-			generatedFilePath = strings.TrimPrefix(templateFilePath, "template_files/")
+			generatedFilePath = strings.TrimPrefix(templateFilePath, "service/")
 			// Change file path from .gotemplate to .go
 			generatedFilePath = strings.TrimSuffix(generatedFilePath, "template")
 
