@@ -16,7 +16,6 @@ func Assemble(dt doctree.Doctree) {
 	for _, file := range md.Files {
 		for _, svc := range file.Services {
 			for _, meth := range svc.Methods {
-				//req := meth.RequestType
 				for _, pbind := range meth.HttpBindings {
 					err := contextualizeBinding(meth, pbind)
 					if err != nil {
