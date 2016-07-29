@@ -1,4 +1,4 @@
-package main
+package integration
 
 import (
 	"bytes"
@@ -37,7 +37,8 @@ func init() {
 	})
 }
 
-func main() {
+func runIntegrationTests() bool {
+	allPassed := true
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		log.WithError(err).Fatal("Cannot get working directory")
@@ -49,8 +50,6 @@ func main() {
 	// tasksCount is increased for every server/client call
 	// and decreased every time one is display, for exiting
 	tasksCount := 0
-
-	done := make(chan bool)
 
 	// Loop through all directories in the running path
 	dirs, err := ioutil.ReadDir(workingDirectory)
@@ -71,40 +70,27 @@ func main() {
 		// seems to slow the system more than distribute the work
 		communicationTestRan := runTest(testDir, port, runRefs)
 
-		// If communication test ran, increase the running taskCount
+		// If communication test ran, increase the running tasksCount
 		if communicationTestRan {
 			tasksCount = tasksCount + 1
 		}
 	}
 
-	// exitWhenFinished calls os.Exit when it has received on chan `done` `tasksCount` number of times
-	go exitWhenFinished(tasksCount, done)
-
 	// range through the runRefs channel, display info if pass
 	// display warn with debug info if fail
-	for ref := range runRefs {
+	for i := 0; i < tasksCount; i++ {
+		ref := <-runRefs
 		if ref.clientErr || ref.serverErr {
 			log.WithField("Service", filepath.Base(ref.path)).Warn("Communication test FAILED")
 			log.Warnf("Client Output\n%v", ref.clientOutput)
 			log.Warnf("Server Output\n%v", ref.serverOutput)
+			allPassed = false
 		} else {
 			log.WithField("Service", filepath.Base(ref.path)).Info("Communication test passed")
 		}
-		done <- true
-
 	}
-}
 
-// exitWhenFinished counts down from the passed tasksCount
-// every time something on chan done is received
-// when zero is reached, os.Exit is called
-func exitWhenFinished(tasksCount int, done chan bool) {
-	for _ = range done {
-		tasksCount = tasksCount - 1
-		if tasksCount == 0 {
-			os.Exit(0)
-		}
-	}
+	return allPassed
 }
 
 // runTest generates, builds, and runs truss services
