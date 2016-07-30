@@ -43,6 +43,7 @@ func runIntegrationTests() bool {
 	if err != nil {
 		log.WithError(err).Fatal("Cannot get working directory")
 	}
+	workingDirectory = workingDirectory + "/test_service_definitions"
 
 	// runRefs will be passed to all gorutines running communication tests
 	// and will be read to display output
@@ -73,6 +74,8 @@ func runIntegrationTests() bool {
 		// If communication test ran, increase the running tasksCount
 		if communicationTestRan {
 			tasksCount = tasksCount + 1
+		} else {
+			allPassed = false
 		}
 	}
 
@@ -87,6 +90,19 @@ func runIntegrationTests() bool {
 			allPassed = false
 		} else {
 			log.WithField("Service", filepath.Base(ref.path)).Info("Communication test passed")
+		}
+	}
+
+	// Clean up the service directories in each test
+	dirs, err = ioutil.ReadDir(workingDirectory)
+	for _, d := range dirs {
+		// If this item is not a directory skip it
+		if !d.IsDir() {
+			continue
+		}
+
+		if fileExists(workingDirectory + "/" + d.Name() + "/service") {
+			os.RemoveAll(workingDirectory + "/" + d.Name() + "/service")
 		}
 	}
 
