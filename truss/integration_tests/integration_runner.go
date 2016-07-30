@@ -39,6 +39,7 @@ func init() {
 
 func runIntegrationTests() bool {
 	allPassed := true
+
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		log.WithError(err).Fatal("Cannot get working directory")
@@ -58,6 +59,11 @@ func runIntegrationTests() bool {
 		// If this item is not a directory skip it
 		if !d.IsDir() {
 			continue
+		}
+
+		// Clean up the service directories in each test
+		if fileExists(workingDirectory + "/" + d.Name() + "/service") {
+			os.RemoveAll(workingDirectory + "/" + d.Name() + "/service")
 		}
 
 		// tests will be run on the fullpath to directory
@@ -93,16 +99,18 @@ func runIntegrationTests() bool {
 		}
 	}
 
-	// Clean up the service directories in each test
-	dirs, err = ioutil.ReadDir(workingDirectory)
-	for _, d := range dirs {
-		// If this item is not a directory skip it
-		if !d.IsDir() {
-			continue
-		}
+	if allPassed {
+		// Clean up the service directories in each test
+		dirs, err = ioutil.ReadDir(workingDirectory)
+		for _, d := range dirs {
+			// If this item is not a directory skip it
+			if !d.IsDir() {
+				continue
+			}
 
-		if fileExists(workingDirectory + "/" + d.Name() + "/service") {
-			os.RemoveAll(workingDirectory + "/" + d.Name() + "/service")
+			if fileExists(workingDirectory + "/" + d.Name() + "/service") {
+				os.RemoveAll(workingDirectory + "/" + d.Name() + "/service")
+			}
 		}
 	}
 
