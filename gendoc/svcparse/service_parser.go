@@ -19,12 +19,13 @@ package svcparse
 import (
 	"fmt"
 	"io"
+	"strconv"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
 )
 
 func parseErr(expected string, line int, val string) error {
-	err := fmt.Errorf("Parser expected %v in line '%v', instead found '%v'", expected, line, val)
+	err := fmt.Errorf("parser expected %v in line '%v', instead found '%v'", expected, line, val)
 	return err
 }
 
@@ -34,7 +35,7 @@ func fastForwardTill(lex *SvcLexer, delim string) error {
 	for {
 		tk, val := lex.GetTokenIgnoreWhitespace()
 		if tk == EOF || tk == ILLEGAL {
-			return fmt.Errorf("In fastForwardTill found token of type '%v' and val '%v'", tk, val)
+			return fmt.Errorf("in fastForwardTill found token of type '%v' and val '%v'", tk, val)
 		} else if val == delim {
 			return nil
 		}
@@ -308,7 +309,11 @@ func ParseBindingFields(lex *SvcLexer) ([]*doctree.BindingField, error) {
 			return nil, parseErr("string literal", lex.GetLineNumber(), val)
 		}
 
-		field.Value = val
+		noqoute, err := strconv.Unquote(val)
+		if err != nil {
+			return nil, err
+		}
+		field.Value = noqoute
 
 		rv = append(rv, field)
 		field = &doctree.BindingField{}
