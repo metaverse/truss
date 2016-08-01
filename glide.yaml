@@ -1,0 +1,10 @@
+package: github.com/TuneLab/gob
+import:
+- package: github.com/Sirupsen/logrus
+  version: ^0.10.0
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+  - protoc-gen-go/descriptor
+  - protoc-gen-go/generator
+  - protoc-gen-go/plugin
