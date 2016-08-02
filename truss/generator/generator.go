@@ -95,6 +95,11 @@ func outputGoogleImport(workingDirectory string) {
 		fileBytes, _ := templates.Asset(filePath)
 		fullPath := workingDirectory + "/" + filePath
 
+		// Rename .gotemplate to .go
+		if strings.HasSuffix(fullPath, ".gotemplate") {
+			fullPath = strings.TrimSuffix(fullPath, "template")
+		}
+
 		err := ioutil.WriteFile(fullPath, fileBytes, 0666)
 		if err != nil {
 			log.WithField("FilePath", fullPath).WithError(err).Fatal("Cannot create ")
