@@ -16,17 +16,6 @@ To install this software, you must:
 5. Install the gRPC: `$ go get -u google.golang.org/grpc`
 6. Install Truss with `$ go get -u github.com/TuneLab/gob/...`
 
-
-## Docker
-
-BETA
-
-To build the docker image
-`$ docker build -t tunelab/gob/truss .`
-
-To use the docker image as `truss` on .proto files
-`$ docker run -it --rm --name test -v $PWD:/gopath/src/microservice -w /gopath/src/microservice tunelab/gob/truss *.proto`
-
 ## Usage
 
 Using Truss is easy. You define your microservice in a protobuf file, and Truss
@@ -36,22 +25,11 @@ Once you've written the definition of your microservice, use the command `$ trus
 {NAME_OF_PROTO_FILE}` to generate your microservice into a directory called
 `service/` within your current directory.
 
+## Developing
+
+See [DEVELOPING.md](./DEVELOPING.md) for details
+
 <!--
 TODO: Add example here of proto file, and the steps to create a microservice from it.
    -->
-
-## Structure
-
-Truss is composed of several libraries and programs which work in tandem. Here
-are the main things to know about the internals of this project.
-
-- `truss` is the program which unites the functionality of all other components in this project, spending most of it's time executing other programs. It's source lives in the `truss/` directory.
-- `protoc-gen-truss-gokit` is a program and `protoc` plugin. It is responsible for creating and managing the files which make up your microservice. It's source lives in the `protoc-gen-truss-gokit/` directory.
-- `protoc-gen-truss-doc` is a program and `protoc` plugin. It is responsible for creating documentation from the protobuf definition. It's source lives in the `protoc-gen-truss-doc/` directory.
-
-Additional internal packages of note used by these programs are:
-
-- `astmodifier`, located in `protoc-gen-truss-gokit/astmodifier/`, used to modify go files in place, and used by `protoc-gen-truss-gokit`
-- `doctree`, located in `gendoc/doctree/`, which makes sense of the protobuf file passed to it by `protoc`, and is used by `protoc-gen-truss-gokit` and `protoc-gen-truss-doc`
-
 
