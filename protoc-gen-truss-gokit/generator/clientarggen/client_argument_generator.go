@@ -1,3 +1,50 @@
+// Package clientarggen collects the necessary information for templating the
+// business logic of a truss client. Let's look at an example.
+//
+// Say the user wants to create a service that adds two numbers together. That
+// user has created a protobuf file which looks like this:
+//
+//     syntax = "proto3";
+//     package pb;
+//     import "google/api/annotations.proto";
+//
+//     // The Add service definition.
+//     service Add {
+//       // Sums two integers.
+//       rpc Sum (SumRequest) returns (SumReply) {
+//         option (google.api.http) = {
+//           get: "/sum"
+//         };
+//       }
+//     }
+//
+//     // The sum request contains two parameters.
+//     message SumRequest {
+//       int64 a = 1;
+//       int64 b = 2;
+//     }
+//
+//     // The sum response contains the result of the calculation.
+//     message SumReply {
+//       int64 v = 1;
+//       string err = 2;
+//     }
+//
+// We cannot infer what the business logic of this service is purely from the
+// definition, so the part of the server where the numbers a and b are added
+// together and returned must be implemented by the user.
+//
+// However, the command line client, which we generate, is much simpler. All it
+// does is take some arguments on the command line, convert those to the
+// correct types, place those arguments into a struct of the correct type, then
+// make a request to the server. Determining the nature of each command line
+// argument, how to convert it to the correct type, and other bookkeeping to
+// automatically generate a client is the task of the package clientarggen.
+//
+// Note that the code generation portion of creating client business logic is
+// largely done in the template files, but that those template files rely on
+// information which is collected and made conveniently available ahead of time
+// by this package.
 package clientarggen
 
 import (
@@ -56,7 +103,7 @@ func (self *MethodArgs) FunctionArgs() string {
 func (self *MethodArgs) CallArgs() string {
 	tmp := []string{}
 	for _, a := range self.Args {
-		tmp = append(tmp, createFlagArg(*a))
+		tmp = append(tmp, createFlagConversion(*a))
 	}
 	return strings.Join(tmp, ", ")
 }
@@ -65,6 +112,11 @@ type ClientServiceArgs struct {
 	MethArgs map[string]*MethodArgs
 }
 
+// AllFlags returns a string that is all the flag declarations for all
+// arguments of all methods, separated by newlines. This is used in the
+// template to declare all the flag arguments for a client at once, and without
+// doing all this iteration in a template where it would be much less
+// understandable.
 func (self *ClientServiceArgs) AllFlags() string {
 	tmp := []string{}
 	for _, m := range self.MethArgs {
@@ -92,6 +144,8 @@ var ProtoToGoTypeMap = map[string]string{
 	"TYPE_SINT64":   "int64",
 }
 
+// New creates a ClientServiceArgs struct containing all the arguments for all
+// the methods of a given RPC.
 func New(svc *doctree.ProtoService) *ClientServiceArgs {
 	svcArgs := ClientServiceArgs{
 		MethArgs: make(map[string]*MethodArgs),
@@ -127,7 +181,8 @@ func New(svc *doctree.ProtoService) *ClientServiceArgs {
 }
 
 // createFlagConvertFunc creates the go string for the flag invocation to parse
-// a command line argument into it's correct type
+// a command line argument into it's nearest available type that the flag
+// package provides.
 func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
@@ -149,9 +204,12 @@ func createFlagConvertFunc(a ClientArg) string {
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
 }
 
-// createFlagConvertFunc creates the go string for the flag invocation to parse
-// a command line argument into it's correct type
-func createFlagArg(a ClientArg) string {
+// createFlagConversion creates the proper syntax for converting a flag into
+// it's correct type. This is done because not every go type that a method
+// field could be has a cooresponding flag command type. So this stage must
+// exist to convert the subset of types which the flag package provides into
+// other golang types, and the dereferencing is just a side effect of that.
+func createFlagConversion(a ClientArg) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.GoType, "int32"):
