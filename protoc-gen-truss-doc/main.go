@@ -1,3 +1,5 @@
+// Command protoc-gen-truss-doc is a plugin for Google protocol buffer compiler
+// to generate markdown documentation for a protobuf definition file.
 package main
 
 import (
@@ -15,7 +17,8 @@ var (
 	response = string("")
 )
 
-// Attempt to parse the incoming CodeGeneratorRequest being written by `protoc` to our stdin
+// Attempt to parse the incoming CodeGeneratorRequest being written by `protoc`
+// to our stdin
 func parseReq(r io.Reader) (*plugin.CodeGeneratorRequest, error) {
 	input, err := ioutil.ReadAll(r)
 	if err != nil {
