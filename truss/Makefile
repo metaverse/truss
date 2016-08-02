@@ -17,7 +17,9 @@ clean:
 
 # Run truss on all proto files in all dirs in ./tests/
 test:
-	go test -tags=integration
+	go test -tags=integration -v ./integration_tests
 
+testclean:
+	go test -tags=integration ./integration_tests -clean
 
 
