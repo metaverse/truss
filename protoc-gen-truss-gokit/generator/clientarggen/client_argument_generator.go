@@ -1,57 +1,13 @@
-// Package clientarggen collects the necessary information for templating the
-// business logic of a truss client. Let's look at an example.
-//
-// Say the user wants to create a service that adds two numbers together. That
-// user has created a protobuf file which looks like this:
-//
-//     syntax = "proto3";
-//     package pb;
-//     import "google/api/annotations.proto";
-//
-//     // The Add service definition.
-//     service Add {
-//       // Sums two integers.
-//       rpc Sum (SumRequest) returns (SumReply) {
-//         option (google.api.http) = {
-//           get: "/sum"
-//         };
-//       }
-//     }
-//
-//     // The sum request contains two parameters.
-//     message SumRequest {
-//       int64 a = 1;
-//       int64 b = 2;
-//     }
-//
-//     // The sum response contains the result of the calculation.
-//     message SumReply {
-//       int64 v = 1;
-//       string err = 2;
-//     }
-//
-// We cannot infer what the business logic of this service is purely from the
-// definition, so the part of the server where the numbers a and b are added
-// together and returned must be implemented by the user.
-//
-// However, the command line client, which we generate, is much simpler. All it
-// does is take some arguments on the command line, convert those to the
-// correct types, place those arguments into a struct of the correct type, then
-// make a request to the server. Determining the nature of each command line
-// argument, how to convert it to the correct type, and other bookkeeping to
-// automatically generate a client is the task of the package clientarggen.
-//
-// Note that the code generation portion of creating client business logic is
-// largely done in the template files, but that those template files rely on
-// information which is collected and made conveniently available ahead of time
-// by this package.
+// Package clientarggen collects information for templating the code in a
+// truss-generated client which marshals command line flags into message fields
+// for each service. Functions and fields in clientargen are called by
+// templates in protoc-gen-truss-gokit/template/
 package clientarggen
 
 import (
 	"fmt"
 	"strings"
 
-	//	log "github.com/Sirupsen/logrus"
 	"github.com/TuneLab/gob/gendoc/doctree"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 )
