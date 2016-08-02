@@ -1,4 +1,5 @@
 # truss
+test
 
 
 The `truss` binary reads in gRPC files that define a single gRPC *service* and outputs:
