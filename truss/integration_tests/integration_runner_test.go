@@ -64,6 +64,7 @@ func TestTruss(t *testing.T) {
 
 		// Running the integration tests one at a time because truss running on all files at once
 		// seems to slow the system more than distribute the work
+		t.Logf("Running integration test for %v...", d.Name())
 		out, err := truss(sDir)
 
 		// If truss fails, test error and skip communication
