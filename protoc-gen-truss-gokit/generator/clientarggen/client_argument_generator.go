@@ -2,10 +2,11 @@ package clientarggen
 
 import (
 	"fmt"
+	"strings"
+
 	//	log "github.com/Sirupsen/logrus"
 	"github.com/TuneLab/gob/gendoc/doctree"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
-	"strings"
 )
 
 // A collection of the necessary information for generating basic business
