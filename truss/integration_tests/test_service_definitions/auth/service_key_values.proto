@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package auth;
+
+message ServiceKeyValuesGetResponse {
+  map<string, string> values = 1;
+}
+
+message ServiceKeyValuesGetRequest {
+  string key = 1;
+}

@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package signon;
+
+message Session {
+  string session_token = 1;
+  int64 created = 2;
+  int64 expires = 3;
+  SessionOtc otc = 4;
+  SessionAccount account = 5;
+  SessionUser user = 6;
+  SessionClient client = 7;
+  int64 client_id = 8;
+}
+
+message SessionOtc {
+  string session_token = 1;
+  int64 expires = 2;
+  SessionOtcContext context = 3;
+}
+
+message SessionOtcContext {
+  string type = 1;
+  int64 id = 2;
+  int64 user_id = 3;
+}
+
+message SessionAccount {
+  string name = 1;
+}
+
+message SessionUser {
+  int64 id = 1;
+  int64 account_id = 2;
+  string name = 3;
+  string email = 4;
+}
+
+message SessionClient {
+  int64 id = 1; 
+  string name = 2;
+}
+
+message SessionAuthenticateRequest {
+  string username = 1;
+  string password = 2;  
+}
+
+message SessionAuthenticateResponse {
+  Session session = 1;
+  SessionAuthenticateResponseA2f a2f = 2;
+}
+
+message SessionAuthenticateResponseA2f {
+  string auth_token = 1;
+}
+
+message SessionAuthenticateA2fRequest {
+  string auth_token = 1;
+  string code = 2;
+}
+
+message SessionAuthenticateA2fResponse {
+  Session session = 1;
+}
+
+message SessionErrorResponse {
+  string error_msg = 1;
+}

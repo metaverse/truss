@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package chrono;
+
+// ClockStateRequest is an empty messsage for polling for stats/state
+message ClockStateRequest {}
+
+// ClockStateResponse is the standard response
+// for any request that interogrates the state of
+// the clock via Resume, Pause or Stats
+message ClockStateResponse {
+  int32 ticks = 1;
+  int32 timeouts = 2;
+  int64 started = 3;
+  int64 lastTick = 4;
+  bool running = 5;
+  bool paused = 6;
+  string error = 7;
+}

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package entities;
+
+message CountryGetByCodeRequest {
+  string code = 1;
+}
+
+message CountryGetByCodesRequest {
+  repeated string codes = 1;
+}
+
+message CountryGetByNameRequest {
+  string name = 1;
+}
+
+message CountryEntities {
+  repeated CountryEntity results = 1;
+}
+
+message CountryEntity {
+  int64 id = 1;
+  string code = 2;
+  string code3 = 3;
+  string name = 4;
+}
