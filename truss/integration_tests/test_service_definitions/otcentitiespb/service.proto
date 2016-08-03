@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package tmcentitiespb;
+package otcentitiespb;
 import "site.proto";
 import "publisher.proto";
 import "ad_network.proto";
@@ -9,7 +9,7 @@ import "account_user_api_key.proto";
 import "stats.proto";
 
 // The Site service definition.
-service TmcEntitiesService {
+service OtcEntitiesService {
   // Find site by platform and package/store_app_id
   rpc SiteGetByAdvertiserPackage (SiteGetByAdvertiserPackageRequest) returns (SiteEntity) {}
   // Find site by id

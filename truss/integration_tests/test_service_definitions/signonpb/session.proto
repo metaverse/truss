@@ -6,20 +6,20 @@ message Session {
   string session_token = 1;
   int64 created = 2;
   int64 expires = 3;
-  SessionTmc tmc = 4;
+  SessionOtc otc = 4;
   SessionAccount account = 5;
   SessionUser user = 6;
   SessionClient client = 7;
   int64 client_id = 8;
 }
 
-message SessionTmc {
+message SessionOtc {
   string session_token = 1;
   int64 expires = 2;
-  SessionTmcContext context = 3;
+  SessionOtcContext context = 3;
 }
 
-message SessionTmcContext {
+message SessionOtcContext {
   string type = 1;
   int64 id = 2;
   int64 user_id = 3;
