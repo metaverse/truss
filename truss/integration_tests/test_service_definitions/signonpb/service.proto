@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package mvsignonpb;
+package signonpb;
 import "session.proto";
 
-service MvSignonService {
+service SignonService {
   rpc SessionAuthenticate(SessionAuthenticateRequest) returns (SessionAuthenticateResponse) {}
   rpc SessionAuthenticateA2f(SessionAuthenticateA2fRequest) returns (SessionAuthenticateA2fResponse) {}
   rpc Status(StatusRequest) returns (StatusResponse) {}

@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package mvcredentialspb;
+package credentialspb;
 import "partner_account.proto";
 
-service MvCredentialsService {
+service CredentialsService {
   rpc PartnerAccountGetById(PartnerAccountGetByIdRequest) returns (PartnerAccountEntity) {}
   rpc PartnerAccountGetByRefId(PartnerAccountGetByRefIdRequest) returns (PartnerAccountEntity) {}
   rpc PartnerAccountFindByClientPartner(PartnerAccountFindByClientPartnerRequest) returns (PartnerAccountEntities) {}

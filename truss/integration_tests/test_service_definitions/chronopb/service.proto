@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mvchronopb;
+package chronopb;
 
 import "clock_state.proto";
 import "enqueue.proto";
@@ -9,7 +9,7 @@ import "notification.proto";
 // Service defines the RPC interface the service
 // will expose and which is required
 // to be implemented in transport/rpc/bindings
-service MvChronoService {
+service ChronoService {
   rpc Enqueue(EnqueueRequest) returns (EnqueueResponse);
   rpc Notify(NotificationRequest) returns (NotificationResponse);
   rpc Retry(RetryRequest) returns (RetryResponse);

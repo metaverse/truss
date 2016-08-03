@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mvsignonpb;
+package signonpb;
 
 message Session {
   string session_token = 1;

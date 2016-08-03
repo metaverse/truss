@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mvchronopb;
+package chronopb;
 
 message EnqueueRequest {
   string task_id = 1;

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mventitiespb;
+package entitiespb;
 import "client.proto";
 import "client_attribution_partner.proto";
 import "partner_account.proto";
@@ -11,7 +11,7 @@ import "vendor.proto";
 import "vendor_request.proto";
 
 // The Platform Entity service definition.
-service MvEntitiesService {
+service EntitiesService {
   rpc ClientGetById(ClientGetByIdRequest) returns (ClientEntity) {}
   rpc ClientGetByIds(ClientGetByIdsRequest) returns (ClientEntities) {}
   rpc ClientGetByRefId(ClientGetByRefIdRequest) returns (ClientEntity) {}

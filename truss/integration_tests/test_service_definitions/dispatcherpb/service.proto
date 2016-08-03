@@ -1,13 +1,13 @@
 syntax = "proto3";
 
-package mvdispatcherpb;
+package dispatcherpb;
 
 import "job.proto";
 
 // Service defines the RPC interface the service
 // will expose and which is required
 // to be implemented in transport/rpc/bindings
-service MvDispatcherService {
+service DispatcherService {
   rpc Submit(JobConfigRequest) returns (JobResponse);
 
   rpc Stop(JobRequest) returns (JobResponse);

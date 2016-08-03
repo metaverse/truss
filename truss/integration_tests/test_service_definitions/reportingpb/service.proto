@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package mvreportingpb;
+package reportingpb;
 
-service MvReportingService {
+service ReportingService {
   rpc ExportQueue(ExportQueueRequest) returns (ExportQueueResponse) {}
   rpc ExportGet(ExportGetRequest) returns (ExportGetResponse) {}
   rpc ExportRedshiftQueue(ExportRedshiftQueueRequest) returns (ExportRedshiftQueueResponse) {}
@@ -46,7 +46,7 @@ enum ExportStatus {
   COMPLETE = 3;
 }
 
-enum MvReportingMvReportingExportDataType {
+enum ReportingReportingExportDataType {
   TYPE_AGGREGATE = 0;
   TYPE_RAW = 1;
   TYPE_ERROR = 2;
@@ -62,7 +62,7 @@ message ExportEntity {
   ExportFormat format = 7;
   int64 percent_complete = 8;
   ExportStatus status = 9;
-  MvReportingMvReportingExportDataType data_type = 10;
+  ReportingReportingExportDataType data_type = 10;
   string s3_url = 11;  
   string created = 12;
   string modified = 13;
@@ -75,7 +75,7 @@ message ExportQueueRequest {
   int64 client_id = 4;
   int64 vendor_id = 5;
   ExportFormat format = 6;
-  MvReportingMvReportingExportDataType data_type = 7;
+  ReportingReportingExportDataType data_type = 7;
 }
 
 message ExportQueueResponse {
@@ -99,7 +99,7 @@ message ExportRedshiftQueueRequest {
   string end_date = 2;
   int64 client_id = 3;
   repeated int64 vendor_ids = 4;
-  MvReportingMvReportingExportDataType data_type = 5;
+  ReportingReportingExportDataType data_type = 5;
 }
 
 message ExportRedshiftQueueResponse {
