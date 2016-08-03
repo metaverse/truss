@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package otcentities;
+
+message AdNetworkGetByIdRequest {
+  int64 id = 1;
+  string request_api_key = 2;
+}
+
+message AdNetworkGetByNameRequest {
+  string name = 1;
+  string request_api_key = 2;
+}
+
+message AdNetworkFindRequest {
+  string where = 1;
+  string order_by = 2;
+  int64 limit = 3;
+  int64 page = 4;
+  string request_api_key = 5;
+}
+
+message AdNetworkEntities {
+  repeated AdNetworkEntity results = 1;
+}
+
+message AdNetworkEntity {
+  int64 id = 1;
+  string name = 2;
+  string thumbnail_url = 3;
+  string description = 4;
+  string status = 5;
+}

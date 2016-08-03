@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package entities;
+
+message VendorRequestFindRequest {
+  string where = 1;
+  repeated string args = 2;
+  string order_by = 3;
+  int64 limit = 4;
+  int64 offset = 5;  
+}
+
+message VendorRequestCreateRequest {
+  int64 client_id = 1;
+  int64 vendor_id = 2;
+}
+
+message VendorRequestEntities {
+  repeated VendorRequestEntity results = 1;
+}
+
+message VendorRequestEntity {
+  int64 vendor_id = 1; 
+  int64 client_id = 2;
+  string created = 3;
+}
