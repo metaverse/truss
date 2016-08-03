@@ -1,11 +1,15 @@
+// Package clientarggen collects information for templating the code in a
+// truss-generated client which marshals command line flags into message fields
+// for each service. Functions and fields in clientargen are called by
+// templates in protoc-gen-truss-gokit/template/
 package clientarggen
 
 import (
 	"fmt"
-	//	log "github.com/Sirupsen/logrus"
+	"strings"
+
 	"github.com/TuneLab/gob/gendoc/doctree"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
-	"strings"
 )
 
 // A collection of the necessary information for generating basic business
@@ -55,7 +59,7 @@ func (self *MethodArgs) FunctionArgs() string {
 func (self *MethodArgs) CallArgs() string {
 	tmp := []string{}
 	for _, a := range self.Args {
-		tmp = append(tmp, createFlagArg(*a))
+		tmp = append(tmp, createFlagConversion(*a))
 	}
 	return strings.Join(tmp, ", ")
 }
@@ -64,6 +68,11 @@ type ClientServiceArgs struct {
 	MethArgs map[string]*MethodArgs
 }
 
+// AllFlags returns a string that is all the flag declarations for all
+// arguments of all methods, separated by newlines. This is used in the
+// template to declare all the flag arguments for a client at once, and without
+// doing all this iteration in a template where it would be much less
+// understandable.
 func (self *ClientServiceArgs) AllFlags() string {
 	tmp := []string{}
 	for _, m := range self.MethArgs {
@@ -91,6 +100,8 @@ var ProtoToGoTypeMap = map[string]string{
 	"TYPE_SINT64":   "int64",
 }
 
+// New creates a ClientServiceArgs struct containing all the arguments for all
+// the methods of a given RPC.
 func New(svc *doctree.ProtoService) *ClientServiceArgs {
 	svcArgs := ClientServiceArgs{
 		MethArgs: make(map[string]*MethodArgs),
@@ -126,7 +137,8 @@ func New(svc *doctree.ProtoService) *ClientServiceArgs {
 }
 
 // createFlagConvertFunc creates the go string for the flag invocation to parse
-// a command line argument into it's correct type
+// a command line argument into it's nearest available type that the flag
+// package provides.
 func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
@@ -148,9 +160,12 @@ func createFlagConvertFunc(a ClientArg) string {
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
 }
 
-// createFlagConvertFunc creates the go string for the flag invocation to parse
-// a command line argument into it's correct type
-func createFlagArg(a ClientArg) string {
+// createFlagConversion creates the proper syntax for converting a flag into
+// it's correct type. This is done because not every go type that a method
+// field could be has a cooresponding flag command type. So this stage must
+// exist to convert the subset of types which the flag package provides into
+// other golang types, and the dereferencing is just a side effect of that.
+func createFlagConversion(a ClientArg) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.GoType, "int32"):

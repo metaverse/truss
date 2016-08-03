@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package auth;
+
+message ServiceEndpointsGetResponse {
+  repeated string addresses = 1;
+}
+
+message ServiceEndpointsGetRequest {
+  int64 service_port = 1;
+}

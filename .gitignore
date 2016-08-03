@@ -4,3 +4,7 @@
 [._]s[a-w][a-z]
 # session
 Session.vi
+
+# Prevents accidentally including a problematic folder within the `vendor/`
+# folder.
+vendor/github.com/Sirupsen/logrus/examples/

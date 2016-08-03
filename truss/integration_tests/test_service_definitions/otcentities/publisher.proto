@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package otcentities;
+
+message PublisherGetByIdRequest {
+  int64 id = 1;
+  string request_api_key = 2;
+}
+
+message PublisherGetByAdvertiserAdNetworkRequest {
+  int64 advertiser_id = 1;
+  int64 ad_network_id = 2;
+  string ad_network = 3;
+  string request_api_key = 4;
+}
+
+message PublisherFindRequest {
+  string where = 1;
+  string order_by = 2;
+  int64 limit = 3;
+  int64 page = 4;
+  string request_api_key = 5;
+}
+
+message PublisherEntities {
+  repeated PublisherEntity results = 1;
+}
+
+message PublisherEntity {
+  int64 id = 1;
+  string name = 2;
+  int64 account_id = 3;
+  int64 ad_network_id = 4;
+  string status = 5;
+}

@@ -17,10 +17,9 @@ clean:
 
 # Run truss on all proto files in all dirs in ./tests/
 test:
-	cd ./tests && truss-integration-runner
+	go test -tags=integration -v ./integration_tests
 
-# Remove the dir named `service/` in all dirs in ./tests/
 testclean:
-	./tests/cleantest.sh ./tests/
+	go test -tags=integration ./integration_tests -clean
 
 
