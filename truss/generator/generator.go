@@ -20,7 +20,7 @@ func init() {
 }
 
 // GenerateMicroservice takes a golang importPath, a path to .proto definition files workingDirectory, and a slice of
-// definition files DefinitionFiles and outputs a ./service direcotry in workingDirectory with a generated and built golang microservice
+// definition files DefinitionFiles and outputs a ./service direcotry in workingDirectory with a generated microservice
 func GenerateMicroservice(importPath string, workingDirectory string, definitionFiles []string) {
 
 	done := make(chan bool)
@@ -41,6 +41,12 @@ func GenerateMicroservice(importPath string, workingDirectory string, definition
 	<-done
 	<-done
 	<-done
+}
+
+// BuildMicroservice builds a microservice using `$ go build` for a microservice generated with GenerateMicroservice
+func BuildMicroservice(importPath string) {
+
+	done := make(chan bool)
 
 	// Stage 5
 	go goBuild("server", importPath+"/service/DONOTEDIT/cmd/svc/...", done)
