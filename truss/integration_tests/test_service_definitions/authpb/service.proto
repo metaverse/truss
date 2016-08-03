@@ -1,12 +1,11 @@
 syntax = "proto3";
 
-package mvauthpb;
+package authpb;
 import "access_token.proto";
 import "service_key_values.proto";
 import "service_endpoints.proto";
 
-service MvAuthService {
-  rpc AccessTokenCreateTemp(AccessTokenCreateTempRequest) returns (AccessTokenCreateTempResponse) {}
+service AuthService {
   rpc AccessTokenValidateGrpc(AccessTokenValidateGrpcRequest) returns (AccessTokenValidateResponse) {}
   rpc AccessTokenValidateHttpjson(AccessTokenValidateHttpjsonRequest) returns (AccessTokenValidateResponse) {}
   rpc ServiceKeyValuesGet(ServiceKeyValuesGetRequest) returns (ServiceKeyValuesGetResponse) {}

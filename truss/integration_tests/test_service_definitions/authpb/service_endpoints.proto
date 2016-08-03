@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package mvauthpb;
+package authpb;
 
 message ServiceEndpointsGetResponse {
   repeated string addresses = 1;
 }
 
-message ServiceEndpointsGetRequest {	
+message ServiceEndpointsGetRequest {
   int64 service_port = 1;
 }

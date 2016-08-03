@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package mvauthpb;
+package authpb;
 
 message ServiceKeyValuesGetResponse {
   map<string, string> values = 1;
 }
 
-message ServiceKeyValuesGetRequest {	
+message ServiceKeyValuesGetRequest {
   string key = 1;
 }
