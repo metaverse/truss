@@ -1,5 +1,5 @@
 hash: 86c7116b141b6cb76099a83ef14216abba8656b1cc188cd3ab5857a1e04051d8
-updated: 2016-08-01T11:53:38.438876297-07:00
+updated: 2016-08-08T14:05:54.819692573-07:00
 imports:
 - name: github.com/golang/protobuf
   version: c3cefd437628a0b7d31b34fe44b3a7a540e98527
@@ -8,6 +8,8 @@ imports:
   - protoc-gen-go/descriptor
   - protoc-gen-go/generator
   - protoc-gen-go/plugin
+- name: github.com/pkg/errors
+  version: a22138067af1c4942683050411a841ade67fe1eb
 - name: github.com/Sirupsen/logrus
   version: 4b6ea7319e214d98c938f12692336f7ca9348d6b
 - name: golang.org/x/sys
