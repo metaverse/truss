@@ -504,7 +504,8 @@ func (self *BindingField) Describe(depth int) string {
 // HttpParameter contains information for one parameter of an http binding. It
 // is created by contextualizing all of the `BindingField`'s within a
 // `MethodHttpBinding`, with each `HttpParameter` corresponding to one of the
-// fields in the input message for the given rpc method.
+// fields in the input message for the given rpc method. It's type is the
+// protobuf type of the field of the struct it's refering to.
 type HttpParameter struct {
 	describable
 	Location string

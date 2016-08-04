@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestPathExtract(t *testing.T) {
+func TestPathParams(t *testing.T) {
 	var cases = []struct {
 		url, tmpl, field, want string
 	}{
@@ -14,20 +14,53 @@ func TestPathExtract(t *testing.T) {
 	}
 
 	for _, test := range cases {
-		got, err := PathExtract(test.url, test.tmpl, test.field)
+		ret, err := PathParams(test.url, test.tmpl)
 		if err != nil {
-			t.Errorf("PathExtract returned error '%v' on case '%+v'\n", err, test)
+			t.Errorf("PathParams returned error '%v' on case '%+v'\n", err, test)
 		}
-		if got != test.want {
-			t.Errorf("PathExtract got '%v', want '%v'\n", got, test.want)
+		if got, ok := ret[test.field]; ok {
+			if got != test.want {
+				t.Errorf("PathParams got '%v', want '%v'\n", got, test.want)
+			}
+		} else {
+			t.Errorf("PathParams didn't return map containing field '%v'\n", test.field)
 		}
 	}
 }
 
 func TestGetSourceCode(t *testing.T) {
-	file, err := GetSourceCode(PathExtract)
+	file, err := GetSourceCode(PathParams)
 	if err != nil {
 		t.Fatalf("Failed to get source code: %s\n", err)
 	}
 	t.Logf("%v\n", file)
+}
+
+func TestEnglishNumber(t *testing.T) {
+	var cases = []struct {
+		i    int
+		want string
+	}{
+		{0, "Zero"},
+		{1, "One"},
+		{2, "Two"},
+		{3, "Three"},
+		{4, "Four"},
+		{5, "Five"},
+		{6, "Six"},
+		{7, "Seven"},
+		{8, "Eight"},
+		{9, "Nine"},
+
+		{11, "OneOne"},
+		{22, "TwoTwo"},
+		{23, "TwoThree"},
+	}
+
+	for _, test := range cases {
+		got := EnglishNumber(test.i)
+		if got != test.want {
+			t.Errorf("Got %v, want %v\n", got, test.want)
+		}
+	}
 }
