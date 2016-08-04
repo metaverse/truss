@@ -21,7 +21,7 @@ func init() {
 
 // Stages are documented in README.md
 func main() {
-	buildMicroservice := flag.Bool("build", true, "Set -build=false to not build microservice")
+	noBuild := flag.Bool("nobuild", false, "Set -nobuild to generate code without building")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
@@ -74,7 +74,7 @@ func main() {
 
 	generator.GenerateMicroservice(genImportPath, workingDirectory, definitionFiles)
 
-	if *buildMicroservice {
+	if !*noBuild {
 		generator.BuildMicroservice(genImportPath)
 	}
 }
