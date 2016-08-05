@@ -13,51 +13,99 @@ import (
 )
 
 type Helper struct {
-	Methods []*Method
+	Methods           []*Method
+	PathParamsBuilder string
+	PossibleLocations []string
 }
 
 // NewHelper builds a helper struct from a service declaration.
 func NewHelper(svc *doctree.ProtoService) *Helper {
-	rv := Helper{}
+	pp, _ := GetSourceCode(PathParams)
+	rv := Helper{
+		PathParamsBuilder: pp,
+		PossibleLocations: []string{"query", "body", "path"},
+	}
 	for _, meth := range svc.Methods {
-		nMeth := Method{}
-		nMeth.Name = meth.GetName()
-		for i, binding := range meth.HttpBindings {
-			nBinding := Binding{
-				Label:        nMeth.Name + EnglishNumber(i),
-				PathTemplate: binding.Path,
-			}
-			for _, field := range meth.RequestType.Fields {
-				// Param is specifically an http parameter, while field is a
-				// field in a protobuf msg. nField is a distillation of the
-				// relevant information to translate the http parameter into a
-				// field on a protobuf msg.
-				param := getParam(field.GetName(), binding.Params)
-				// TODO add handling for non-found params here
-				nField := Field{
-					Name:          field.GetName(),
-					Location:      param.Location,
-					ProtobufType:  param.Type,
-					ProtobufLabel: field.Label,
-					LocalName:     fmt.Sprintf("%s%s", gogen.CamelCase(field.GetName()), gogen.CamelCase(meth.GetName())),
-				}
-				var gt string
-				var ok bool
-				tmap := clientarggen.ProtoToGoTypeMap
-				if gt, ok = tmap[nField.ProtobufType]; !ok || field.Label == "LABEL_REPEATED" {
-					gt = "string"
-					nField.IsBaseType = false
-				} else {
-					nField.IsBaseType = true
-				}
-				nField.GoType = gt
-				nBinding.Fields = append(nBinding.Fields, &nField)
-			}
-			nMeth.Bindings = append(nMeth.Bindings, &nBinding)
-		}
-		rv.Methods = append(rv.Methods, &nMeth)
+		nMeth := NewMethod(meth)
+		rv.Methods = append(rv.Methods, nMeth)
 	}
 	return &rv
+}
+
+func NewMethod(meth *doctree.ServiceMethod) *Method {
+	nMeth := Method{}
+	nMeth.Name = meth.GetName()
+	for i, _ := range meth.HttpBindings {
+		nBinding := NewBinding(i, meth)
+		nMeth.Bindings = append(nMeth.Bindings, nBinding)
+	}
+	return &nMeth
+}
+
+func NewBinding(i int, meth *doctree.ServiceMethod) *Binding {
+	binding := meth.HttpBindings[i]
+	nBinding := Binding{
+		Label:        meth.GetName() + EnglishNumber(i),
+		PathTemplate: binding.Path,
+		BasePath:     basePath(binding.Path),
+	}
+	for _, field := range meth.RequestType.Fields {
+		// Param is specifically an http parameter, while field is a
+		// field in a protobuf msg. nField is a distillation of the
+		// relevant information to translate the http parameter into a
+		// field on a protobuf msg.
+		param := getParam(field.GetName(), binding.Params)
+		// TODO add handling for non-found params here
+		nField := Field{
+			Name:          field.GetName(),
+			Location:      param.Location,
+			ProtobufType:  param.Type,
+			ProtobufLabel: field.Label,
+			LocalName:     fmt.Sprintf("%s%s", gogen.CamelCase(field.GetName()), gogen.CamelCase(meth.GetName())),
+		}
+		var gt string
+		var ok bool
+		tmap := clientarggen.ProtoToGoTypeMap
+		if gt, ok = tmap[nField.ProtobufType]; !ok || field.Label == "LABEL_REPEATED" {
+			gt = "string"
+			nField.IsBaseType = false
+		} else {
+			nField.IsBaseType = true
+		}
+		nField.GoType = gt
+		nField.ConvertFunc = createConvertFunc(nField)
+
+		nBinding.Fields = append(nBinding.Fields, &nField)
+	}
+	return &nBinding
+}
+
+// createConvertFunc creates a go string representing the function to convert
+// the string form of the field to it's correct go type.
+func createConvertFunc(f Field) string {
+	fType := ""
+	switch {
+	case strings.Contains(f.GoType, "int32"):
+		fType = "%s, err := strconv.ParseInt(%s, 32)"
+	case strings.Contains(f.GoType, "int64"):
+		fType = "%s, err := strconv.ParseInt(%s, 64)"
+	case strings.Contains(f.GoType, "int"):
+		fType = "%s, err := strconv.ParseInt(%s, 32)"
+	case strings.Contains(f.GoType, "bool"):
+		fType = "%s, err := strconv.ParseBool(%s)"
+	case strings.Contains(f.GoType, "float32"):
+		fType = "%s, err := strconv.ParseFloat(%s, 32)"
+	case strings.Contains(f.GoType, "float64"):
+		fType = "%s, err := strconv.ParseFloat(%s, 64)"
+	case strings.Contains(f.GoType, "string"):
+		fType = "%s := %s"
+	}
+	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
+}
+
+func basePath(path string) string {
+	parts := strings.Split(path, "{")
+	return parts[0]
 }
 
 func getParam(name string, params []*doctree.HttpParameter) *doctree.HttpParameter {
@@ -69,11 +117,11 @@ func getParam(name string, params []*doctree.HttpParameter) *doctree.HttpParamet
 	return nil
 }
 
-// PathExtract takes a url and a gRPC-annotation style url template, and
+// PathParams takes a url and a gRPC-annotation style url template, and
 // returns a map of the named parameters in the template and their values in
 // the given url.
 //
-// PathExtract does not support the entirety of the URL template syntax defined
+// PathParams does not support the entirety of the URL template syntax defined
 // in third_party/googleapis/google/api/httprule.proto. Only a small subset of
 // the functionality defined there is implemented here.
 func PathParams(url string, urlTmpl string) (map[string]string, error) {
@@ -118,6 +166,7 @@ var DigitEnglish = map[rune]string{
 	'9': "nine",
 }
 
+// EnglishNumber takes an integer and returns the english words that compose that word, in base ten
 func EnglishNumber(i int) string {
 	n := strconv.Itoa(i)
 	rv := ""

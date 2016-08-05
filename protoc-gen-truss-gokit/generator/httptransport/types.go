@@ -6,9 +6,14 @@ type Method struct {
 }
 
 type Binding struct {
-	Label        string
+	Label string
+	// PathTemplate is the full path template as it appeared in the http
+	// annotation which this binding refers to.
 	PathTemplate string
-	Fields       []*Field
+	// BasePath is the longest static portion of the full PathTemplate, and is
+	// given the the net/http mux as the path for the route for this binding.
+	BasePath string
+	Fields   []*Field
 }
 
 type Field struct {
