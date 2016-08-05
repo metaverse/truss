@@ -1,8 +1,9 @@
 package httptransport
 
 type Method struct {
-	Name     string
-	Bindings []*Binding
+	Name        string
+	RequestType string
+	Bindings    []*Binding
 }
 
 type Binding struct {

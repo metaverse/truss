@@ -8,11 +8,12 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/TuneLab/gob/gendoc/doctree"
 	"github.com/TuneLab/gob/protoc-gen-truss-gokit/astmodifier"
+	"github.com/TuneLab/gob/protoc-gen-truss-gokit/generator/clientarggen"
+	"github.com/TuneLab/gob/protoc-gen-truss-gokit/generator/httptransport"
 	templateFileAssets "github.com/TuneLab/gob/protoc-gen-truss-gokit/template"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
-	"github.com/TuneLab/gob/protoc-gen-truss-gokit/generator/clientarggen"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 
@@ -46,6 +47,7 @@ type templateExecutor struct {
 	// GRPC/Protobuff service, with all parameters and return values accessible
 	Service    *doctree.ProtoService
 	ClientArgs *clientarggen.ClientServiceArgs
+	HTTPHelper *httptransport.Helper
 }
 
 // New returns a new generator which generates grpc gateway files.
@@ -111,6 +113,7 @@ func New(files []*doctree.ProtoFile, outputDirName string) *generator {
 			GeneratedImport: generatedImportString,
 			Service:         service,
 			ClientArgs:      clientarggen.New(service),
+			HTTPHelper:      httptransport.NewHelper(service),
 		},
 	}
 }

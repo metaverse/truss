@@ -4,6 +4,7 @@ package httptransport
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -13,17 +14,22 @@ import (
 )
 
 type Helper struct {
-	Methods           []*Method
-	PathParamsBuilder string
-	PossibleLocations []string
+	Methods            []*Method
+	PathParamsBuilder  string
+	QueryParamsBuilder string
+	PossibleLocations  []string
 }
 
-// NewHelper builds a helper struct from a service declaration.
+// NewHelper builds a helper struct from a service declaration. The other
+// "New*" functions in this file are there to make this function smaller and
+// more testable.
 func NewHelper(svc *doctree.ProtoService) *Helper {
 	pp, _ := GetSourceCode(PathParams)
+	qp, _ := GetSourceCode(QueryParams)
 	rv := Helper{
-		PathParamsBuilder: pp,
-		PossibleLocations: []string{"query", "body", "path"},
+		PathParamsBuilder:  pp,
+		QueryParamsBuilder: qp,
+		PossibleLocations:  []string{"query", "body", "path"},
 	}
 	for _, meth := range svc.Methods {
 		nMeth := NewMethod(meth)
@@ -33,8 +39,10 @@ func NewHelper(svc *doctree.ProtoService) *Helper {
 }
 
 func NewMethod(meth *doctree.ServiceMethod) *Method {
-	nMeth := Method{}
-	nMeth.Name = meth.GetName()
+	nMeth := Method{
+		Name:        meth.GetName(),
+		RequestType: meth.RequestType.GetName(),
+	}
 	for i, _ := range meth.HttpBindings {
 		nBinding := NewBinding(i, meth)
 		nMeth.Bindings = append(nMeth.Bindings, nBinding)
@@ -86,11 +94,11 @@ func createConvertFunc(f Field) string {
 	fType := ""
 	switch {
 	case strings.Contains(f.GoType, "int32"):
-		fType = "%s, err := strconv.ParseInt(%s, 32)"
+		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 	case strings.Contains(f.GoType, "int64"):
-		fType = "%s, err := strconv.ParseInt(%s, 64)"
+		fType = "%s, err := strconv.ParseInt(%s, 10, 64)"
 	case strings.Contains(f.GoType, "int"):
-		fType = "%s, err := strconv.ParseInt(%s, 32)"
+		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 	case strings.Contains(f.GoType, "bool"):
 		fType = "%s, err := strconv.ParseBool(%s)"
 	case strings.Contains(f.GoType, "float32"):
@@ -153,6 +161,18 @@ func PathParams(url string, urlTmpl string) (map[string]string, error) {
 	return rv, nil
 }
 
+func QueryParams(vals url.Values) (map[string]string, error) {
+	// TODO make this not flatten the query params
+	// WARNING this is a super huge hack and will ignore repeated values in the
+	// query parameter. This should absolutely be correctly implemented later
+	// by someone else or maybe future me...
+	rv := map[string]string{}
+	for k, v := range vals {
+		rv[k] = v[0]
+	}
+	return rv, nil
+}
+
 var DigitEnglish = map[rune]string{
 	'0': "zero",
 	'1': "one",
@@ -166,7 +186,8 @@ var DigitEnglish = map[rune]string{
 	'9': "nine",
 }
 
-// EnglishNumber takes an integer and returns the english words that compose that word, in base ten
+// EnglishNumber takes an integer and returns the english words that represents
+// that number, in base ten
 func EnglishNumber(i int) string {
 	n := strconv.Itoa(i)
 	rv := ""

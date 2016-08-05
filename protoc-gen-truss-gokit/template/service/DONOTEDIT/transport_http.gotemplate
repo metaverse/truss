@@ -10,6 +10,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	//stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
@@ -31,30 +34,17 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints/*, tracer stdopent
 	}*/
 	m := http.NewServeMux()
 
-	{{range $i := $templateExecutor.Service.Methods}}
-	m.Handle("/{{ToLower $i.GetName}}", httptransport.NewServer(
+{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $binding := $method.Bindings}}
+	m.Handle("{{ToLower $binding.BasePath}}", httptransport.NewServer(
 		ctx,
-		endpoints.{{$i.GetName}}Endpoint,
-		DecodeHTTP{{$i.GetName}}Request,
+		endpoints.{{$method.Name}}Endpoint,
+		DecodeHTTP{{$binding.Label}}Request,
 		EncodeHTTPGenericResponse,
 	))
-	{{- end}}
+{{- end}}
+{{- end}}
 	return m
-	/*m.Handle("/sum", httptransport.NewServer(
-		ctx,
-		endpoints.SumEndpoint,
-		DecodeHTTPSumRequest,
-		EncodeHTTPGenericResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "Sum", logger)))...,
-	))
-	m.Handle("/concat", httptransport.NewServer(
-		ctx,
-		endpoints.ConcatEndpoint,
-		DecodeHTTPConcatRequest,
-		EncodeHTTPGenericResponse,
-		append(options, httptransport.ServerBefore(opentracing.FromHTTPRequest(tracer, "Concat", logger)))...,
-	))
-	return m*/
 }
 
 func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
@@ -92,15 +82,45 @@ type errorWrapper struct {
 }
 
 // Server Decode
-{{range $i := $templateExecutor.Service.Methods}}
-// DecodeHTTP{{$i.GetName}}Request is a transport/http.DecodeRequestFunc that
-// decodes a JSON-encoded {{ToLower $i.GetName}} request from the HTTP request
+{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $binding := $method.Bindings}}
+// DecodeHTTP{{$method.Name}}Request is a transport/http.DecodeRequestFunc that
+// decodes a JSON-encoded {{ToLower $method.Name}} request from the HTTP request
 // body. Primarily useful in a server.
-func DecodeHTTP{{$i.GetName}}Request(_ context.Context, r *http.Request) (interface{}, error) {
-	var req pb.{{GoName $i.RequestType.GetName}}
+func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
+	var req pb.{{GoName $method.RequestType}}
 	err := json.NewDecoder(r.Body).Decode(&req)
+
+	pathParams, err := PathParams(r.URL.Path, "{{$binding.PathTemplate}}")
+	// We may not use pathParams this time, but still gotta keep the compiler
+	// from complaining :|
+	_ = pathParams
+	// TODO: Better error handling
+	if err != nil {
+		return nil, err
+	}
+	queryParams, err := QueryParams(r.URL.Query())
+	// We may not use queryParams this time, but still gotta keep the compiler
+	// from complaining :|
+	_ = queryParams
+	// TODO: Better error handling
+	if err != nil {
+		return nil, err
+	}
+{{range $field := $binding.Fields}}
+	{{$field.LocalName}}Str := {{$field.Location}}Params["{{$field.Name}}"]
+	{{$field.ConvertFunc}}
+	// TODO: Better error handling
+	if err != nil {
+		return nil, err
+	}
+	req.{{GoName $field.Name}} = {{$field.LocalName}}
+{{end}}
+
+
 	return req, err
 }
+{{end}}
 {{end}}
 
 // Client Decode
@@ -136,5 +156,9 @@ func EncodeHTTPGenericRequest(_ context.Context, r *http.Request, request interf
 func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	return json.NewEncoder(w).Encode(response)
 }
+
+{{$templateExecutor.HTTPHelper.PathParamsBuilder}}
+{{$templateExecutor.HTTPHelper.QueryParamsBuilder}}
+
 
 {{- end}}
