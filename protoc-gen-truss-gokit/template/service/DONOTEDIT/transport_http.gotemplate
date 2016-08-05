@@ -25,6 +25,11 @@ import (
 	pb "{{$templateExecutor.GeneratedImport -}} /pb"
 )
 
+var (
+	_ = strconv.Atoi
+	_ = httptransport.NewServer
+)
+
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
 func MakeHTTPHandler(ctx context.Context, endpoints Endpoints/*, tracer stdopentracing.Tracer, logger log.Logger*/) http.Handler {
