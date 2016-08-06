@@ -28,8 +28,16 @@ func TestPathParams(t *testing.T) {
 	}
 }
 
-func TestGetSourceCode(t *testing.T) {
-	file, err := GetSourceCode(PathParams)
+func TestFuncSourceCode(t *testing.T) {
+	file, err := FuncSourceCode(PathParams)
+	if err != nil {
+		t.Fatalf("Failed to get source code: %s\n", err)
+	}
+	t.Logf("%v\n", file)
+}
+
+func TestAllFuncSourceCode(t *testing.T) {
+	file, err := AllFuncSourceCode(PathParams)
 	if err != nil {
 		t.Fatalf("Failed to get source code: %s\n", err)
 	}

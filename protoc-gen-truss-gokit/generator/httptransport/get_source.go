@@ -13,9 +13,9 @@ import (
 	"go/token"
 )
 
-// GetSourceCode returns a string representing the source code of the function
+// FuncSourceCode returns a string representing the source code of the function
 // provided to it.
-func GetSourceCode(val interface{}) (string, error) {
+func FuncSourceCode(val interface{}) (string, error) {
 	ptr := reflect.ValueOf(val).Pointer()
 	fpath, _ := runtime.FuncForPC(ptr).FileLine(ptr)
 
@@ -49,4 +49,47 @@ func GetSourceCode(val interface{}) (string, error) {
 	}
 
 	return code.String(), nil
+}
+
+// Given a function, return the source code of all the functions defined in the
+// same file, including the one passed in.
+func AllFuncSourceCode(val interface{}) (string, error) {
+
+	ptr := reflect.ValueOf(val).Pointer()
+	fpath, _ := runtime.FuncForPC(ptr).FileLine(ptr)
+
+	funcName := runtime.FuncForPC(ptr).Name()
+	parts := strings.Split(funcName, ".")
+	funcName = parts[len(parts)-1]
+
+	// Parse the go file into the ast
+	fset := token.NewFileSet()
+	fileAst, err := parser.ParseFile(fset, fpath, nil, 0)
+	if err != nil {
+		return "", fmt.Errorf("ERROR: go parser couldn't parse file '%v'\n", fpath)
+	}
+
+	// Search ast for all function declarations
+	fncSlc := []*ast.FuncDecl{}
+	for _, decs := range fileAst.Decls {
+		switch decs.(type) {
+		case *ast.FuncDecl:
+			f := decs.(*ast.FuncDecl)
+			fncSlc = append(fncSlc, f)
+		}
+	}
+
+	rv := ""
+	// Append source of each function to rv
+	for _, fnc := range fncSlc {
+		code := bytes.NewBuffer(nil)
+		err = printer.Fprint(code, fset, fnc)
+
+		if err != nil {
+			return "", fmt.Errorf("couldn't print code for func '%v': %v\n", fnc.Name.String(), err)
+		}
+		rv += code.String() + "\n"
+	}
+
+	return rv, nil
 }

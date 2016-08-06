@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -26,6 +27,7 @@ import (
 )
 
 var (
+	_ = fmt.Sprint
 	_ = strconv.Atoi
 	_ = httptransport.NewServer
 )
@@ -97,16 +99,12 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 	err := json.NewDecoder(r.Body).Decode(&req)
 
 	pathParams, err := PathParams(r.URL.Path, "{{$binding.PathTemplate}}")
-	// We may not use pathParams this time, but still gotta keep the compiler
-	// from complaining :|
 	_ = pathParams
 	// TODO: Better error handling
 	if err != nil {
 		return nil, err
 	}
 	queryParams, err := QueryParams(r.URL.Query())
-	// We may not use queryParams this time, but still gotta keep the compiler
-	// from complaining :|
 	_ = queryParams
 	// TODO: Better error handling
 	if err != nil {
@@ -145,9 +143,27 @@ func DecodeHTTP{{$i.GetName}}Response(_ context.Context, r *http.Response) (inte
 }
 {{end}}
 
-// EncodeHTTPGenericRequest is a transport/http.EncodeRequestFunc that
-// JSON-encodes any request to the request body. Primarily useful in a client.
-func EncodeHTTPGenericRequest(_ context.Context, r *http.Request, request interface{}) error {
+// Client Encode
+{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $binding := $method.Bindings}}
+// EncodeHTTP{{$binding.Label}}Request is a transport/http.EncodeRequestFunc
+// that encodes a {{ToLower $method.Name}} request into the various portions of
+// the http request (path, query, and body).
+func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, request interface{}) error {
+	req := request.(pb.{{GoName $method.RequestType}})
+	_ = req
+
+	// Set the path parameters
+	path := strings.Join([]string{
+{{range $section := $binding.PathSections}}
+{{- $section -}},
+{{end}}
+	}, "/")
+	u, err := url.Parse(path)
+	if err != nil {
+		return err
+	}
+	r.URL = u
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(request); err != nil {
 		return err
@@ -155,6 +171,8 @@ func EncodeHTTPGenericRequest(_ context.Context, r *http.Request, request interf
 	r.Body = ioutil.NopCloser(&buf)
 	return nil
 }
+{{end}}
+{{end}}
 
 // EncodeHTTPGenericResponse is a transport/http.EncodeResponseFunc that encodes
 // the response as JSON to the response writer. Primarily useful in a server.
@@ -163,7 +181,6 @@ func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, respons
 }
 
 {{$templateExecutor.HTTPHelper.PathParamsBuilder}}
-{{$templateExecutor.HTTPHelper.QueryParamsBuilder}}
 
 
 {{- end}}
