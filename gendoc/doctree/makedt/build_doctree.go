@@ -1,3 +1,8 @@
+// Makedt is a package for exposing the creation of a doctree structure.
+//
+// It lives in it's own package because it must use several other packages
+// which make use of doctree to create a doctree, so to prevent circular
+// imports, it must be its own package.
 package makedt
 
 import (
