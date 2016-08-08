@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
 	"github.com/TuneLab/gob/protoc-gen-truss-gokit/generator/clientarggen"
@@ -25,7 +26,6 @@ func NewHelper(svc *doctree.ProtoService) *Helper {
 	pp, _ := AllFuncSourceCode(PathParams)
 	rv := Helper{
 		PathParamsBuilder: pp,
-		//QueryParamsBuilder: qp,
 	}
 	for _, meth := range svc.Methods {
 		nMeth := NewMethod(meth)
@@ -52,6 +52,7 @@ func NewBinding(i int, meth *doctree.ServiceMethod) *Binding {
 		Label:        meth.GetName() + EnglishNumber(i),
 		PathTemplate: binding.Path,
 		BasePath:     basePath(binding.Path),
+		Verb:         binding.Verb,
 	}
 	for _, field := range meth.RequestType.Fields {
 		// Param is specifically an http parameter, while field is a
@@ -77,7 +78,10 @@ func NewBinding(i int, meth *doctree.ServiceMethod) *Binding {
 			nField.IsBaseType = true
 		}
 		nField.GoType = gt
-		nField.ConvertFunc = createConvertFunc(nField)
+		nField.ConvertFunc = createDecodeConvertFunc(nField)
+
+		nField.CamelName = gogen.CamelCase(nField.Name)
+		nField.LowCamelName = LowCamelName(nField.Name)
 
 		nBinding.Fields = append(nBinding.Fields, &nField)
 	}
@@ -99,9 +103,9 @@ func (self *Binding) PathSections() []string {
 	return rv
 }
 
-// createConvertFunc creates a go string representing the function to convert
-// the string form of the field to it's correct go type.
-func createConvertFunc(f Field) string {
+// createDecodeConvertFunc creates a go string representing the function to
+// convert the string form of the field to it's correct go type.
+func createDecodeConvertFunc(f Field) string {
 	fType := ""
 	switch {
 	case strings.Contains(f.GoType, "int32"):
@@ -122,6 +126,8 @@ func createConvertFunc(f Field) string {
 	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
 }
 
+// The 'basePath' of a path is the section from the start of the string till
+// the first '{' character.
 func basePath(path string) string {
 	parts := strings.Split(path, "{")
 	return parts[0]
@@ -162,4 +168,18 @@ func EnglishNumber(i int) string {
 		}
 	}
 	return rv
+}
+
+// LowCamelCase returns a CamelCased string, but with the first letter
+// lowercased. "package_name" becomes "packageName".
+func LowCamelName(s string) string {
+	s = gogen.CamelCase(s)
+	new := []rune(s)
+	if len(new) < 1 {
+		return s
+	}
+	rv := []rune{}
+	rv = append(rv, unicode.ToLower(new[0]))
+	rv = append(rv, new[1:]...)
+	return string(rv)
 }

@@ -28,8 +28,10 @@ import (
 
 var (
 	_ = fmt.Sprint
+	_ = bytes.Compare
 	_ = strconv.Atoi
 	_ = httptransport.NewServer
+	_ = ioutil.NopCloser
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
@@ -111,13 +113,15 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 		return nil, err
 	}
 {{range $field := $binding.Fields}}
+{{if ne $field.Location "body"}}
 	{{$field.LocalName}}Str := {{$field.Location}}Params["{{$field.Name}}"]
 	{{$field.ConvertFunc}}
 	// TODO: Better error handling
 	if err != nil {
 		return nil, err
 	}
-	req.{{GoName $field.Name}} = {{$field.LocalName}}
+	req.{{$field.CamelName}} = {{$field.LocalName}}
+{{end}}
 {{end}}
 
 
@@ -164,8 +168,24 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 		return err
 	}
 	r.URL = u
+
+	// Set the query parameters
+	values := r.URL.Query()
+{{range $field := $binding.Fields -}}
+	{{- if eq $field.Location "query" -}}
+	values.Add("{{$field.CamelName}}", fmt.Sprint(req.{{$field.CamelName}}))
+	{{end -}}
+{{end}}
+	// Set the body parameters
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(request); err != nil {
+	toRet := map[string]interface{}{
+{{- range $field := $binding.Fields -}}
+	{{if eq $field.Location "body"}}
+	"{{$field.CamelName}}" : req.{{$field.CamelName}},
+	{{end}}
+{{- end -}}
+	}
+	if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
 		return err
 	}
 	r.Body = ioutil.NopCloser(&buf)

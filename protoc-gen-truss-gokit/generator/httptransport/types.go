@@ -14,11 +14,20 @@ type Binding struct {
 	// BasePath is the longest static portion of the full PathTemplate, and is
 	// given the the net/http mux as the path for the route for this binding.
 	BasePath string
+	Verb     string
 	Fields   []*Field
 }
 
 type Field struct {
 	Name string
+	// The name of this field, but passed through the CamelCase function.
+	// Removes underscores, adds camelcase; "client_id" becomes "ClientId".
+	CamelName string
+	// The name of this field, but run through the camelcase function and with
+	// the first letter lowercased. "package_name" becomes "packageName".
+	// LowCamelName is how the names of fields should appear when marshaled to
+	// JSON, according to the gRPC language guide.
+	LowCamelName string
 	// The go-compatible name for this variable, for use in auto generated go
 	// code.
 	LocalName string

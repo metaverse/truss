@@ -72,3 +72,23 @@ func TestEnglishNumber(t *testing.T) {
 		}
 	}
 }
+
+func TestLowCamelName(t *testing.T) {
+	var cases = []struct {
+		name, want string
+	}{
+		{"what", "what"},
+		{"example_one", "exampleOne"},
+		{"another_example_case", "anotherExampleCase"},
+		{"_leading_camel", "xLeadingCamel"},
+		{"_a", "xA"},
+		{"a", "a"},
+	}
+
+	for _, test := range cases {
+		got := LowCamelName(test.name)
+		if got != test.want {
+			t.Errorf("Got %v, want %v\n", got, test.want)
+		}
+	}
+}
