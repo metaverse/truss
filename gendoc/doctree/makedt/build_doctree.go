@@ -91,13 +91,16 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 		// in the Doctree
 		newFile, err := NewFile(file, &dt)
 		if err != nil {
-			return nil, errors.Wrapf(err, "file creation of '%s' failed", file.GetName())
+			return nil, errors.Wrapf(err, "file creation of %q failed", file.GetName())
 		}
 		dt.Files = append(dt.Files, newFile)
 	}
 
-	// Do the association of comments to units code. The implementation of this
-	// function is in `associate_comments.go`
+	// AssociateComments goes through the comments in the passed in protobuf
+	// CodeGeneratorRequest, figures out which node within the mostly-assembled
+	// doctree each comment corresponds with, then uses the `SetDescription`
+	// method of each node to set it's description to the comment.
+	// The implementation of this function is in doctree/associate_comments.go
 	doctree.AssociateComments(&dt, req)
 
 	addHttpOptions(&dt, req)
@@ -168,16 +171,7 @@ func NewMessage(msg *descriptor.DescriptorProto) (*doctree.ProtoMessage, error) 
 		newField := doctree.MessageField{}
 		newField.Number = int(field.GetNumber())
 		newField.Name = *field.Name
-		newField.Type.Name = field.GetTypeName()
-		// The `GetTypeName` method on FieldDescriptorProto only
-		// returns the path/name of a type if that type is a message or
-		// an Enum. For basic types (int, float, etc.) `GetTypeName()`
-		// returns an empty string. In that case, we set the newFields
-		// type name to be the string representing the type of the
-		// field being examined.
-		if newField.Type.Name == "" {
-			newField.Type.Name = field.Type.String()
-		}
+		newField.Type.Name = getCorrectTypeName(field)
 		// The label we get back is a number, translate it to a human
 		// readable string
 		label := int32(field.GetLabel())
@@ -224,6 +218,21 @@ func NewService(
 		newSvc.Methods = append(newSvc.Methods, &newMeth)
 	}
 	return &newSvc, nil
+}
+
+// getCorrectTypeName returns the correct name for the type of the given
+// FieldDescriptorProto. The GetTypeName method on FieldDescriptorProto only
+// returns the path/name of a type if that type is a message or an Enum. For
+// basic types (int, float, etc.) GetTypeName() returns an empty string. In
+// that case, we set the newFields type name to be the string representing the
+// type of the field being examined.
+func getCorrectTypeName(p *descriptor.FieldDescriptorProto) string {
+	rv := p.GetTypeName()
+
+	if rv == "" {
+		rv = p.Type.String()
+	}
+	return rv
 }
 
 // Searches all descendent directories for a file with name `fname`.
