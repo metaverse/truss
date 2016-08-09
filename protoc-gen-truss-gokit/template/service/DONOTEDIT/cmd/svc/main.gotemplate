@@ -40,7 +40,7 @@ import (
 func main() {
 	var (
 		debugAddr      = flag.String("debug.addr", ":8080", "Debug and metrics listen address")
-		//httpAddr       = flag.String("http.addr", ":8081", "HTTP listen address")
+		httpAddr       = flag.String("http.addr", ":8081", "HTTP listen address")
 		grpcAddr       = flag.String("grpc.addr", ":8082", "gRPC (HTTP) listen address")
 		//zipkinAddr     = flag.String("zipkin.addr", "", "Enable Zipkin tracing via a Kafka server host:port")
 		//appdashAddr    = flag.String("appdash.addr", "", "Enable Appdash tracing via an Appdash server host:port")
@@ -180,12 +180,13 @@ func main() {
 	}()
 
 	// HTTP transport.
-	//go func() {
-		//logger := log.NewContext(logger).With("transport", "HTTP")
+	go func() {
+		logger := log.NewContext(logger).With("transport", "HTTP")
 		//h := addsvc.MakeHTTPHandler(ctx, endpoints, tracer, logger)
-		//logger.Log("addr", *httpAddr)
-		//errc <- http.ListenAndServe(*httpAddr, h)
-	//}()
+		h := addsvc.MakeHTTPHandler(ctx, endpoints)
+		logger.Log("addr", *httpAddr)
+		errc <- http.ListenAndServe(*httpAddr, h)
+	}()
 
 	// gRPC transport.
 	go func() {

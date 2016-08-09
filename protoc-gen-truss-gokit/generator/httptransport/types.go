@@ -1,18 +1,24 @@
 package httptransport
 
 type Method struct {
-	Name        string
-	RequestType string
-	Bindings    []*Binding
+	Name         string
+	RequestType  string
+	ResponseType string
+	Bindings     []*Binding
 }
 
 type Binding struct {
+	// Label is the name of this method, plus the english word for the index of
+	// this binding in this methods slice of bindings. So if this binding where
+	// the first binding in the slice of bindings for the method "Sum", the
+	// label for this binding would be "SumZero". If it where the third
+	// binding, it would be named "SumTwo".
 	Label string
 	// PathTemplate is the full path template as it appeared in the http
 	// annotation which this binding refers to.
 	PathTemplate string
 	// BasePath is the longest static portion of the full PathTemplate, and is
-	// given the the net/http mux as the path for the route for this binding.
+	// given to the net/http mux as the path for the route for this binding.
 	BasePath string
 	Verb     string
 	Fields   []*Field

@@ -97,6 +97,7 @@ type errorWrapper struct {
 // decodes a JSON-encoded {{ToLower $method.Name}} request from the HTTP request
 // body. Primarily useful in a server.
 func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
+	fmt.Printf("Decoding request %v\n", r)
 	var req pb.{{GoName $method.RequestType}}
 	err := json.NewDecoder(r.Body).Decode(&req)
 
@@ -104,12 +105,14 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 	_ = pathParams
 	// TODO: Better error handling
 	if err != nil {
+		fmt.Printf("Error while reading path params: %v\n", err)
 		return nil, err
 	}
 	queryParams, err := QueryParams(r.URL.Query())
 	_ = queryParams
 	// TODO: Better error handling
 	if err != nil {
+		fmt.Printf("Error while reading query params: %v\n", err)
 		return nil, err
 	}
 {{range $field := $binding.Fields}}
@@ -118,6 +121,8 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 	{{$field.ConvertFunc}}
 	// TODO: Better error handling
 	if err != nil {
+		fmt.Printf("Error while extracting {{$field.LocalName}} from {{$field.Location}}: %v\n", err)
+		fmt.Printf("{{$field.Location}}Params: %v\n", {{$field.Location}}Params)
 		return nil, err
 	}
 	req.{{$field.CamelName}} = {{$field.LocalName}}
@@ -125,7 +130,7 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 {{end}}
 
 
-	return req, err
+	return &req, err
 }
 {{end}}
 {{end}}
@@ -143,7 +148,7 @@ func DecodeHTTP{{$i.GetName}}Response(_ context.Context, r *http.Response) (inte
 	}
 	var resp pb.{{GoName $i.ResponseType.GetName}}
 	err := json.NewDecoder(r.Body).Decode(&resp)
-	return resp, err
+	return &resp, err
 }
 {{end}}
 
@@ -154,6 +159,7 @@ func DecodeHTTP{{$i.GetName}}Response(_ context.Context, r *http.Response) (inte
 // that encodes a {{ToLower $method.Name}} request into the various portions of
 // the http request (path, query, and body).
 func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, request interface{}) error {
+	fmt.Printf("Encoding request %v\n", request)
 	req := request.(pb.{{GoName $method.RequestType}})
 	_ = req
 
@@ -163,19 +169,24 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 {{- $section -}},
 {{end}}
 	}, "/")
+		//r.URL.Scheme,
+		//r.URL.Host,
 	u, err := url.Parse(path)
 	if err != nil {
 		return err
 	}
-	r.URL = u
+	r.URL.RawPath = u.RawPath
+	r.URL.Path = u.Path
 
 	// Set the query parameters
 	values := r.URL.Query()
 {{range $field := $binding.Fields -}}
 	{{- if eq $field.Location "query" -}}
-	values.Add("{{$field.CamelName}}", fmt.Sprint(req.{{$field.CamelName}}))
+	values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
 	{{end -}}
 {{end}}
+	r.URL.RawQuery = values.Encode()
+
 	// Set the body parameters
 	var buf bytes.Buffer
 	toRet := map[string]interface{}{
@@ -189,6 +200,7 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 		return err
 	}
 	r.Body = ioutil.NopCloser(&buf)
+	fmt.Printf("URL: %v\n", r.URL)
 	return nil
 }
 {{end}}

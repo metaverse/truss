@@ -36,8 +36,9 @@ func NewHelper(svc *doctree.ProtoService) *Helper {
 
 func NewMethod(meth *doctree.ServiceMethod) *Method {
 	nMeth := Method{
-		Name:        meth.GetName(),
-		RequestType: meth.RequestType.GetName(),
+		Name:         meth.GetName(),
+		RequestType:  meth.RequestType.GetName(),
+		ResponseType: meth.ResponseType.GetName(),
 	}
 	for i, _ := range meth.HttpBindings {
 		nBinding := NewBinding(i, meth)
