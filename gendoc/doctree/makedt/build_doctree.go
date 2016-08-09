@@ -1,6 +1,6 @@
 // Makedt is a package for exposing the creation of a doctree structure.
 //
-// It lives in it's own package because it must use several other packages
+// It lives in its own package because it must use several other packages
 // which make use of doctree to create a doctree, so to prevent circular
 // imports, it must be its own package.
 package makedt
@@ -36,10 +36,10 @@ func init() {
 
 // Finds the package name of the proto files named on the command line
 func findDoctreePackage(req *plugin.CodeGeneratorRequest) string {
-	for _, cmd_file := range req.GetFileToGenerate() {
-		for _, proto_file := range req.GetProtoFile() {
-			if proto_file.GetName() == cmd_file {
-				return proto_file.GetPackage()
+	for _, cmdFile := range req.GetFileToGenerate() {
+		for _, protoFile := range req.GetProtoFile() {
+			if protoFile.GetName() == cmdFile {
+				return protoFile.GetPackage()
 			}
 		}
 	}
@@ -49,7 +49,7 @@ func findDoctreePackage(req *plugin.CodeGeneratorRequest) string {
 // Finds a message given a fully qualified name to that message. The provided
 // path may be either a fully qualfied name of a message, or just the bare name
 // for a message.
-func findMessage(md *doctree.MicroserviceDefinition, new_file *doctree.ProtoFile, path string) (*doctree.ProtoMessage, error) {
+func findMessage(md *doctree.MicroserviceDefinition, newFile *doctree.ProtoFile, path string) (*doctree.ProtoMessage, error) {
 	if path[0] == '.' {
 		parts := strings.Split(path, ".")
 		for _, file := range md.Files {
@@ -59,13 +59,13 @@ func findMessage(md *doctree.MicroserviceDefinition, new_file *doctree.ProtoFile
 				}
 			}
 		}
-		for _, msg := range new_file.Messages {
+		for _, msg := range newFile.Messages {
 			if parts[2] == msg.GetName() {
 				return msg, nil
 			}
 		}
 	} else {
-		for _, msg := range new_file.Messages {
+		for _, msg := range newFile.Messages {
 			if path == msg.GetName() {
 				return msg, nil
 			}
@@ -87,8 +87,8 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 			continue
 		}
 
-		// This is a file we are meant to examine, so contine with it's
-		// creation in the Doctree
+		// This is a file we are meant to examine, so contine with its creation
+		// in the Doctree
 		newFile, err := NewFile(file, &dt)
 		if err != nil {
 			return nil, errors.Wrapf(err, "file creation of '%s' failed", file.GetName())
@@ -245,26 +245,26 @@ func searchFileName(fname string) string {
 func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 
 	fname := FindServiceFile(req)
-	full_path := searchFileName(fname)
+	fullPath := searchFileName(fname)
 
-	f, err := os.Open(full_path)
+	f, err := os.Open(fullPath)
 	if err != nil {
 		cwd, _ := os.Getwd()
-		log.Warnf("From current directory '%v', error opening file '%v', '%v'\n", cwd, full_path, err)
+		log.Warnf("From current directory '%v', error opening file '%v', '%v'\n", cwd, fullPath, err)
 		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
 		return
 	}
 	lex := svcparse.NewSvcLexer(f)
-	parsed_svc, err := svcparse.ParseService(lex)
+	parsedSvc, err := svcparse.ParseService(lex)
 
 	if err != nil {
-		log.Warnf("Error found while parsing file '%v': %v", full_path, err)
+		log.Warnf("Error found while parsing file '%v': %v", fullPath, err)
 		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
 		return
 	}
 
-	svc := dt.GetByName(fname).GetByName(parsed_svc.GetName()).(*doctree.ProtoService)
-	for _, pmeth := range parsed_svc.Methods {
+	svc := dt.GetByName(fname).GetByName(parsedSvc.GetName()).(*doctree.ProtoService)
+	for _, pmeth := range parsedSvc.Methods {
 		meth := svc.GetByName(pmeth.GetName()).(*doctree.ServiceMethod)
 		meth.HttpBindings = pmeth.HttpBindings
 	}
@@ -277,18 +277,18 @@ func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
 // one which contains a service declaration. If no file in the request contains
 // a service, returns an empty string.
 func FindServiceFile(req *plugin.CodeGeneratorRequest) string {
-	svc_files := []string{}
+	svcFiles := []string{}
 	// Since the names of proto files in FileDescriptorProto's don't contain
-	// the path, we have to find the first one with a service, then find it's
+	// the path, we have to find the first one with a service, then find its
 	// actual relative path by searching the slice `FileToGenerate`.
 	for _, file := range req.GetProtoFile() {
 		if len(file.GetService()) > 0 {
-			svc_files = append(svc_files, file.GetName())
+			svcFiles = append(svcFiles, file.GetName())
 		}
 	}
 	for _, file := range req.GetFileToGenerate() {
-		for _, svc_f := range svc_files {
-			if strings.Contains(file, svc_f) {
+		for _, svcF := range svcFiles {
+			if strings.Contains(file, svcF) {
 				return file
 			}
 		}
