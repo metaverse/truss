@@ -65,7 +65,7 @@ func getProtobufField(proto_field int, proto_msg reflect.Value) (reflect.Value, 
 		}
 
 		if pfield_n != -1 && pfield_n == proto_field {
-			// Found the correct field, return it and it's label
+			// Found the correct field, return it and its label
 			return proto_msg.Field(n), field_label, nil
 		}
 	}
@@ -95,7 +95,7 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 //
 // For example, there may be SourceLocation with a comment "spam eggs" and a
 // path like [ 4 2 6 0 ]. To find the actual unit of code refered to by this
-// SourceLocation we must walk it's path. Walking the path goes like so:
+// SourceLocation we must walk its path. Walking the path goes like so:
 //
 //     From the root file, go to the 4th field
 //       The 4th field of the file is the list of messages
