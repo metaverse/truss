@@ -58,13 +58,13 @@ type Describable interface {
 	SetDescription(string)
 	// describe causes a Describable to generate a string representing itself.
 	// The integer argument is used as the 'depth' that this Describable sits
-	// within a tree of Describable structs, allowing it to print it's
+	// within a tree of Describable structs, allowing it to print its
 	// information with proper indentation. If called recursively, allows for
 	// printing of a structured tree-style view of a tree of Describables.
 	Describe(int) string
 	describeMarkdown(int) string
 	// GetByName allows one to query a Describable to see if it has a child
-	// Describable in any of it's collections.
+	// Describable in any of its collections.
 	GetByName(string) Describable
 }
 
