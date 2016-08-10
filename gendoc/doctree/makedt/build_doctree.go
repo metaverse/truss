@@ -127,7 +127,7 @@ func NewFile(
 	for _, msg := range pfile.MessageType {
 		newMsg, err := NewMessage(msg)
 		if err != nil {
-			return nil, errors.Wrap(err, "error converting message %q", msg.GetName())
+			return nil, errors.Wrapf(err, "error converting message %q", msg.GetName())
 		}
 		newFile.Messages = append(newFile.Messages, newMsg)
 	}
@@ -135,7 +135,7 @@ func NewFile(
 	for _, srvc := range pfile.Service {
 		newSvc, err := NewService(srvc, &newFile, curNewDt)
 		if err != nil {
-			return nil, errors.Wrap(err, "error converting service %q", srvc.GetName())
+			return nil, errors.Wrapf(err, "error converting service %q", srvc.GetName())
 		}
 		// Set the new services FullyQualifiedName here so that we don't have
 		// to pass around additional references to pfile.
