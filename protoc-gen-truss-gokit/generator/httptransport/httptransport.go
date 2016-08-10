@@ -3,20 +3,30 @@
 package httptransport
 
 import (
+	"bytes"
 	"fmt"
+	"go/format"
+	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"unicode"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
 	"github.com/TuneLab/gob/protoc-gen-truss-gokit/generator/clientarggen"
+	"github.com/davecgh/go-spew/spew"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
+	"github.com/pkg/errors"
+)
+
+var (
+	_ = spew.Sdump
+	_ = os.Stderr
 )
 
 type Helper struct {
 	Methods           []*Method
 	PathParamsBuilder string
-	//QueryParamsBuilder string
 }
 
 // NewHelper builds a helper struct from a service declaration. The other
@@ -35,6 +45,7 @@ func NewHelper(svc *doctree.ProtoService) *Helper {
 }
 
 func NewMethod(meth *doctree.ServiceMethod) *Method {
+	//fmt.Fprintf(os.Stderr, spew.Sdump(meth))
 	nMeth := Method{
 		Name:         meth.GetName(),
 		RequestType:  meth.RequestType.GetName(),
@@ -42,8 +53,10 @@ func NewMethod(meth *doctree.ServiceMethod) *Method {
 	}
 	for i, _ := range meth.HttpBindings {
 		nBinding := NewBinding(i, meth)
+		nBinding.Parent = &nMeth
 		nMeth.Bindings = append(nMeth.Bindings, nBinding)
 	}
+	//fmt.Fprintf(os.Stderr, spew.Sdump(nMeth))
 	return &nMeth
 }
 
@@ -89,6 +102,38 @@ func NewBinding(i int, meth *doctree.ServiceMethod) *Binding {
 	return &nBinding
 }
 
+func (self *Binding) GenServerDecode() (string, error) {
+	code, err := ApplyTemplate("ServerDecodeTemplate", ServerDecodeTemplate, self, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
+}
+
+func (self *Binding) GenClientEncode() (string, error) {
+	code, err := ApplyTemplate("ClientEncodeTemplate", ClientEncodeTemplate, self, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
+}
+
+// PathSections returns a slice of strings for templating the creation of a
+// fully assembled URL with the correct fields in the correct locations.
+//
+// For example, let's say there's a method "Sum" which accepts a "SumRequest",
+// and SumRequest has two fields, 'a' and 'b'. Additionally, lets say that this
+// binding for "Sum" has a path of "/sum/{a}". If we call the PathSection()
+// method on this binding, it will return a slice that looks like the
+// following slice literal:
+//
+//     []string{
+//         "\"\"",
+//         "\"sum\"",
+//         "fmt.Sprint(req.A)",
+//     }
 func (self *Binding) PathSections() []string {
 	rv := []string{}
 	parts := strings.Split(self.PathTemplate, "/")
@@ -98,6 +143,9 @@ func (self *Binding) PathSections() []string {
 			convert := fmt.Sprintf("fmt.Sprint(req.%v)", gogen.CamelCase(name))
 			rv = append(rv, convert)
 		} else {
+			// Add quotes around things which'll be embeded as string literals,
+			// so that the 'fmt.Sprint' lines will be unquoted and thus
+			// evaluated as code.
 			rv = append(rv, `"`+part+`"`)
 		}
 	}
@@ -159,7 +207,11 @@ var DigitEnglish = map[rune]string{
 }
 
 // EnglishNumber takes an integer and returns the english words that represents
-// that number, in base ten
+// that number, in base ten. Examples:
+//     1  -> "One"
+//     5  -> "Five"
+//     10 -> "OneZero"
+//     48 -> "FourEight"
 func EnglishNumber(i int) string {
 	n := strconv.Itoa(i)
 	rv := ""
@@ -183,4 +235,35 @@ func LowCamelName(s string) string {
 	rv = append(rv, unicode.ToLower(new[0]))
 	rv = append(rv, new[1:]...)
 	return string(rv)
+}
+
+var TemplateFuncs = template.FuncMap{
+	"ToLower": strings.ToLower,
+	"Title":   strings.Title,
+	"GoName":  gogen.CamelCase,
+}
+
+// ApplyTemplate applies a template with a given name, executor context, and
+// function map. Returns the output of the template on success, returns an
+// error if template failed to execute.
+func ApplyTemplate(name string, tmpl string, executor interface{}, fncs template.FuncMap) (string, error) {
+	codeTemplate := template.Must(template.New(name).Funcs(fncs).Parse(tmpl))
+
+	code := bytes.NewBuffer(nil)
+	err := codeTemplate.Execute(code, executor)
+	if err != nil {
+		return "", errors.Wrapf(err, "attempting to execute template %q", name)
+	}
+	return code.String(), nil
+}
+
+func FormatCode(code string) string {
+	formatted, err := format.Source([]byte(code))
+
+	if err != nil {
+		// Set formatted to code so at least we get something to examine
+		formatted = []byte(code)
+	}
+
+	return string(formatted)
 }

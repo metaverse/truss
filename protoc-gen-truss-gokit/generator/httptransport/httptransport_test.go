@@ -1,8 +1,137 @@
 package httptransport
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/davecgh/go-spew/spew"
 )
+
+var (
+	_ = spew.Sdump
+)
+
+func TestNewMethod(t *testing.T) {
+	dmeth := doctree.ServiceMethod{
+		Name: "Sum",
+		RequestType: &doctree.ProtoMessage{
+			Name: "SumRequest",
+			//Description: "The sum request contains two parameters.",
+			Fields: []*doctree.MessageField{
+				&doctree.MessageField{
+					Name:   "a",
+					Number: 1,
+					Label:  "LABEL_OPTIONAL",
+					Type: doctree.FieldType{
+						Name: "TYPE_INT64",
+					},
+				},
+				&doctree.MessageField{
+					Name:   "b",
+					Number: 2,
+					Label:  "LABEL_OPTIONAL",
+					Type: doctree.FieldType{
+						Name: "TYPE_INT64",
+					},
+				},
+			},
+		},
+		ResponseType: &doctree.ProtoMessage{
+			Name: "SumReply",
+			Fields: []*doctree.MessageField{
+				&doctree.MessageField{
+					Name:   "v",
+					Number: 1,
+					Label:  "LABEL_OPTIONAL",
+					Type: doctree.FieldType{
+						Name: "TYPE_INT64",
+					},
+				},
+				&doctree.MessageField{
+					Name:   "err",
+					Number: 2,
+					Label:  "LABEL_OPTIONAL",
+					Type: doctree.FieldType{
+						Name: "TYPE_STRING",
+					},
+				},
+			},
+		},
+		HttpBindings: []*doctree.MethodHttpBinding{
+			&doctree.MethodHttpBinding{
+				Verb: "get",
+				Path: "/sum/{a}",
+				Fields: []*doctree.BindingField{
+					&doctree.BindingField{
+						Name:  "get",
+						Kind:  "get",
+						Value: "/sum/{a}",
+					},
+				},
+				Params: []*doctree.HttpParameter{
+					&doctree.HttpParameter{
+						Name:     "a",
+						Location: "path",
+						Type:     "TYPE_INT64",
+					},
+					&doctree.HttpParameter{
+						Name:     "b",
+						Location: "query",
+						Type:     "TYPE_INT64",
+					},
+				},
+			},
+		},
+	}
+	binding := &Binding{
+		Label:        "SumZero",
+		PathTemplate: "/sum/{a}",
+		BasePath:     "/sum/",
+		Verb:         "get",
+		Fields: []*Field{
+			&Field{
+				Name:          "a",
+				CamelName:     "A",
+				LowCamelName:  "a",
+				LocalName:     "ASum",
+				Location:      "path",
+				ProtobufType:  "TYPE_INT64",
+				GoType:        "int64",
+				ProtobufLabel: "LABEL_OPTIONAL",
+				ConvertFunc:   "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
+				IsBaseType:    true,
+			},
+			&Field{
+				Name:          "b",
+				CamelName:     "B",
+				LowCamelName:  "b",
+				LocalName:     "BSum",
+				Location:      "query",
+				ProtobufType:  "TYPE_INT64",
+				GoType:        "int64",
+				ProtobufLabel: "LABEL_OPTIONAL",
+				ConvertFunc:   "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
+				IsBaseType:    true,
+			},
+		},
+	}
+	meth := &Method{
+		Name:         "Sum",
+		RequestType:  "SumRequest",
+		ResponseType: "SumReply",
+		Bindings: []*Binding{
+			binding,
+		},
+	}
+	binding.Parent = meth
+
+	newMeth := NewMethod(&dmeth)
+	if got, want := newMeth, meth; !reflect.DeepEqual(got, want) {
+		t.Errorf("methods differ;\ngot  = %+v\nwant = %+v\n", got, want)
+	}
+	//t.Log(spew.Sdump(meth))
+}
 
 func TestPathParams(t *testing.T) {
 	var cases = []struct {
@@ -29,19 +158,17 @@ func TestPathParams(t *testing.T) {
 }
 
 func TestFuncSourceCode(t *testing.T) {
-	file, err := FuncSourceCode(PathParams)
+	_, err := FuncSourceCode(PathParams)
 	if err != nil {
 		t.Fatalf("Failed to get source code: %s\n", err)
 	}
-	t.Logf("%v\n", file)
 }
 
 func TestAllFuncSourceCode(t *testing.T) {
-	file, err := AllFuncSourceCode(PathParams)
+	_, err := AllFuncSourceCode(PathParams)
 	if err != nil {
 		t.Fatalf("Failed to get source code: %s\n", err)
 	}
-	t.Logf("%v\n", file)
 }
 
 func TestEnglishNumber(t *testing.T) {

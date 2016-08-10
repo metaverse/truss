@@ -25,6 +25,11 @@ import (
 	//pb "{{$templateExecutor.GeneratedImport -}} /pb"
 )
 
+var (
+	_ = endpoint.Chain
+	_ = httptransport.NewClient
+)
+
 // New returns an AddService backed by an HTTP server living at the remote
 // instance. We expect instance to come from a service discovery system, so
 // likely of the form "host:port".
@@ -38,6 +43,7 @@ func New(instance string) (handler.Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	_ = u
 
 	// We construct a single ratelimiter middleware, to limit the total outgoing
 	// QPS from this client to all methods on the remote instance. We also

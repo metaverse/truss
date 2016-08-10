@@ -22,6 +22,9 @@ type Binding struct {
 	BasePath string
 	Verb     string
 	Fields   []*Field
+	// A pointer back to the parent method of this binding. Used within some
+	// binding methods
+	Parent *Method
 }
 
 type Field struct {
