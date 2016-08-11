@@ -183,7 +183,7 @@ func main() {
 	go func() {
 		logger := log.NewContext(logger).With("transport", "HTTP")
 		//h := addsvc.MakeHTTPHandler(ctx, endpoints, tracer, logger)
-		h := addsvc.MakeHTTPHandler(ctx, endpoints)
+		h := addsvc.MakeHTTPHandler(ctx, endpoints, logger)
 		logger.Log("addr", *httpAddr)
 		errc <- http.ListenAndServe(*httpAddr, h)
 	}()
