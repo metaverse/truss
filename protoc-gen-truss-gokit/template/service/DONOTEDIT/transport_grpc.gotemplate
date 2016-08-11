@@ -85,7 +85,7 @@ func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (
 {{end}}
 
 
-// Client Decode
+// Client Encode
 {{range $i := $templateExecutor.Service.Methods}}
 // EncodeGRPC{{$i.GetName}}Request is a transport/grpc.EncodeRequestFunc that converts a
 // user-domain {{ToLower $i.GetName}} request to a gRPC {{ToLower $i.GetName}} request. Primarily useful in a client.
