@@ -129,6 +129,8 @@ func runServerAndClient(path string, port int, debugPort int, runRefs chan runRe
 		path+relativeServerPath,
 		"-grpc.addr",
 		":"+strconv.Itoa(port),
+		"-http.addr",
+		":"+strconv.Itoa(port-70),
 		"-debug.addr",
 		":"+strconv.Itoa(debugPort),
 	)
