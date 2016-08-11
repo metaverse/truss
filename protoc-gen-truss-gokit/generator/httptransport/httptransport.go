@@ -33,7 +33,7 @@ type Helper struct {
 // "New*" functions in this file are there to make this function smaller and
 // more testable.
 func NewHelper(svc *doctree.ProtoService) *Helper {
-	pp, _ := AllFuncSourceCode(PathParams)
+	pp, _ := FormatCode(HTTPAssistFuncs)
 	rv := Helper{
 		PathParamsBuilder: pp,
 	}
@@ -45,7 +45,6 @@ func NewHelper(svc *doctree.ProtoService) *Helper {
 }
 
 func NewMethod(meth *doctree.ServiceMethod) *Method {
-	//fmt.Fprintf(os.Stderr, spew.Sdump(meth))
 	nMeth := Method{
 		Name:         meth.GetName(),
 		RequestType:  meth.RequestType.GetName(),
@@ -56,7 +55,6 @@ func NewMethod(meth *doctree.ServiceMethod) *Method {
 		nBinding.Parent = &nMeth
 		nMeth.Bindings = append(nMeth.Bindings, nBinding)
 	}
-	//fmt.Fprintf(os.Stderr, spew.Sdump(nMeth))
 	return &nMeth
 }
 
