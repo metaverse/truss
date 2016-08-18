@@ -16,6 +16,7 @@ import (
 
 	"github.com/TuneLab/gob/gengokit/astmodifier"
 	"github.com/TuneLab/gob/gengokit/clientarggen"
+	"github.com/TuneLab/gob/gengokit/httptransport"
 	templateFileAssets "github.com/TuneLab/gob/gengokit/template"
 
 	"github.com/TuneLab/gob/gendoc/doctree"
@@ -44,6 +45,8 @@ type templateExecutor struct {
 	// GRPC/Protobuff service, with all parameters and return values accessible
 	Service    *doctree.ProtoService
 	ClientArgs *clientarggen.ClientServiceArgs
+	// A helper struct for generating http transport functionality.
+	HTTPHelper *httptransport.Helper
 }
 
 // GenerateGokit accepts a doctree representing the ast of a group of .proto
@@ -99,6 +102,7 @@ func newGenerator(service *doctree.ProtoService, goImportPath string) *generator
 			GeneratedImport: generatedImportString,
 			Service:         service,
 			ClientArgs:      clientarggen.New(service),
+			HTTPHelper:      httptransport.NewHelper(service),
 		},
 	}
 }

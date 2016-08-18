@@ -78,56 +78,47 @@ type Doctree interface {
 	Markdown() string
 }
 
-// describable is a  concrete implementation of the `Describable` interface, to
-// allow for nice convenient inheritance with concrete default methods.
-type describable struct {
-	Name        string
-	Description string
-}
-
-func (self *describable) GetName() string {
-	return self.Name
-}
-
-func (self *describable) SetName(s string) {
-	self.Name = s
-}
-
-func (self *describable) Describe(depth int) string {
-	rv := prindent(depth, "Name: %v\n", self.Name)
-	rv += prindent(depth, "Desc: %v\n", self.Description)
+func genericDescribe(self Describable, depth int) string {
+	rv := prindent(depth, "Name: %v\n", self.GetName())
+	rv += prindent(depth, "Desc: %v\n", self.GetDescription())
 	return rv
 }
 
-func (self *describable) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
+func genericDescribeMarkdown(self Describable, depth int) string {
+	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.GetName())
+	if len(self.GetDescription()) > 1 {
+		rv += prindent(0, "%v\n\n", self.GetDescription())
 	}
 	return rv
 }
 
-func (self *describable) GetDescription() string {
+// MicroserviceDefinition is the root node for any particular `Doctree`
+type MicroserviceDefinition struct {
+	Describable
+	Name        string
+	Description string
+	Files       []*ProtoFile
+}
+
+func (self *MicroserviceDefinition) GetName() string {
+	return self.Name
+}
+
+func (self *MicroserviceDefinition) SetName(s string) {
+	self.Name = s
+}
+
+func (self *MicroserviceDefinition) GetDescription() string {
 	return self.Description
 }
 
-func (self *describable) SetDescription(d string) {
+func (self *MicroserviceDefinition) SetDescription(d string) {
 	// When setting a description, clean it up
 	self.Description = scrubComments(d)
 }
 
-func (self *describable) GetByName(s string) Describable {
-	return nil
-}
-
-// MicroserviceDefinition is the root node for any particular `Doctree`
-type MicroserviceDefinition struct {
-	describable
-	Files []*ProtoFile
-}
-
 func (self *MicroserviceDefinition) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	for idx, file := range self.Files {
 		rv += prindent(depth, "File %v:\n", idx)
 		rv += file.Describe(depth + 1)
@@ -137,8 +128,7 @@ func (self *MicroserviceDefinition) Describe(depth int) string {
 
 func (self *MicroserviceDefinition) describeMarkdown(depth int) string {
 	rv := doc_css
-	rv += self.describable.describeMarkdown(depth)
-	//rv += prindent(0, "%v %v\n\n", strRepeat("#", depth), "Files")
+	rv += genericDescribeMarkdown(self, depth)
 	for _, file := range self.Files {
 		rv += file.describeMarkdown(depth + 1)
 	}
@@ -185,14 +175,33 @@ func (self *MicroserviceDefinition) Markdown() string {
 }
 
 type ProtoFile struct {
-	describable
-	Messages []*ProtoMessage
-	Enums    []*ProtoEnum
-	Services []*ProtoService
+	Describable
+	Name        string
+	Description string
+	Messages    []*ProtoMessage
+	Enums       []*ProtoEnum
+	Services    []*ProtoService
+}
+
+func (self *ProtoFile) GetName() string {
+	return self.Name
+}
+
+func (self *ProtoFile) SetName(s string) {
+	self.Name = s
+}
+
+func (self *ProtoFile) GetDescription() string {
+	return self.Description
+}
+
+func (self *ProtoFile) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
 }
 
 func (self *ProtoFile) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	for idx, svc := range self.Services {
 		rv += prindent(depth, "Service %v:\n", idx)
 		rv += svc.Describe(depth + 1)
@@ -209,7 +218,7 @@ func (self *ProtoFile) Describe(depth int) string {
 }
 
 func (self *ProtoFile) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
+	rv := genericDescribeMarkdown(self, depth)
 
 	if len(self.Messages) > 0 {
 		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Messages")
@@ -254,12 +263,31 @@ func (self *ProtoFile) GetByName(name string) Describable {
 }
 
 type ProtoMessage struct {
-	describable
-	Fields []*MessageField
+	Describable
+	Name        string
+	Description string
+	Fields      []*MessageField
+}
+
+func (self *ProtoMessage) GetName() string {
+	return self.Name
+}
+
+func (self *ProtoMessage) SetName(s string) {
+	self.Name = s
+}
+
+func (self *ProtoMessage) GetDescription() string {
+	return self.Description
+}
+
+func (self *ProtoMessage) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
 }
 
 func (self *ProtoMessage) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	for idx, field := range self.Fields {
 		rv += prindent(depth, "Field %v:\n", idx)
 		rv += field.Describe(depth + 1)
@@ -306,16 +334,47 @@ func (self *ProtoMessage) GetByName(name string) Describable {
 }
 
 type MessageField struct {
-	describable
-	Type   FieldType
-	Number int
+	Describable
+	Name        string
+	Description string
+	Type        FieldType
+	Number      int
 	// Label is one of either "LABEL_OPTIONAL", "LABEL_REPEATED", or
 	// "LABEL_REQUIRED"
 	Label string
 }
 
+func (self *MessageField) GetName() string {
+	return self.Name
+}
+
+func (self *MessageField) SetName(s string) {
+	self.Name = s
+}
+
+func (self *MessageField) GetDescription() string {
+	return self.Description
+}
+
+func (self *MessageField) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
+func (self *MessageField) describeMarkdown(depth int) string {
+	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
+	if len(self.Description) > 1 {
+		rv += prindent(0, "%v\n\n", self.Description)
+	}
+	return rv
+}
+
+func (self *MessageField) GetByName(s string) Describable {
+	return nil
+}
+
 func (self *MessageField) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	rv += prindent(depth, "Number: %v\n", self.Number)
 	rv += prindent(depth, "Type:\n")
 	rv += self.Type.Describe(depth + 1)
@@ -323,12 +382,31 @@ func (self *MessageField) Describe(depth int) string {
 }
 
 type ProtoEnum struct {
-	describable
-	Values []*EnumValue
+	Describable
+	Name        string
+	Description string
+	Values      []*EnumValue
+}
+
+func (self *ProtoEnum) GetName() string {
+	return self.Name
+}
+
+func (self *ProtoEnum) SetName(s string) {
+	self.Name = s
+}
+
+func (self *ProtoEnum) GetDescription() string {
+	return self.Description
+}
+
+func (self *ProtoEnum) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
 }
 
 func (self *ProtoEnum) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	for idx, val := range self.Values {
 		rv += prindent(depth, "Value %v:\n", idx)
 		rv += val.Describe(depth + 1)
@@ -337,7 +415,7 @@ func (self *ProtoEnum) Describe(depth int) string {
 }
 
 func (self *ProtoEnum) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
+	rv := genericDescribeMarkdown(self, depth)
 	rv += "| Number | Name |\n"
 	rv += "| ------ | ---- |\n"
 	for _, val := range self.Values {
@@ -348,29 +426,102 @@ func (self *ProtoEnum) describeMarkdown(depth int) string {
 }
 
 type EnumValue struct {
-	describable
-	Number int
+	Describable
+	Name        string
+	Description string
+	Number      int
+}
+
+func (self *EnumValue) GetName() string {
+	return self.Name
+}
+
+func (self *EnumValue) SetName(s string) {
+	self.Name = s
+}
+
+func (self *EnumValue) GetDescription() string {
+	return self.Description
+}
+
+func (self *EnumValue) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
 }
 
 func (self *EnumValue) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	rv += prindent(depth, "Number: %v\n", self.Number)
 	return rv
 }
 
 type FieldType struct {
-	describable
-	Enum *ProtoEnum
+	Describable
+	Name        string
+	Description string
+	Enum        *ProtoEnum
+}
+
+func (self *FieldType) GetName() string {
+	return self.Name
+}
+
+func (self *FieldType) SetName(s string) {
+	self.Name = s
+}
+
+func (self *FieldType) GetDescription() string {
+	return self.Description
+}
+
+func (self *FieldType) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
+func (self *FieldType) Describe(depth int) string {
+	return genericDescribe(self, depth)
+}
+
+func (self *FieldType) describeMarkdown(depth int) string {
+	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
+	if len(self.Description) > 1 {
+		rv += prindent(0, "%v\n\n", self.Description)
+	}
+	return rv
+}
+
+func (self *FieldType) GetByName(s string) Describable {
+	return nil
 }
 
 type ProtoService struct {
-	describable
+	Describable
+	Name               string
+	Description        string
 	Methods            []*ServiceMethod
 	FullyQualifiedName string
 }
 
+func (self *ProtoService) GetName() string {
+	return self.Name
+}
+
+func (self *ProtoService) SetName(s string) {
+	self.Name = s
+}
+
+func (self *ProtoService) GetDescription() string {
+	return self.Description
+}
+
+func (self *ProtoService) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
 func (self *ProtoService) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	for idx, meth := range self.Methods {
 		rv += prindent(depth, "Method %v:\n", idx)
 		rv += meth.Describe(depth + 1)
@@ -379,7 +530,7 @@ func (self *ProtoService) Describe(depth int) string {
 }
 
 func (self *ProtoService) describeMarkdown(depth int) string {
-	rv := self.describable.describeMarkdown(depth)
+	rv := genericDescribe(self, depth)
 
 	rv += "| Method Name | Request Type | Response Type | Description|\n"
 	rv += "| ---- | ---- | ------------ | -----------|\n"
@@ -408,14 +559,33 @@ func (self *ProtoService) GetByName(name string) Describable {
 }
 
 type ServiceMethod struct {
-	describable
+	Describable
+	Name         string
+	Description  string
 	RequestType  *ProtoMessage
 	ResponseType *ProtoMessage
 	HttpBindings []*MethodHttpBinding
 }
 
+func (self *ServiceMethod) GetName() string {
+	return self.Name
+}
+
+func (self *ServiceMethod) SetName(s string) {
+	self.Name = s
+}
+
+func (self *ServiceMethod) GetDescription() string {
+	return self.Description
+}
+
+func (self *ServiceMethod) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
 func (self *ServiceMethod) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	rv += prindent(depth, "RequestType: %v\n", self.RequestType.GetName())
 	rv += prindent(depth, "ResponseType: %v\n", self.ResponseType.GetName())
 	rv += prindent(depth, "MethodHttpBinding:\n")
@@ -427,11 +597,7 @@ func (self *ServiceMethod) Describe(depth int) string {
 }
 
 func (self *ServiceMethod) describeMarkdown(depth int) string {
-	//rv := self.describable.describeMarkdown(depth)
 	rv := ""
-
-	//rv += prindent(0, "[RequestType: %v](#%v)\n\n", self.RequestType.GetName(), self.RequestType.GetName())
-	//rv += prindent(0, "[ResponseType: %v](#%v)\n\n", self.ResponseType.GetName(), self.ResponseType.GetName())
 
 	for _, bind := range self.HttpBindings {
 		rv += bind.describeMarkdown(depth)
@@ -451,15 +617,38 @@ func (self *ServiceMethod) GetByName(name string) Describable {
 }
 
 type MethodHttpBinding struct {
-	describable
-	Verb   string
-	Path   string
-	Fields []*BindingField
-	Params []*HttpParameter
+	Describable
+	Name        string
+	Description string
+	Verb        string
+	Path        string
+	Fields      []*BindingField
+	Params      []*HttpParameter
+}
+
+func (self *MethodHttpBinding) GetName() string {
+	return self.Name
+}
+
+func (self *MethodHttpBinding) SetName(s string) {
+	self.Name = s
+}
+
+func (self *MethodHttpBinding) GetDescription() string {
+	return self.Description
+}
+
+func (self *MethodHttpBinding) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
+func (self *MethodHttpBinding) GetByName(s string) Describable {
+	return nil
 }
 
 func (self *MethodHttpBinding) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	for _, field := range self.Fields {
 		rv += field.Describe(depth + 1)
 	}
@@ -489,13 +678,44 @@ func (self *MethodHttpBinding) describeMarkdown(depth int) string {
 // `BindingField`. The `Kind` field is the left side of the option field, and
 // the `Value` is the right hand side of the option field.
 type BindingField struct {
-	describable
-	Kind  string
-	Value string
+	Describable
+	Name        string
+	Description string
+	Kind        string
+	Value       string
+}
+
+func (self *BindingField) GetName() string {
+	return self.Name
+}
+
+func (self *BindingField) SetName(s string) {
+	self.Name = s
+}
+
+func (self *BindingField) GetDescription() string {
+	return self.Description
+}
+
+func (self *BindingField) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
+func (self *BindingField) describeMarkdown(depth int) string {
+	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
+	if len(self.Description) > 1 {
+		rv += prindent(0, "%v\n\n", self.Description)
+	}
+	return rv
+}
+
+func (self *BindingField) GetByName(s string) Describable {
+	return nil
 }
 
 func (self *BindingField) Describe(depth int) string {
-	rv := self.describable.Describe(depth)
+	rv := genericDescribe(self, depth)
 	rv += prindent(depth, "Kind: %v\n", self.Kind)
 	rv += prindent(depth, "Value: %v\n", self.Value)
 	return rv
@@ -504,9 +724,48 @@ func (self *BindingField) Describe(depth int) string {
 // HttpParameter contains information for one parameter of an http binding. It
 // is created by contextualizing all of the `BindingField`'s within a
 // `MethodHttpBinding`, with each `HttpParameter` corresponding to one of the
-// fields in the input message for the given rpc method.
+// fields in the input message for the given rpc method. It's type is the
+// protobuf type of the field of the struct it's refering to.
 type HttpParameter struct {
-	describable
-	Location string
-	Type     string
+	Describable
+	Name        string
+	Description string
+	Location    string
+	Type        string
+}
+
+func (self *HttpParameter) GetName() string {
+	return self.Name
+}
+
+func (self *HttpParameter) SetName(s string) {
+	self.Name = s
+}
+
+func (self *HttpParameter) GetDescription() string {
+	return self.Description
+}
+
+func (self *HttpParameter) SetDescription(d string) {
+	// When setting a description, clean it up
+	self.Description = scrubComments(d)
+}
+
+func (self *HttpParameter) describeMarkdown(depth int) string {
+	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
+	if len(self.Description) > 1 {
+		rv += prindent(0, "%v\n\n", self.Description)
+	}
+	return rv
+}
+
+func (self *HttpParameter) GetByName(s string) Describable {
+	return nil
+}
+
+func (self *HttpParameter) Describe(depth int) string {
+	rv := genericDescribe(self, depth)
+	rv += prindent(depth, "Location: %v\n", self.Location)
+	rv += prindent(depth, "Type: %v\n", self.Type)
+	return rv
 }
