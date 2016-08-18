@@ -7,6 +7,7 @@ package makedt
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -71,28 +72,36 @@ func findMessage(md *doctree.MicroserviceDefinition, newFile *doctree.ProtoFile,
 			}
 		}
 	}
-	return nil, fmt.Errorf("Couldn't find message.")
+	return nil, fmt.Errorf("couldn't find message.")
 
 }
 
-// New accepts a Protobuf CodeGeneratorRequest and returns a Doctree struct
-func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
+// New accepts a Protobuf plugin.CodeGeneratorRequest and the contents of the
+// file containing the service declaration and returns a Doctree struct
+func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (doctree.Doctree, error) {
 	dt := doctree.MicroserviceDefinition{}
 	dt.SetName(findDoctreePackage(req))
 
+	var svc *doctree.ProtoService
+	var serviceFileName string
 	for _, file := range req.ProtoFile {
 		// Check if this file is one we even should examine, and if it's not,
 		// skip it
 		if file.GetPackage() != findDoctreePackage(req) {
 			continue
 		}
-
 		// This is a file we are meant to examine, so contine with its creation
 		// in the Doctree
 		newFile, err := NewFile(file, &dt)
 		if err != nil {
 			return nil, errors.Wrapf(err, "file creation of %q failed", file.GetName())
 		}
+
+		if len(newFile.Services) > 0 {
+			svc = newFile.Services[0]
+			serviceFileName = newFile.GetName()
+		}
+
 		dt.Files = append(dt.Files, newFile)
 	}
 
@@ -103,7 +112,11 @@ func New(req *plugin.CodeGeneratorRequest) (doctree.Doctree, error) {
 	// The implementation of this function is in doctree/associate_comments.go
 	doctree.AssociateComments(&dt, req)
 
-	addHttpOptions(&dt, req)
+	err := addHttpOptions(&dt, svc, serviceFile)
+	if err != nil {
+		log.WithError(err).Warnf("Error found while parsing file %v", serviceFileName)
+		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
+	}
 
 	return &dt, nil
 }
@@ -146,7 +159,8 @@ func NewFile(
 	return &newFile, nil
 }
 
-// NewEnum returns a *doctree.ProtoEnum created from a *descriptor.EnumDescriptorProto
+// NewEnum returns a *doctree.ProtoEnum created from a
+// *descriptor.EnumDescriptorProto
 func NewEnum(enum *descriptor.EnumDescriptorProto) (*doctree.ProtoEnum, error) {
 	newEnum := doctree.ProtoEnum{}
 
@@ -162,7 +176,8 @@ func NewEnum(enum *descriptor.EnumDescriptorProto) (*doctree.ProtoEnum, error) {
 	return &newEnum, nil
 }
 
-// NewMessage returns a *doctree.ProtoMessage created from a *descriptor.DescriptorProto
+// NewMessage returns a *doctree.ProtoMessage created from a
+// *descriptor.DescriptorProto
 func NewMessage(msg *descriptor.DescriptorProto) (*doctree.ProtoMessage, error) {
 	newMsg := doctree.ProtoMessage{}
 	newMsg.Name = *msg.Name
@@ -206,11 +221,11 @@ func NewService(
 		// Message types
 		reqMsg, err := findMessage(curNewDt, curNewFile, *meth.InputType)
 		if reqMsg == nil || err != nil {
-			return nil, fmt.Errorf("Couldn't find request message of type '%v' for method '%v'", *meth.InputType, *meth.Name)
+			return nil, fmt.Errorf("couldn't find request message of type '%v' for method '%v'", *meth.InputType, *meth.Name)
 		}
 		respMsg, err := findMessage(curNewDt, curNewFile, *meth.OutputType)
 		if respMsg == nil || err != nil {
-			return nil, fmt.Errorf("Couldn't find response message of type '%v' for method '%v'", *meth.InputType, *meth.Name)
+			return nil, fmt.Errorf("couldn't find response message of type '%v' for method '%v'", *meth.InputType, *meth.Name)
 		}
 		newMeth.RequestType = reqMsg
 		newMeth.ResponseType = respMsg
@@ -251,35 +266,27 @@ func searchFileName(fname string) string {
 
 // Parse the protobuf files for comments surrounding http options, then add
 // those to the Doctree in place.
-func addHttpOptions(dt doctree.Doctree, req *plugin.CodeGeneratorRequest) {
+func addHttpOptions(dt doctree.Doctree, svc *doctree.ProtoService, protoFile io.Reader) error {
 
-	fname := FindServiceFile(req)
-	fullPath := searchFileName(fname)
-
-	f, err := os.Open(fullPath)
-	if err != nil {
-		cwd, _ := os.Getwd()
-		log.Warnf("From current directory '%v', error opening file '%v', '%v'\n", cwd, fullPath, err)
-		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
-		return
-	}
-	lex := svcparse.NewSvcLexer(f)
+	lex := svcparse.NewSvcLexer(protoFile)
 	parsedSvc, err := svcparse.ParseService(lex)
 
 	if err != nil {
-		log.Warnf("Error found while parsing file '%v': %v", fullPath, err)
-		log.Warnf("Due to the above warning(s), http options and bindings where not parsed and will not be present in the generated documentation.")
-		return
+		return errors.Wrapf(err, "error while parsing http options for the %v service definition", svc.GetName())
 	}
 
-	svc := dt.GetByName(fname).GetByName(parsedSvc.GetName()).(*doctree.ProtoService)
 	for _, pmeth := range parsedSvc.Methods {
 		meth := svc.GetByName(pmeth.GetName()).(*doctree.ServiceMethod)
 		meth.HttpBindings = pmeth.HttpBindings
 	}
 
 	// Assemble the http parameters for each http binding
-	httpopts.Assemble(dt)
+	err = httpopts.Assemble(dt)
+	if err != nil {
+		return errors.Wrap(err, "could not assemble http parameters for each http binding")
+	}
+
+	return nil
 }
 
 // Searches through the files in the request and returns the path to the first

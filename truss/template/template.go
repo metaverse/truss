@@ -86,7 +86,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiAnnotationsPbGotemplate() (*a
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.pb.gotemplate", size: 2514, mode: os.FileMode(436), modTime: time.Unix(1470178137, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.pb.gotemplate", size: 2514, mode: os.FileMode(436), modTime: time.Unix(1470266210, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -126,7 +126,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiHttpPbGotemplate() (*asset, e
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.pb.gotemplate", size: 18398, mode: os.FileMode(436), modTime: time.Unix(1470178137, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.pb.gotemplate", size: 18398, mode: os.FileMode(436), modTime: time.Unix(1470266210, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

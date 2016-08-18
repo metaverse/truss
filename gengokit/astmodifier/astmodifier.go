@@ -22,7 +22,7 @@ func init() {
 
 type astModifier struct {
 	fset             *token.FileSet
-	fileAst          *ast.File
+	fileAst          ast.Node
 	funcIndexer      *functionIndexer
 	funcRemover      *functionRemover
 	interfaceRemover *interfaceRemover
@@ -41,7 +41,7 @@ type interfaceRemover struct {
 }
 
 // New returns a new astModifier from a source file which modifies code intelligently
-func New(sourcePath string) *astModifier {
+func NewFromFile(sourcePath string) *astModifier {
 	fset := token.NewFileSet()
 	fileAst, err := parser.ParseFile(fset, sourcePath, nil, 0)
 	if err != nil {
@@ -61,7 +61,29 @@ func New(sourcePath string) *astModifier {
 			interfaceToRemove: "",
 		},
 	}
+}
 
+// New returns a new astModifier from a source file which modifies code intelligently
+func New(source *string) *astModifier {
+	fset := token.NewFileSet()
+	fileAst, err := parser.ParseFile(fset, "", *source, 0)
+	if err != nil {
+		log.WithError(err).Fatal("server/service.go could not be parsed by go/parser into AST")
+	}
+
+	return &astModifier{
+		fset:    fset,
+		fileAst: fileAst,
+		funcIndexer: &functionIndexer{
+			functionIndex: make(map[string]bool),
+		},
+		funcRemover: &functionRemover{
+			functionsToKeep: make(map[string]bool),
+		},
+		interfaceRemover: &interfaceRemover{
+			interfaceToRemove: "",
+		},
+	}
 }
 
 // String returns the current ast as a string
