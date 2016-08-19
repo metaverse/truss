@@ -86,7 +86,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiAnnotationsPbGotemplate() (*a
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.pb.gotemplate", size: 2514, mode: os.FileMode(436), modTime: time.Unix(1470266210, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.pb.gotemplate", size: 2514, mode: os.FileMode(436), modTime: time.Unix(1470944947, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -106,7 +106,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiAnnotationsProto() (*asset, e
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.proto", size: 927, mode: os.FileMode(436), modTime: time.Unix(1470178116, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/annotations.proto", size: 927, mode: os.FileMode(436), modTime: time.Unix(1470864908, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -126,7 +126,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiHttpPbGotemplate() (*asset, e
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.pb.gotemplate", size: 18398, mode: os.FileMode(436), modTime: time.Unix(1470266210, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.pb.gotemplate", size: 18398, mode: os.FileMode(436), modTime: time.Unix(1470944947, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -146,7 +146,7 @@ func serviceDonoteditThird_partyGoogleapisGoogleApiHttpProto() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.proto", size: 9887, mode: os.FileMode(436), modTime: time.Unix(1470178116, 0)}
+	info := bindataFileInfo{name: "service/DONOTEDIT/third_party/googleapis/google/api/http.proto", size: 9887, mode: os.FileMode(436), modTime: time.Unix(1470864908, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
