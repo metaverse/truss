@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 )
 

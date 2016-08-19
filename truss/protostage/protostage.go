@@ -12,7 +12,7 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pkg/errors"
 
-	templates "github.com/TuneLab/gob/truss/template"
+	templates "github.com/TuneLab/go-truss/truss/template"
 )
 
 // Stage outputs the following files and directories in place

@@ -14,7 +14,7 @@ To install this software, you must:
 2. Of course, install the Go compiler and tools from https://golang.org/. See https://golang.org/doc/install for details or, if you are using gccgo, follow the instructions at https://golang.org/doc/install/gccgo
 4. Install the `protoc-gen-go` and `proto` packages for Go. The simplest way is to run `go get -u github.com/golang/protobuf/{proto,protoc-gen-go}`. The compiler plugin, protoc-gen-go, will be installed in `$GOBIN`, defaulting to `$GOPATH/bin`.  It must be in your `$PATH` for the protocol compiler, protoc, to find it.
 5. Install the gRPC: `$ go get -u google.golang.org/grpc`
-6. Install Truss with `$ go get -u github.com/TuneLab/gob/...`
+6. Install Truss with `$ go get -u github.com/TuneLab/go-truss/...`
 
 ## Usage
 

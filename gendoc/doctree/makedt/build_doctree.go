@@ -13,9 +13,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
-	"github.com/TuneLab/gob/gendoc/doctree/httpopts"
-	"github.com/TuneLab/gob/gendoc/svcparse"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree/httpopts"
+	"github.com/TuneLab/go-truss/gendoc/svcparse"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"

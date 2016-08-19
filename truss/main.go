@@ -13,12 +13,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/gob/truss/protostage"
-	"github.com/TuneLab/gob/truss/truss"
+	"github.com/TuneLab/go-truss/truss/protostage"
+	"github.com/TuneLab/go-truss/truss/truss"
 
-	"github.com/TuneLab/gob/gendoc"
-	"github.com/TuneLab/gob/gendoc/doctree/makedt"
-	"github.com/TuneLab/gob/gengokit"
+	"github.com/TuneLab/go-truss/gendoc"
+	"github.com/TuneLab/go-truss/gendoc/doctree/makedt"
+	"github.com/TuneLab/go-truss/gengokit"
 )
 
 func main() {

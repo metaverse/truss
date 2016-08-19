@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 // Assemble takes a doctree that's already had http options parsed by svcparse

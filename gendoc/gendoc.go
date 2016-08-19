@@ -3,8 +3,8 @@
 package gendoc
 
 import (
-	"github.com/TuneLab/gob/gendoc/doctree"
-	"github.com/TuneLab/gob/truss/truss"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/truss/truss"
 )
 
 // GenerateDocs accepts a doctree that represents an ast of a group of

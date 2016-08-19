@@ -19,7 +19,7 @@ The `truss` binary reads in gRPC files that define a single gRPC *service* and o
 ## Install
 
 ```
-$ go get -u -v github.com/TuneLab/gob/...
+$ go get -u -v github.com/TuneLab/go-truss/...
 
 ```
 

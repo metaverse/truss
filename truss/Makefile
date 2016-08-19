@@ -2,11 +2,11 @@ all: truss
 
 # Generate go files containing the all template files in []byte form
 gobindata:
-	go generate github.com/TuneLab/gob/...
+	go generate github.com/TuneLab/go-truss/...
 
 # Install truss and all dependencies 
 truss: gobindata
-	go install github.com/TuneLab/gob/...
+	go install github.com/TuneLab/go-truss/...
 
 # Remove the truss binarys
 clean:

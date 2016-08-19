@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 	"github.com/davecgh/go-spew/spew"
 )
 
