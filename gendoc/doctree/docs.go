@@ -362,11 +362,7 @@ func (self *MessageField) SetDescription(d string) {
 }
 
 func (self *MessageField) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
+	return genericDescribeMarkdown(self, depth)
 }
 
 func (self *MessageField) GetByName(s string) Describable {
@@ -484,11 +480,7 @@ func (self *FieldType) Describe(depth int) string {
 }
 
 func (self *FieldType) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
+	return genericDescribeMarkdown(self, depth)
 }
 
 func (self *FieldType) GetByName(s string) Describable {
@@ -530,7 +522,7 @@ func (self *ProtoService) Describe(depth int) string {
 }
 
 func (self *ProtoService) describeMarkdown(depth int) string {
-	rv := genericDescribe(self, depth)
+	rv := genericDescribeMarkdown(self, depth)
 
 	rv += "| Method Name | Request Type | Response Type | Description|\n"
 	rv += "| ---- | ---- | ------------ | -----------|\n"
@@ -656,7 +648,6 @@ func (self *MethodHttpBinding) Describe(depth int) string {
 }
 
 func (self *MethodHttpBinding) describeMarkdown(depth int) string {
-	//rv := ""
 	rv := prindent(0, "%v %v `%v`\n\n", strRepeat("#", depth), strings.ToUpper(self.Verb), self.Path)
 
 	rv += self.GetDescription() + "\n\n"
@@ -703,11 +694,7 @@ func (self *BindingField) SetDescription(d string) {
 }
 
 func (self *BindingField) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
+	return genericDescribeMarkdown(self, depth)
 }
 
 func (self *BindingField) GetByName(s string) Describable {
@@ -752,11 +739,7 @@ func (self *HttpParameter) SetDescription(d string) {
 }
 
 func (self *HttpParameter) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
+	return genericDescribeMarkdown(self, depth)
 }
 
 func (self *HttpParameter) GetByName(s string) Describable {
