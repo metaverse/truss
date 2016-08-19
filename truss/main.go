@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -79,17 +80,18 @@ func main() {
 
 	// Write files to disk
 	for _, f := range genFiles {
-		name := *(f.Name)
-		content := *(f.Content)
+		name := f.Name()
 
 		mkdir(name)
+		file, err := os.Create(name)
+		exitIfError(errors.Wrapf(err, "could create file %v", name))
 
-		err = ioutil.WriteFile(name, []byte(content), 0666)
+		_, err = io.Copy(file, f)
 		exitIfError(errors.Wrapf(err, "could not write to %v", name))
 	}
 
 	if !*noBuild {
-		err := buildMicroservice()
+		err := buildMicroservice(goImportPath)
 		exitIfError(errors.Wrap(err, "could not build microservice"))
 	}
 }
@@ -154,15 +156,15 @@ func exitIfError(err error) {
 	}
 }
 
-func buildMicroservice() (err error) {
-	const serverPath = "./service/DONOTEDIT/cmd/svc/..."
-	const clientPath = "./service/DONOTEDIT/cmd/svc/..."
+func buildMicroservice(goImportPath string) (err error) {
+	const serverPath = "/service/DONOTEDIT/cmd/svc/..."
+	const clientPath = "/service/DONOTEDIT/cmd/cliclient/..."
 
 	// Build server and client
 	errChan := make(chan error)
 
-	go goBuild("server", serverPath, errChan)
-	go goBuild("cliclient", clientPath, errChan)
+	go goBuild("server", goImportPath+serverPath, errChan)
+	go goBuild("cliclient", goImportPath+clientPath, errChan)
 
 	err = <-errChan
 	if err != nil {
@@ -223,13 +225,13 @@ func goBuild(name string, path string, errChan chan error) {
 }
 
 // readPreviousGeneration accepts the path to the directory where the inputed .proto files are stored, protoDir,
-// it returns a []truss.SimpleFile for all files in the service/ dir in protoDir
-func readPreviousGeneration(protoDir string) ([]truss.SimpleFile, error) {
+// it returns a []truss.NamedReadWriter for all files in the service/ dir in protoDir
+func readPreviousGeneration(protoDir string) ([]truss.NamedReadWriter, error) {
 	if fileExists(protoDir+"/service") != true {
 		return nil, nil
 	}
 
-	var files []truss.SimpleFile
+	var files []truss.NamedReadWriter
 	sfs := simpleFileConstructor{
 		protoDir: protoDir,
 		files:    files,
@@ -247,7 +249,7 @@ func readPreviousGeneration(protoDir string) ([]truss.SimpleFile, error) {
 // for all files in a direcotry
 type simpleFileConstructor struct {
 	protoDir string
-	files    []truss.SimpleFile
+	files    []truss.NamedReadWriter
 }
 
 // makeSimpleFile is of type filepath.WalkFunc
@@ -266,14 +268,11 @@ func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, 
 	// name will be in the always start with "service/"
 	// trim the prefix of the path to the proto files from the full path to the file
 	name := strings.TrimPrefix(path, sfs.protoDir+"/")
-	content := string(byteContent)
+	var file truss.SimpleFile
+	file.Path = name
+	file.Write(byteContent)
 
-	file := truss.SimpleFile{
-		Name:    &name,
-		Content: &content,
-	}
-
-	sfs.files = append(sfs.files, file)
+	sfs.files = append(sfs.files, &file)
 
 	return nil
 }

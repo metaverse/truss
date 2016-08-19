@@ -10,17 +10,16 @@ import (
 // GenerateDocs accepts a doctree that represents an ast of a group of
 // protofiles and returns a []truss.SimpleFile that represents a relative
 // filestructure of generated docs
-func GenerateDocs(dt doctree.Doctree) []truss.SimpleFile {
+func GenerateDocs(dt doctree.Doctree) []truss.NamedReadWriter {
 	response := dt.Markdown()
-	name := "service/docs/docs.md"
 
-	file := truss.SimpleFile{
-		Name:    &name,
-		Content: &response,
-	}
+	var file truss.SimpleFile
 
-	var files []truss.SimpleFile
-	files = append(files, file)
+	file.Path = "service/docs/docs.md"
+	file.Write([]byte(response))
+
+	var files []truss.NamedReadWriter
+	files = append(files, &file)
 
 	return files
 }
