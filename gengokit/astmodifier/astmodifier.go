@@ -7,6 +7,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -64,9 +65,9 @@ func NewFromFile(sourcePath string) *astModifier {
 }
 
 // New returns a new astModifier from a source file which modifies code intelligently
-func New(source *string) *astModifier {
+func New(source io.Reader) *astModifier {
 	fset := token.NewFileSet()
-	fileAst, err := parser.ParseFile(fset, "", *source, 0)
+	fileAst, err := parser.ParseFile(fset, "", source, 0)
 	if err != nil {
 		log.WithError(err).Fatal("server/service.go could not be parsed by go/parser into AST")
 	}
