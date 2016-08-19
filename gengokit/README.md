@@ -18,12 +18,12 @@ gengokit is a `truss` plugin that from a `doctree` and `[]truss.SimpleFile`
 
 ### Build
 
-` $ go generate github.com/TuneLab/gob/...`
-` $ go install github.com/TuneLab/gob/...`
+` $ go generate github.com/TuneLab/go-truss/...`
+` $ go install github.com/TuneLab/go-truss/...`
 
 ### Test
 
-`make test` from the `$GOPATH/src/github.com/TuneLab/gob/truss` directory runs the integration tests
+`make test` from the `$GOPATH/src/github.com/TuneLab/go-truss/truss` directory runs the integration tests
 
 
 ### Structure

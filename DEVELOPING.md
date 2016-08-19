@@ -10,13 +10,13 @@
 Whenever templates are modified, the templates must be recompiled to binary, this is done with:
 
 ```
-$ go generate github.com/TuneLab/gob/...
+$ go generate github.com/TuneLab/go-truss/...
 ```
 
 Then to build truss and it's two protoc plugins to your $GOPATH/bin directory:
 
 ```
-$ go install github.com/TuneLab/gob/...
+$ go install github.com/TuneLab/go-truss/...
 ```
 
 ## Testing
@@ -24,7 +24,7 @@ $ go install github.com/TuneLab/gob/...
 Before submitting a pull request always run tests that cover modified code. Also build truss and run truss's integration test. This can be done by
 
 ```
-$ cd $GOPATH/src/github.com/TuneLab/gob/truss
+$ cd $GOPATH/src/github.com/TuneLab/go-truss/truss
 $ make clean && make && make test
 # If the tests failed and you want to remove generated code
 $ make testclean

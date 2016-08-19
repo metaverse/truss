@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 func TestUnderscoreIdent(t *testing.T) {

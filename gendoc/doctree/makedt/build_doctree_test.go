@@ -7,10 +7,10 @@ import (
 	// This has to be imported because it modifies the state of `proto` by
 	// registering the `google.api.http` extension, allowing us to specify it
 	// in the sources below.
-	_ "github.com/TuneLab/gob/gendoc/doctree/makedt/googlethirdparty"
+	_ "github.com/TuneLab/go-truss/gendoc/doctree/makedt/googlethirdparty"
 	//"github.com/davecgh/go-spew/spew"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )

@@ -11,8 +11,8 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
-	"github.com/TuneLab/gob/gengokit/clientarggen"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 )

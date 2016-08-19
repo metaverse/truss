@@ -21,7 +21,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 func parseErr(expected string, line int, val string) error {

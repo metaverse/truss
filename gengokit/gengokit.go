@@ -14,13 +14,13 @@ import (
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/gob/gengokit/astmodifier"
-	"github.com/TuneLab/gob/gengokit/clientarggen"
-	"github.com/TuneLab/gob/gengokit/httptransport"
-	templateFileAssets "github.com/TuneLab/gob/gengokit/template"
+	"github.com/TuneLab/go-truss/gengokit/astmodifier"
+	"github.com/TuneLab/go-truss/gengokit/clientarggen"
+	"github.com/TuneLab/go-truss/gengokit/httptransport"
+	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
-	"github.com/TuneLab/gob/gendoc/doctree"
-	"github.com/TuneLab/gob/truss/truss"
+	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/truss/truss"
 )
 
 func init() {

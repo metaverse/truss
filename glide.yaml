@@ -1,4 +1,4 @@
-package: github.com/TuneLab/gob
+package: github.com/TuneLab/go-truss
 import:
 - package: github.com/Sirupsen/logrus
   version: ^0.10.0

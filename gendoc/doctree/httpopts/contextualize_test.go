@@ -3,7 +3,7 @@ package httpopts
 import (
 	"testing"
 
-	dt "github.com/TuneLab/gob/gendoc/doctree"
+	dt "github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 func TestGetPathParams(t *testing.T) {

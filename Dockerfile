@@ -35,12 +35,12 @@ RUN go get -u -v github.com/golang/protobuf/protoc-gen-go
 RUN go get -u -v google.golang.org/grpc 
 
 RUN go get -u -v github.com/go-kit/kit/...
-COPY . $GOPATH/src/github.com/TuneLab/gob/
+COPY . $GOPATH/src/github.com/TuneLab/go-truss/
 
 RUN ls -la /gopath/src/github.com
 RUN ls -la /gopath/src/github.com/opentracing
 
-RUN go get -v github.com/TuneLab/gob/...
+RUN go get -v github.com/TuneLab/go-truss/...
 
 ENTRYPOINT ["/gopath/bin/truss"]
 
