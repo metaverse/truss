@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+// General package
+package general;
+
+// RequestMessage is so foo
+message RequestMessage {
+  string in = 1;
+}
+
+// ResponseMessage is so bar
+message ResponseMessage {
+  string out = 1;
+}
+
+// ProtoService is a Microservice
+service ProtoService {
+  // ProtoMethod is simple. Like a gopher.
+  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {};
+}
