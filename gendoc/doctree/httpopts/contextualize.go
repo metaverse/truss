@@ -1,9 +1,12 @@
 package httpopts
 
 import (
-	"github.com/TuneLab/gob/gendoc/doctree"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 // Assemble takes a doctree that's already had http options parsed by svcparse
@@ -11,7 +14,7 @@ import (
 // ServiceMethod's http annotations. After this, each `HttpBinding` will have a
 // populated list of all the http parameters that that binding requires, where
 // that parameter should be located, and the type of each parameter.
-func Assemble(dt doctree.Doctree) {
+func Assemble(dt doctree.Doctree) error {
 	md := dt.(*doctree.MicroserviceDefinition)
 	for _, file := range md.Files {
 		for _, svc := range file.Services {
@@ -19,12 +22,14 @@ func Assemble(dt doctree.Doctree) {
 				for _, pbind := range meth.HttpBindings {
 					err := contextualizeBinding(meth, pbind)
 					if err != nil {
-						panic(err)
+						return errors.Wrap(err, "contextualizing http bindings failed")
 					}
 				}
 			}
 		}
 	}
+
+	return nil
 }
 
 func contextualizeBinding(meth *doctree.ServiceMethod, binding *doctree.MethodHttpBinding) error {
