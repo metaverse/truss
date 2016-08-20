@@ -2,6 +2,8 @@
 
 Truss handles the painful parts of microservices, freeing you to focus on the business logic.
 
+**Please note that Truss is currently pre-release software, and may change drastically with no notice. There is no versioning, no guarantees, no stability at this time. However, if you want to play around, make suggestions, or submit changes, we welcome issues and pull requests!**
+
 ![Everything all the time forever](http://i.imgur.com/FCmSUiQ.png)
 
 ## Install
