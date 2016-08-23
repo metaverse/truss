@@ -1,4 +1,4 @@
-# Truss[![Build Status](https://travis-ci.org/hasAdamr/go-truss.svg?branch=travis)](https://travis-ci.org/hasAdamr/go-truss)
+# Truss [![Build Status](https://travis-ci.org/TuneLab/go-truss.svg?branch=master)](https://travis-ci.org/TuneLab/go-truss)
 
 Truss handles the painful parts of microservices, freeing you to focus on the business logic.
 
