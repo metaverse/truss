@@ -1,7 +1,7 @@
 package httptransport
 
 // Method contains the distillation of information within an
-// doctree.ServiceMethod that's useful for templating http transport.
+// deftree.ServiceMethod that's useful for templating http transport.
 type Method struct {
 	Name         string
 	RequestType  string
@@ -10,7 +10,7 @@ type Method struct {
 }
 
 // Binding contains the distillation of information within an
-// doctree.HttpBinding that's useful for templating http transport.
+// deftree.HttpBinding that's useful for templating http transport.
 type Binding struct {
 	// Label is the name of this method, plus the english word for the index of
 	// this binding in this methods slice of bindings. So if this binding where
@@ -32,7 +32,7 @@ type Binding struct {
 }
 
 // Field contains the distillation of information within an
-// doctree.MessageField that's useful for templating http transport.
+// deftree.MessageField that's useful for templating http transport.
 type Field struct {
 	Name string
 	// The name of this field, but passed through the CamelCase function.

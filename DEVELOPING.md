@@ -42,7 +42,7 @@ are the main things to know about the internals of this project.
 Additional internal packages of note used by these programs are:
 
 - `astmodifier`, located in `protoc-gen-truss-gokit/astmodifier/`, used to modify go files in place, and used by `protoc-gen-truss-gokit`
-- `doctree`, located in `gendoc/doctree/`, which makes sense of the protobuf file passed to it by `protoc`, and is used by `protoc-gen-truss-gokit` and `protoc-gen-truss-doc`
+- `deftree`, located in `deftree/`, which makes sense of the protobuf file passed to it by `protoc`, and is used by `protoc-gen-truss-gokit` and `protoc-gen-truss-doc`
 
 ## Docker
 

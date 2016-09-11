@@ -1,4 +1,4 @@
-package doctree
+package gendoc
 
 // A straightforward and simple set of base CSS to give generated documentation
 // a little something extra

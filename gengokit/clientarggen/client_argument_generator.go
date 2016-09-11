@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/deftree"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 )
 
@@ -102,7 +102,7 @@ var ProtoToGoTypeMap = map[string]string{
 
 // New creates a ClientServiceArgs struct containing all the arguments for all
 // the methods of a given RPC.
-func New(svc *doctree.ProtoService) *ClientServiceArgs {
+func New(svc *deftree.ProtoService) *ClientServiceArgs {
 	svcArgs := ClientServiceArgs{
 		MethArgs: make(map[string]*MethodArgs),
 	}

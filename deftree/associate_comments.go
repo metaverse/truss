@@ -1,4 +1,4 @@
-package doctree
+package deftree
 
 import (
 	"fmt"
@@ -90,7 +90,7 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 // represents. buildNamePath walks the integer path, finding the names of these
 // entries and adding those names to the end of "NamePath". The returned slice
 // of strings thus represents the names of objects and their implicit parents,
-// which is used to find the location in the Doctree that matches the integer
+// which is used to find the location in the Deftree that matches the integer
 // path.
 //
 // For example, there may be SourceLocation with a comment "spam eggs" and a
@@ -129,8 +129,8 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 // immediate child named 'baz'."
 //
 // This idea that there are just simple objects or nodes that contain child
-// objects with some name is exactly how a Doctree is constructed and
-// navigated. Every node within the Doctree implements the "Describable"
+// objects with some name is exactly how a Deftree is constructed and
+// navigated. Every node within the Deftree implements the "Describable"
 // interface, garunteeing that it has a Name, a Description (comments about the
 // node), and a GetByName method which allows you to query that node for any
 // child nodes with the name you specify.
@@ -226,7 +226,7 @@ func scrubComments(comment string) string {
 	return comment
 }
 
-func AssociateComments(dt Doctree, req *plugin.CodeGeneratorRequest) {
+func AssociateComments(dt Deftree, req *plugin.CodeGeneratorRequest) {
 	for _, file := range req.GetProtoFile() {
 		// Skip comments for files outside the main one being considered
 		skip := true
