@@ -1,9 +1,7 @@
-// Makedt is a package for exposing the creation of a doctree structure.
-//
-// It lives in its own package because it must use several other packages
-// which make use of doctree to create a doctree, so to prevent circular
-// imports, it must be its own package.
-package makedt
+package deftree
+
+// build_deftree.go contains the functions for the creation of a deftree and
+// it's component structs.
 
 import (
 	"fmt"
@@ -13,9 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
-	"github.com/TuneLab/go-truss/gendoc/doctree/httpopts"
-	"github.com/TuneLab/go-truss/gendoc/svcparse"
+	"github.com/TuneLab/go-truss/deftree/svcparse"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
@@ -36,7 +32,7 @@ func init() {
 }
 
 // Finds the package name of the proto files named on the command line
-func findDoctreePackage(req *plugin.CodeGeneratorRequest) string {
+func findDeftreePackage(req *plugin.CodeGeneratorRequest) string {
 	for _, cmdFile := range req.GetFileToGenerate() {
 		for _, protoFile := range req.GetProtoFile() {
 			if protoFile.GetName() == cmdFile {
@@ -50,7 +46,7 @@ func findDoctreePackage(req *plugin.CodeGeneratorRequest) string {
 // Finds a message given a fully qualified name to that message. The provided
 // path may be either a fully qualfied name of a message, or just the bare name
 // for a message.
-func findMessage(md *doctree.MicroserviceDefinition, newFile *doctree.ProtoFile, path string) (*doctree.ProtoMessage, error) {
+func findMessage(md *MicroserviceDefinition, newFile *ProtoFile, path string) (*ProtoMessage, error) {
 	if path[0] == '.' {
 		parts := strings.Split(path, ".")
 		for _, file := range md.Files {
@@ -77,21 +73,21 @@ func findMessage(md *doctree.MicroserviceDefinition, newFile *doctree.ProtoFile,
 }
 
 // New accepts a Protobuf plugin.CodeGeneratorRequest and the contents of the
-// file containing the service declaration and returns a Doctree struct
-func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (doctree.Doctree, error) {
-	dt := doctree.MicroserviceDefinition{}
-	dt.SetName(findDoctreePackage(req))
+// file containing the service declaration and returns a Deftree struct
+func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (Deftree, error) {
+	dt := MicroserviceDefinition{}
+	dt.SetName(findDeftreePackage(req))
 
-	var svc *doctree.ProtoService
+	var svc *ProtoService
 	var serviceFileName string
 	for _, file := range req.ProtoFile {
 		// Check if this file is one we even should examine, and if it's not,
 		// skip it
-		if file.GetPackage() != findDoctreePackage(req) {
+		if file.GetPackage() != findDeftreePackage(req) {
 			continue
 		}
 		// This is a file we are meant to examine, so contine with its creation
-		// in the Doctree
+		// in the Deftree
 		newFile, err := NewFile(file, &dt)
 		if err != nil {
 			return nil, errors.Wrapf(err, "file creation of %q failed", file.GetName())
@@ -107,10 +103,10 @@ func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (doctree.Doctr
 
 	// AssociateComments goes through the comments in the passed in protobuf
 	// CodeGeneratorRequest, figures out which node within the mostly-assembled
-	// doctree each comment corresponds with, then uses the `SetDescription`
+	// deftree each comment corresponds with, then uses the `SetDescription`
 	// method of each node to set it's description to the comment.
-	// The implementation of this function is in doctree/associate_comments.go
-	doctree.AssociateComments(&dt, req)
+	// The implementation of this function is in deftree/associate_comments.go
+	AssociateComments(&dt, req)
 
 	err := addHttpOptions(&dt, svc, serviceFile)
 	if err != nil {
@@ -121,12 +117,12 @@ func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (doctree.Doctr
 	return &dt, nil
 }
 
-// Build a new doctree.File struct
+// Build a new deftree.File struct
 func NewFile(
 	pfile *descriptor.FileDescriptorProto,
-	curNewDt *doctree.MicroserviceDefinition) (*doctree.ProtoFile, error) {
+	curNewDt *MicroserviceDefinition) (*ProtoFile, error) {
 
-	newFile := doctree.ProtoFile{}
+	newFile := ProtoFile{}
 	newFile.Name = pfile.GetName()
 
 	for _, enum := range pfile.EnumType {
@@ -159,15 +155,15 @@ func NewFile(
 	return &newFile, nil
 }
 
-// NewEnum returns a *doctree.ProtoEnum created from a
+// NewEnum returns a *ProtoEnum created from a
 // *descriptor.EnumDescriptorProto
-func NewEnum(enum *descriptor.EnumDescriptorProto) (*doctree.ProtoEnum, error) {
-	newEnum := doctree.ProtoEnum{}
+func NewEnum(enum *descriptor.EnumDescriptorProto) (*ProtoEnum, error) {
+	newEnum := ProtoEnum{}
 
 	newEnum.SetName(enum.GetName())
 	// Add values to this enum
 	for _, val := range enum.GetValue() {
-		nval := doctree.EnumValue{}
+		nval := EnumValue{}
 		nval.SetName(val.GetName())
 		nval.Number = int(val.GetNumber())
 		newEnum.Values = append(newEnum.Values, &nval)
@@ -176,14 +172,14 @@ func NewEnum(enum *descriptor.EnumDescriptorProto) (*doctree.ProtoEnum, error) {
 	return &newEnum, nil
 }
 
-// NewMessage returns a *doctree.ProtoMessage created from a
+// NewMessage returns a *ProtoMessage created from a
 // *descriptor.DescriptorProto
-func NewMessage(msg *descriptor.DescriptorProto) (*doctree.ProtoMessage, error) {
-	newMsg := doctree.ProtoMessage{}
+func NewMessage(msg *descriptor.DescriptorProto) (*ProtoMessage, error) {
+	newMsg := ProtoMessage{}
 	newMsg.Name = *msg.Name
 	// Add fields to this message
 	for _, field := range msg.Field {
-		newField := doctree.MessageField{}
+		newField := MessageField{}
 		newField.Number = int(field.GetNumber())
 		newField.Name = *field.Name
 		newField.Type.Name = getCorrectTypeName(field)
@@ -198,23 +194,23 @@ func NewMessage(msg *descriptor.DescriptorProto) (*doctree.ProtoMessage, error) 
 	return &newMsg, nil
 }
 
-// NewService creates a new *doctree.ProtoService from a
+// NewService creates a new *ProtoService from a
 // descriptor.ServiceDescriptorProto. Additionally requires being passed the
-// current *doctree.ProtoFile being defined and a reference to the current
-// *doctree.MicroserviceDefinition being defined; this access is necessary so
-// that the RequestType and ResponseType fields of each of the methods of this
-// service may be set as references to the correct ProtoMessages
+// current *ProtoFile being defined and a reference to the current
+// *MicroserviceDefinition being defined; this access is necessary so that the
+// RequestType and ResponseType fields of each of the methods of this service
+// may be set as references to the correct ProtoMessages
 func NewService(
 	srvc *descriptor.ServiceDescriptorProto,
-	curNewFile *doctree.ProtoFile,
-	curNewDt *doctree.MicroserviceDefinition) (*doctree.ProtoService, error) {
+	curNewFile *ProtoFile,
+	curNewDt *MicroserviceDefinition) (*ProtoService, error) {
 
-	newSvc := doctree.ProtoService{}
+	newSvc := ProtoService{}
 	newSvc.Name = *srvc.Name
 
 	// Add methods to this service
 	for _, meth := range srvc.Method {
-		newMeth := doctree.ServiceMethod{}
+		newMeth := ServiceMethod{}
 		newMeth.Name = *meth.Name
 
 		// Set this methods request and responses to point to existing
@@ -264,24 +260,69 @@ func searchFileName(fname string) string {
 	return foundPath
 }
 
+// convertSvcparse converts the structures returned by the service parser into
+// the equivalent representation as deftree structures. At this time,
+// convertSvcparse won't ever return an error, but that may change at any time,
+// so please do not ignore the error on this function!
+func convertSvcparse(parsedSvc *svcparse.Service) (*ProtoService, error) {
+	rv := &ProtoService{}
+	rv.SetName(parsedSvc.Name)
+
+	for _, pm := range parsedSvc.Methods {
+		m := &ServiceMethod{
+			Name:        pm.Name,
+			Description: scrubComments(pm.Description),
+		}
+
+		m.RequestType = &ProtoMessage{
+			Name: pm.RequestType,
+		}
+		m.ResponseType = &ProtoMessage{
+			Name: pm.ResponseType,
+		}
+
+		for _, pb := range pm.HTTPBindings {
+			b := &MethodHttpBinding{
+				Description: scrubComments(pb.Description),
+			}
+			for _, pf := range pb.Fields {
+				f := &BindingField{
+					Name:        pf.Name,
+					Description: scrubComments(pf.Description),
+					Kind:        pf.Kind,
+					Value:       pf.Value,
+				}
+				b.Fields = append(b.Fields, f)
+			}
+			m.HttpBindings = append(m.HttpBindings, b)
+		}
+		rv.Methods = append(rv.Methods, m)
+	}
+
+	return rv, nil
+}
+
 // Parse the protobuf files for comments surrounding http options, then add
-// those to the Doctree in place.
-func addHttpOptions(dt doctree.Doctree, svc *doctree.ProtoService, protoFile io.Reader) error {
+// those to the Deftree in place.
+func addHttpOptions(dt Deftree, svc *ProtoService, protoFile io.Reader) error {
 
 	lex := svcparse.NewSvcLexer(protoFile)
-	parsedSvc, err := svcparse.ParseService(lex)
-
+	ps, err := svcparse.ParseService(lex)
 	if err != nil {
 		return errors.Wrapf(err, "error while parsing http options for the %v service definition", svc.GetName())
 	}
+	parsedSvc, err := convertSvcparse(ps)
+	if err != nil {
+		return errors.Wrapf(err, "error while converting result of service parser for the %v service definition", svc.GetName())
+	}
 
 	for _, pmeth := range parsedSvc.Methods {
-		meth := svc.GetByName(pmeth.GetName()).(*doctree.ServiceMethod)
+		meth := svc.GetByName(pmeth.GetName()).(*ServiceMethod)
 		meth.HttpBindings = pmeth.HttpBindings
 	}
 
 	// Assemble the http parameters for each http binding
-	err = httpopts.Assemble(dt)
+	err = Assemble(dt)
 	if err != nil {
 		return errors.Wrap(err, "could not assemble http parameters for each http binding")
 	}

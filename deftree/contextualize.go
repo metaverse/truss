@@ -1,21 +1,19 @@
-package httpopts
+package deftree
 
 import (
 	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
-// Assemble takes a doctree that's already had http options parsed by svcparse
+// Assemble takes a deftree that's already had http options parsed by svcparse
 // and inserted, then assembles the `HttpParameters` corresponding to each
 // ServiceMethod's http annotations. After this, each `HttpBinding` will have a
 // populated list of all the http parameters that that binding requires, where
 // that parameter should be located, and the type of each parameter.
-func Assemble(dt doctree.Doctree) error {
-	md := dt.(*doctree.MicroserviceDefinition)
+func Assemble(dt Deftree) error {
+	md := dt.(*MicroserviceDefinition)
 	for _, file := range md.Files {
 		for _, svc := range file.Services {
 			for _, meth := range svc.Methods {
@@ -32,16 +30,16 @@ func Assemble(dt doctree.Doctree) error {
 	return nil
 }
 
-func contextualizeBinding(meth *doctree.ServiceMethod, binding *doctree.MethodHttpBinding) error {
+func contextualizeBinding(meth *ServiceMethod, binding *MethodHttpBinding) error {
 	msg := meth.RequestType
 
 	// Find the verb and the path
 	binding.Verb, binding.Path = getVerb(binding)
 
-	params := make([]*doctree.HttpParameter, 0)
+	params := make([]*HttpParameter, 0)
 	// Create the new HttpParameters
 	for _, field := range msg.Fields {
-		new_param := &doctree.HttpParameter{}
+		new_param := &HttpParameter{}
 		new_param.Name = field.Name
 		new_param.Type = field.Type.GetName()
 		new_param.Location = paramLocation(field, binding)
@@ -52,7 +50,7 @@ func contextualizeBinding(meth *doctree.ServiceMethod, binding *doctree.MethodHt
 }
 
 // Get's the verb of binding. Currently doesn't support "custom" verbs.
-func getVerb(binding *doctree.MethodHttpBinding) (verb string, path string) {
+func getVerb(binding *MethodHttpBinding) (verb string, path string) {
 	for _, field := range binding.Fields {
 		switch field.Kind {
 		case "get", "put", "post", "delete", "patch":
@@ -62,7 +60,7 @@ func getVerb(binding *doctree.MethodHttpBinding) (verb string, path string) {
 	return "", ""
 }
 
-func paramLocation(field *doctree.MessageField, binding *doctree.MethodHttpBinding) string {
+func paramLocation(field *MessageField, binding *MethodHttpBinding) string {
 	path_params := getPathParams(binding)
 	for _, path_param := range path_params {
 		if strings.Split(path_param, ".")[0] == field.GetName() {
@@ -83,7 +81,7 @@ func paramLocation(field *doctree.MessageField, binding *doctree.MethodHttpBindi
 }
 
 // Returns a slice of strings containing all parameters in the path
-func getPathParams(binding *doctree.MethodHttpBinding) []string {
+func getPathParams(binding *MethodHttpBinding) []string {
 	_, path := getVerb(binding)
 	find_params := regexp.MustCompile("{(.*?)}")
 	remove_braces := regexp.MustCompile("{|}")

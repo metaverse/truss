@@ -5,8 +5,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/pmezard/go-difflib/difflib"
 )
+
+func DiffStrings(a, b string) string {
+	t := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(a),
+		B:        difflib.SplitLines(b),
+		FromFile: "A",
+		ToFile:   "B",
+		Context:  5,
+	}
+	text, _ := difflib.GetUnifiedDiffString(t)
+	return text
+}
 
 func TestUnderscoreIdent(t *testing.T) {
 	r := strings.NewReader("service Example_Service {}")
@@ -52,60 +65,57 @@ service Example_Service {
 		t.Fatalf("Returned service is nil\n")
 	}
 
-	if got, want := svc.GetName(), "Example_Service"; got != want {
+	if got, want := svc.Name, "Example_Service"; got != want {
 		t.Errorf("name = %#v, want = %#v\n", got, want)
 	}
 	if got, want := len(svc.Methods), 1; got != want {
 		t.Errorf("Method count = %#v, want = %#v\n", got, want)
 	}
 	meth := svc.Methods[0]
-	if got, want := meth.GetName(), "Example"; got != want {
+	if got, want := meth.Name, "Example"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meth.RequestType.GetName(), "Empty"; got != want {
+	if got, want := meth.RequestType, "Empty"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meth.ResponseType.GetName(), "Empty"; got != want {
+	if got, want := meth.ResponseType, "Empty"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 
-	if got, want := len(meth.HttpBindings), 2; got != want {
+	if got, want := len(meth.HTTPBindings), 2; got != want {
 		t.Errorf("Http binding count = %#v, want = %#v\n", got, want)
 	}
 
-	bindings := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindings := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/ExamplePost",
 				},
 			},
 		},
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
-					Kind:  "get",
-					Value: "/ExampleGet",
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:        "get",
+					Description: "// Some example comment\n",
+					Kind:        "get",
+					Value:       "/ExampleGet",
 				},
-				&doctree.BindingField{
+				&Field{
+					Name:  "body",
 					Kind:  "body",
 					Value: "*",
 				},
 			},
 		},
 	}
-	// Have to use SetName/SetDescription methods after declaration since
-	// `Name` and `Description are fields of a non-exported embedded struct
-	bindings[0].Fields[0].SetName("post")
-	bindings[1].Fields[0].SetName("get")
-	bindings[1].Fields[0].SetDescription("Some example comment")
-	bindings[1].Fields[1].SetName("body")
-
-	if got, want := meth.HttpBindings, bindings; !reflect.DeepEqual(got, want) {
+	if got, want := meth.HTTPBindings, bindings; !reflect.DeepEqual(got, want) {
+		t.Log(DiffStrings(spew.Sdump(got), spew.Sdump(want)))
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
-
 }
 
 func TestTrailingCommentsTwoDeep(t *testing.T) {
@@ -135,60 +145,57 @@ service Example_Service {
 		t.Fatalf("Returned service is nil\n")
 	}
 
-	if got, want := svc.GetName(), "Example_Service"; got != want {
+	if got, want := svc.Name, "Example_Service"; got != want {
 		t.Errorf("name = %#v, want = %#v\n", got, want)
 	}
 	if got, want := len(svc.Methods), 1; got != want {
 		t.Errorf("Method count = %#v, want = %#v\n", got, want)
 	}
 	meth := svc.Methods[0]
-	if got, want := meth.GetName(), "Example"; got != want {
+	if got, want := meth.Name, "Example"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meth.RequestType.GetName(), "Empty"; got != want {
+	if got, want := meth.RequestType, "Empty"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meth.ResponseType.GetName(), "Empty"; got != want {
+	if got, want := meth.ResponseType, "Empty"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 
-	if got, want := len(meth.HttpBindings), 2; got != want {
+	if got, want := len(meth.HTTPBindings), 2; got != want {
 		t.Errorf("Http binding count = %#v, want = %#v\n", got, want)
 	}
 
-	bindings := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindings := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/ExamplePost",
 				},
 			},
 		},
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
-					Kind:  "get",
-					Value: "/ExampleGet",
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:        "get",
+					Description: "// Some example comment\n",
+					Kind:        "get",
+					Value:       "/ExampleGet",
 				},
-				&doctree.BindingField{
+				&Field{
+					Name:  "body",
 					Kind:  "body",
 					Value: "*",
 				},
 			},
 		},
 	}
-	// Have to use SetName/SetDescription methods after declaration since
-	// `Name` and `Description are fields of a non-exported embedded struct
-	bindings[0].Fields[0].SetName("post")
-	bindings[1].Fields[0].SetName("get")
-	bindings[1].Fields[0].SetDescription("Some example comment")
-	bindings[1].Fields[1].SetName("body")
 
-	if got, want := meth.HttpBindings, bindings; !reflect.DeepEqual(got, want) {
+	if got, want := meth.HTTPBindings, bindings; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
-
 }
 
 func TestTrailingCommentsOneDeep(t *testing.T) {
@@ -218,57 +225,55 @@ service Example_Service {
 		t.Fatalf("Returned service is nil\n")
 	}
 
-	if got, want := svc.GetName(), "Example_Service"; got != want {
+	if got, want := svc.Name, "Example_Service"; got != want {
 		t.Errorf("name = %#v, want = %#v\n", got, want)
 	}
 	if got, want := len(svc.Methods), 1; got != want {
 		t.Errorf("Method count = %#v, want = %#v\n", got, want)
 	}
 	meth := svc.Methods[0]
-	if got, want := meth.GetName(), "Example"; got != want {
+	if got, want := meth.Name, "Example"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meth.RequestType.GetName(), "Empty"; got != want {
+	if got, want := meth.RequestType, "Empty"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meth.ResponseType.GetName(), "Empty"; got != want {
+	if got, want := meth.ResponseType, "Empty"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 
-	if got, want := len(meth.HttpBindings), 2; got != want {
+	if got, want := len(meth.HTTPBindings), 2; got != want {
 		t.Errorf("Http binding count = %#v, want = %#v\n", got, want)
 	}
 
-	bindings := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindings := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/ExamplePost",
 				},
 			},
 		},
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
-					Kind:  "get",
-					Value: "/ExampleGet",
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:        "get",
+					Description: "// Some example comment\n",
+					Kind:        "get",
+					Value:       "/ExampleGet",
 				},
-				&doctree.BindingField{
+				&Field{
+					Name:  "body",
 					Kind:  "body",
 					Value: "*",
 				},
 			},
 		},
 	}
-	// Have to use SetName/SetDescription methods after declaration since
-	// `Name` and `Description are fields of a non-exported embedded struct
-	bindings[0].Fields[0].SetName("post")
-	bindings[1].Fields[0].SetName("get")
-	bindings[1].Fields[0].SetDescription("Some example comment")
-	bindings[1].Fields[1].SetName("body")
 
-	if got, want := meth.HttpBindings, bindings; !reflect.DeepEqual(got, want) {
+	if got, want := meth.HTTPBindings, bindings; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 }
@@ -312,99 +317,97 @@ service Example_Service {
 		t.Fatalf("Returned service is nil\n")
 	}
 
-	if got, want := svc.GetName(), "Example_Service"; got != want {
+	if got, want := svc.Name, "Example_Service"; got != want {
 		t.Errorf("name = %#v, want = %#v\n", got, want)
 	}
 	if got, want := len(svc.Methods), 2; got != want {
 		t.Errorf("Method count = %#v, want = %#v\n", got, want)
 	}
 	methone := svc.Methods[0]
-	if got, want := methone.GetName(), "Example"; got != want {
+	if got, want := methone.Name, "Example"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methone.RequestType.GetName(), "Empty"; got != want {
+	if got, want := methone.RequestType, "Empty"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methone.ResponseType.GetName(), "Empty"; got != want {
+	if got, want := methone.ResponseType, "Empty"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 	methtwo := svc.Methods[1]
-	if got, want := methtwo.GetName(), "SecondExample"; got != want {
+	if got, want := methtwo.Name, "SecondExample"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methone.RequestType.GetName(), "Empty"; got != want {
+	if got, want := methone.RequestType, "Empty"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methone.ResponseType.GetName(), "Empty"; got != want {
+	if got, want := methone.ResponseType, "Empty"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 
-	if got, want := len(methone.HttpBindings), 2; got != want {
+	if got, want := len(methone.HTTPBindings), 2; got != want {
 		t.Errorf("Http binding count = %#v, want = %#v\n", got, want)
 	}
 
-	bindingsone := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindingsone := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/ExamplePost",
 				},
 			},
 		},
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
-					Kind:  "get",
-					Value: "/ExampleGet",
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:        "get",
+					Description: "// Some example comment\n",
+					Kind:        "get",
+					Value:       "/ExampleGet",
 				},
-				&doctree.BindingField{
+				&Field{
+					Name:  "body",
 					Kind:  "body",
 					Value: "*",
 				},
 			},
 		},
 	}
-	// Have to use SetName/SetDescription methods after declaration since
-	// `Name` and `Description are fields of a non-exported embedded struct
-	bindingsone[0].Fields[0].SetName("post")
-	bindingsone[1].Fields[0].SetName("get")
-	bindingsone[1].Fields[0].SetDescription("Some example comment")
-	bindingsone[1].Fields[1].SetName("body")
 
-	if got, want := methone.HttpBindings, bindingsone; !reflect.DeepEqual(got, want) {
+	if got, want := methone.HTTPBindings, bindingsone; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 
-	bindingstwo := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
-					Kind:  "post",
-					Value: "/ExamplePost",
+	bindingstwo := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:        "post",
+					Description: "// Second binding, this time for post\n",
+					Kind:        "post",
+					Value:       "/ExamplePost",
 				},
 			},
 		},
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
-					Kind:  "get",
-					Value: "/SecondExampleGet",
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:        "get",
+					Description: "// Second group of example comments\n",
+					Kind:        "get",
+					Value:       "/SecondExampleGet",
 				},
-				&doctree.BindingField{
+				&Field{
+					Name:  "body",
 					Kind:  "body",
 					Value: "*",
 				},
 			},
 		},
 	}
-	bindingstwo[0].Fields[0].SetName("post")
-	bindingstwo[0].Fields[0].SetDescription("Second binding, this time for post")
-	bindingstwo[1].Fields[0].SetName("get")
-	bindingstwo[1].Fields[0].SetDescription("Second group of example comments")
-	bindingstwo[1].Fields[1].SetName("body")
 
-	if got, want := methtwo.HttpBindings, bindingstwo; !reflect.DeepEqual(got, want) {
+	if got, want := methtwo.HTTPBindings, bindingstwo; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 }
@@ -439,7 +442,7 @@ service FlowCombination {
 		t.Fatalf("Returned service is nil\n")
 	}
 
-	if got, want := svc.GetName(), "FlowCombination"; got != want {
+	if got, want := svc.Name, "FlowCombination"; got != want {
 		t.Errorf("name = %#v, want = %#v\n", got, want)
 	}
 	if got, want := len(svc.Methods), 3; got != want {
@@ -447,82 +450,80 @@ service FlowCombination {
 	}
 
 	methone := svc.Methods[0]
-	if got, want := methone.GetName(), "RpcEmptyStream"; got != want {
+	if got, want := methone.Name, "RpcEmptyStream"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methone.RequestType.GetName(), "EmptyProto"; got != want {
+	if got, want := methone.RequestType, "EmptyProto"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methone.ResponseType.GetName(), "EmptyProto"; got != want {
+	if got, want := methone.ResponseType, "EmptyProto"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 	methtwo := svc.Methods[1]
-	if got, want := methtwo.GetName(), "StreamEmptyRpc"; got != want {
+	if got, want := methtwo.Name, "StreamEmptyRpc"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methtwo.RequestType.GetName(), "EmptyProto"; got != want {
+	if got, want := methtwo.RequestType, "EmptyProto"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := methtwo.ResponseType.GetName(), "EmptyProto"; got != want {
+	if got, want := methtwo.ResponseType, "EmptyProto"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 	meththree := svc.Methods[2]
-	if got, want := meththree.GetName(), "StreamEmptyStream"; got != want {
+	if got, want := meththree.Name, "StreamEmptyStream"; got != want {
 		t.Errorf("Method name = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meththree.RequestType.GetName(), "EmptyProto"; got != want {
+	if got, want := meththree.RequestType, "EmptyProto"; got != want {
 		t.Errorf("Request type = %#v, want = %#v\n", got, want)
 	}
-	if got, want := meththree.ResponseType.GetName(), "EmptyProto"; got != want {
+	if got, want := meththree.ResponseType, "EmptyProto"; got != want {
 		t.Errorf("Response type = %#v, want = %#v\n", got, want)
 	}
 
-	bindingsone := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindingsone := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/rpc/empty/stream",
 				},
 			},
 		},
 	}
-	bindingsone[0].Fields[0].SetName("post")
 
-	if got, want := methone.HttpBindings, bindingsone; !reflect.DeepEqual(got, want) {
+	if got, want := methone.HTTPBindings, bindingsone; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 
-	bindingstwo := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindingstwo := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/stream/empty/rpc",
 				},
 			},
 		},
 	}
-	bindingstwo[0].Fields[0].SetName("post")
-
-	if got, want := methtwo.HttpBindings, bindingstwo; !reflect.DeepEqual(got, want) {
+	if got, want := methtwo.HTTPBindings, bindingstwo; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 
-	bindingsthree := []*doctree.MethodHttpBinding{
-		&doctree.MethodHttpBinding{
-			Fields: []*doctree.BindingField{
-				&doctree.BindingField{
+	bindingsthree := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Name:  "post",
 					Kind:  "post",
 					Value: "/stream/empty/stream",
 				},
 			},
 		},
 	}
-	bindingsthree[0].Fields[0].SetName("post")
 
-	if got, want := meththree.HttpBindings, bindingsthree; !reflect.DeepEqual(got, want) {
+	if got, want := meththree.HTTPBindings, bindingsthree; !reflect.DeepEqual(got, want) {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
-
 }

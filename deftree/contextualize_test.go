@@ -1,15 +1,13 @@
-package httpopts
+package deftree
 
 import (
 	"testing"
-
-	dt "github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 func TestGetPathParams(t *testing.T) {
-	binding := &dt.MethodHttpBinding{
-		Fields: []*dt.BindingField{
-			&dt.BindingField{
+	binding := &MethodHttpBinding{
+		Fields: []*BindingField{
+			&BindingField{
 				Kind:  "get",
 				Value: `"/{a}/{b}"`,
 			},
@@ -25,22 +23,22 @@ func TestGetPathParams(t *testing.T) {
 // Make sure that the location of fields in HTTP parameters matches up with the
 // locations specified within MethodHttpBinding
 func TestPostBodyParams(t *testing.T) {
-	typ := dt.FieldType{}
+	typ := FieldType{}
 	typ.SetName("TYPE_STRING")
 
-	msg := &dt.ProtoMessage{
-		Fields: []*dt.MessageField{
-			&dt.MessageField{
+	msg := &ProtoMessage{
+		Fields: []*MessageField{
+			&MessageField{
 				Number: 1,
 				Label:  "LABEL_OPTIONAL",
 				Type:   typ,
 			},
-			&dt.MessageField{
+			&MessageField{
 				Number: 2,
 				Label:  "LABEL_OPTIONAL",
 				Type:   typ,
 			},
-			&dt.MessageField{
+			&MessageField{
 				Number: 3,
 				Label:  "LABEL_OPTIONAL",
 				Type:   typ,
@@ -50,7 +48,7 @@ func TestPostBodyParams(t *testing.T) {
 	// In order to contextualize http bindings, there must be ProtoMessages
 	// with `Name` fields which match the ones specified within the
 	// BindingFields of the HttpBindings. However, since the `Name` field of
-	// pretty much all the types in the Doctree module are actually fields on
+	// pretty much all the types in the Deftree module are actually fields on
 	// embeded structs which aren't exported, we can't define the `Name` fields
 	// of MessageField types inline. For this reason, the MessageFields are
 	// defined above, but their names are set in the for loop below.
@@ -58,26 +56,26 @@ func TestPostBodyParams(t *testing.T) {
 		names := []string{"A", "B", "C"}
 		field.SetName(names[count])
 	}
-	md := &dt.MicroserviceDefinition{
-		Files: []*dt.ProtoFile{
-			&dt.ProtoFile{
-				Messages: []*dt.ProtoMessage{
+	md := &MicroserviceDefinition{
+		Files: []*ProtoFile{
+			&ProtoFile{
+				Messages: []*ProtoMessage{
 					msg,
 				},
-				Services: []*dt.ProtoService{
-					&dt.ProtoService{
-						Methods: []*dt.ServiceMethod{
-							&dt.ServiceMethod{
+				Services: []*ProtoService{
+					&ProtoService{
+						Methods: []*ServiceMethod{
+							&ServiceMethod{
 								RequestType:  msg,
 								ResponseType: msg,
-								HttpBindings: []*dt.MethodHttpBinding{
-									&dt.MethodHttpBinding{
-										Fields: []*dt.BindingField{
-											&dt.BindingField{
+								HttpBindings: []*MethodHttpBinding{
+									&MethodHttpBinding{
+										Fields: []*BindingField{
+											&BindingField{
 												Kind:  "post",
 												Value: `/{A}`,
 											},
-											&dt.BindingField{
+											&BindingField{
 												Kind:  "body",
 												Value: `B`,
 											},

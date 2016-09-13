@@ -16,8 +16,8 @@ import (
 	"github.com/TuneLab/go-truss/truss/protostage"
 	"github.com/TuneLab/go-truss/truss/truss"
 
+	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
-	"github.com/TuneLab/go-truss/gendoc/doctree/makedt"
 	"github.com/TuneLab/go-truss/gengokit"
 )
 
@@ -57,12 +57,12 @@ func main() {
 	goImportPath := strings.TrimPrefix(protoDir, goPath+"/src/")
 	err = protostage.GeneratePBDataStructures(definitionFiles, protoDir, goImportPath)
 
-	// Compose protocOut and service file to make a doctree
+	// Compose protocOut and service file to make a deftree
 	protocOut, serviceFile, err := protostage.Compose(definitionFiles, protoDir)
 	exitIfError(err)
 
-	// Make a doctree
-	dt, err := makedt.New(protocOut, serviceFile)
+	// Make a deftree
+	dt, err := deftree.New(protocOut, serviceFile)
 	exitIfError(err)
 
 	prevGen, err := readPreviousGeneration(protoDir)

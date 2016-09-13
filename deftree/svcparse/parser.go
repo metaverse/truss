@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-
-	"github.com/TuneLab/go-truss/gendoc/doctree"
 )
 
 func parseErr(expected string, line int, val string) error {
@@ -42,9 +40,47 @@ func fastForwardTill(lex *SvcLexer, delim string) error {
 	}
 }
 
-// ParseService will parse a proto file and return the the doctree
+// Each of the following structs exists as a distillation of a corresponding
+// deftree struct, only including what's necessary for this parser. The reason
+// we define these structs instead of using the ones within deftree is because
+// doing so would couple this package to that package, and cause import cycles.
+
+// Service keeps track of the information extracted by the parser about each
+// service in the file.
+type Service struct {
+	Name    string
+	Methods []*Method
+}
+
+// Method holds information extracted by the parser about each method within
+// each service.
+type Method struct {
+	Name         string
+	Description  string
+	RequestType  string
+	ResponseType string
+	HTTPBindings []*HTTPBinding
+}
+
+// HTTPBinding holds information extracted by the parser about each HTTP
+// binding within each method.
+type HTTPBinding struct {
+	Description string
+	Fields      []*Field
+}
+
+// Field holds information extracted by the parser about each field within each
+// HTTP binding.
+type Field struct {
+	Name        string
+	Description string
+	Kind        string
+	Value       string
+}
+
+// ParseService will parse a proto file and return the the struct
 // representation of that service.
-func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
+func ParseService(lex *SvcLexer) (*Service, error) {
 	tk, val := lex.GetTokenIgnoreWhitespace()
 	if tk == EOF {
 		return nil, io.ErrUnexpectedEOF
@@ -53,13 +89,13 @@ func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
 		return nil, parseErr("'service' identifier", lex.GetLineNumber(), val)
 	}
 
-	toret := &doctree.ProtoService{}
+	toret := &Service{}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
 		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
 	}
-	toret.SetName(val)
+	toret.Name = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
@@ -84,7 +120,7 @@ func ParseService(lex *SvcLexer) (*doctree.ProtoService, error) {
 	return toret, nil
 }
 
-func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
+func ParseMethod(lex *SvcLexer) (*Method, error) {
 	var desc string
 
 	tk, val := lex.GetTokenIgnoreWhitespace()
@@ -101,14 +137,14 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		return nil, parseErr("identifier 'rpc'", lex.GetLineNumber(), val)
 	}
 
-	toret := &doctree.ServiceMethod{}
-	toret.SetDescription(desc)
+	toret := &Method{}
+	toret.Description = desc
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
 		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
 	}
-	toret.SetName(val)
+	toret.Name = val
 
 	// TODO Add some kind of lookup of the existing messages instead of
 	// creating a new message
@@ -128,8 +164,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		return nil, parseErr("a string identifier in first argument to method", lex.GetLineNumber(), val)
 	}
 
-	toret.RequestType = &doctree.ProtoMessage{}
-	toret.RequestType.SetName(val)
+	toret.RequestType = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
@@ -156,8 +191,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 		return nil, parseErr("a string identifier in return argument to method", lex.GetLineNumber(), val)
 	}
 
-	toret.ResponseType = &doctree.ProtoMessage{}
-	toret.ResponseType.SetName(val)
+	toret.ResponseType = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
@@ -173,7 +207,7 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 	if err != nil {
 		return nil, err
 	}
-	toret.HttpBindings = bindings
+	toret.HTTPBindings = bindings
 
 	// There should be a semi-colon immediately following all 'option'
 	// declarations, which we should check for
@@ -191,10 +225,10 @@ func ParseMethod(lex *SvcLexer) (*doctree.ServiceMethod, error) {
 
 }
 
-func ParseHttpBindings(lex *SvcLexer) ([]*doctree.MethodHttpBinding, error) {
+func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 
-	rv := make([]*doctree.MethodHttpBinding, 0)
-	new_opt := &doctree.MethodHttpBinding{}
+	rv := make([]*HTTPBinding, 0)
+	new_opt := &HTTPBinding{}
 
 	tk, val := lex.GetTokenIgnoreWhitespace()
 	// If there's a comment before the declaration of a new HttpBinding, then
@@ -208,7 +242,7 @@ func ParseHttpBindings(lex *SvcLexer) ([]*doctree.MethodHttpBinding, error) {
 	// basis for association.
 	for {
 		if tk == COMMENT {
-			new_opt.SetDescription(val)
+			new_opt.Description = val
 			tk, val = lex.GetTokenIgnoreWhitespace()
 		} else if tk == EOF || tk == ILLEGAL {
 			return nil, parseErr("non-illegal input", lex.GetLineNumber(), tk.String())
@@ -271,15 +305,15 @@ func ParseHttpBindings(lex *SvcLexer) ([]*doctree.MethodHttpBinding, error) {
 	return nil, parseErr("'option' or 'additional_bindings' while parsing options", lex.GetLineNumber(), val)
 }
 
-func ParseBindingFields(lex *SvcLexer) ([]*doctree.BindingField, error) {
+func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
 
-	rv := make([]*doctree.BindingField, 0)
-	field := &doctree.BindingField{}
+	rv := make([]*Field, 0)
+	field := &Field{}
 	for {
 		tk, val := lex.GetTokenIgnoreWhitespace()
 		for {
 			if tk == COMMENT {
-				field.SetDescription(val)
+				field.Description = val
 				tk, val = lex.GetTokenIgnoreWhitespace()
 			} else if tk == EOF || tk == ILLEGAL {
 				return nil, parseErr("non-illegal token whil parsing binding fields", lex.GetLineNumber(), val)
@@ -297,7 +331,7 @@ func ParseBindingFields(lex *SvcLexer) ([]*doctree.BindingField, error) {
 		}
 
 		field.Kind = val
-		field.SetName(val)
+		field.Name = val
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != SYMBOL || val != ":" {
@@ -316,7 +350,7 @@ func ParseBindingFields(lex *SvcLexer) ([]*doctree.BindingField, error) {
 		field.Value = noqoute
 
 		rv = append(rv, field)
-		field = &doctree.BindingField{}
+		field = &Field{}
 	}
 
 	return rv, nil
