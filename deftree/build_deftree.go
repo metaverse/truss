@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/TuneLab/go-truss/gendoc/svcparse"
+	"github.com/TuneLab/go-truss/deftree/svcparse"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
