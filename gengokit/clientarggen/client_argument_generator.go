@@ -142,20 +142,22 @@ func New(svc *deftree.ProtoService) *ClientServiceArgs {
 func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
+	case strings.Contains(a.GoType, "uint32"):
+		fType = `%s = flag.Uint("%s", 0, %s)`
+	case strings.Contains(a.GoType, "uint64"):
+		fType = `%s = flag.Uint64("%s", 0, %s)`
 	case strings.Contains(a.GoType, "int32"):
-		fType = "%s = flag.Int(\"%s\", 0, %s)"
+		fType = `%s = flag.Int("%s", 0, %s)`
 	case strings.Contains(a.GoType, "int64"):
-		fType = "%s = flag.Int64(\"%s\", 0, %s)"
-	case strings.Contains(a.GoType, "int"):
-		fType = "%s = flag.Int(\"%s\", 0, %s)"
+		fType = `%s = flag.Int64("%s", 0, %s)`
 	case strings.Contains(a.GoType, "bool"):
-		fType = "%s = flag.Bool(\"%s\", false, %s)"
+		fType = `%s = flag.Bool("%s", false, %s)`
 	case strings.Contains(a.GoType, "float32"):
-		fType = "%s = flag.Float64(\"%s\", 0.0, %s)"
+		fType = `%s = flag.Float64("%s", 0.0, %s)`
 	case strings.Contains(a.GoType, "float64"):
-		fType = "%s = flag.Float64(\"%s\", 0.0, %s)"
+		fType = `%s = flag.Float64("%s", 0.0, %s)`
 	case strings.Contains(a.GoType, "string"):
-		fType = "%s = flag.String(\"%s\", \"\", %s)"
+		fType = `%s = flag.String("%s", "", %s)`
 	}
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
 }
@@ -168,19 +170,13 @@ func createFlagConvertFunc(a ClientArg) string {
 func createFlagConversion(a ClientArg) string {
 	fType := ""
 	switch {
+	case strings.Contains(a.GoType, "uint32"):
+		fType = "uint32(*%s)"
 	case strings.Contains(a.GoType, "int32"):
 		fType = "int32(*%s)"
-	case strings.Contains(a.GoType, "int64"):
-		fType = "*%s"
-	case strings.Contains(a.GoType, "int"):
-		fType = "*%s"
-	case strings.Contains(a.GoType, "bool"):
-		fType = "*%s"
 	case strings.Contains(a.GoType, "float32"):
 		fType = "float32(*%s)"
-	case strings.Contains(a.GoType, "float64"):
-		fType = "*%s"
-	case strings.Contains(a.GoType, "string"):
+	default:
 		fType = "*%s"
 	}
 	return fmt.Sprintf(fType, generatego.CamelCase(a.FlagArg))
