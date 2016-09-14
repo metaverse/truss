@@ -4,6 +4,8 @@
 [._]s[a-w][a-z]
 # session
 Session.vi
+build/
+!docker/build/
 
 # Prevents accidentally including a problematic folder within the `vendor/`
 # folder.

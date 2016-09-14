@@ -8,12 +8,12 @@ gobindata:
 truss: gobindata
 	go install github.com/TuneLab/go-truss/...
 
-# Remove the truss binarys
+# Remove the truss binaries
 clean:
-	rm -f $(GOPATH)/bin/truss
-	rm -f $(GOPATH)/bin/protoc-gen-truss-gokit
-	rm -f $(GOPATH)/bin/protoc-gen-truss-doc
-	rm -f $(GOPATH)/bin/truss-integration-runner
+	@rm -f $(GOPATH)/bin/truss \
+		$(GOPATH)/bin/protoc-gen-truss-gokit
+		$(GOPATH)/bin/protoc-gen-truss-doc \
+		$(GOPATH)/bin/truss-integration-runner
 
 # Run truss on all proto files in all dirs in ./tests/
 test:

@@ -4,17 +4,17 @@ language: go
 sudo: false
 
 go:
-  - 1.7
-  - 1.6
+  - 1.7.1
+  - 1.6.3
 
 go_import_path: github.com/TuneLab/go-truss
 
 before_install:
   # protobuf
   # download, unzip in $HOME, add to $PATH
-  - wget https://github.com/google/protobuf/releases/download/v3.0.0/protoc-3.0.0-linux-x86_64.zip
-  - mv protoc-3.0.0-linux-x86_64.zip $HOME
-  - unzip ~/protoc-3.0.0-linux-x86_64.zip -d $HOME
+  - wget https://github.com/google/protobuf/releases/download/v3.0.2/protoc-3.0.2-linux-x86_64.zip
+  - mv protoc-3.0.2-linux-x86_64.zip $HOME
+  - unzip ~/protoc-3.0.2-linux-x86_64.zip -d $HOME
   - export PATH=$HOME/bin/:$PATH
 
     # golang/protobuf contains protoc-gen-go which generates the .pb.go files
