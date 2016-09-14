@@ -25,7 +25,9 @@ uses that definition to create an entire microservice.
 
 Once you've written the definition of your microservice, use the command `$ truss
 {NAME_OF_PROTO_FILE}` to generate your microservice into a directory called
-`service/` within your current directory.
+`NAME-service/` within your current directory where NAME is the package name of your service.
+
+See [USAGE.md](./USAGE.md) for details
 
 ## Developing
 

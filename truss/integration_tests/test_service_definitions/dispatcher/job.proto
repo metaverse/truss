@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package dispatcher;
+package TEST;
 
 // JobConfigRequest is for calls to Submit
 // and concerned with configuration of a job

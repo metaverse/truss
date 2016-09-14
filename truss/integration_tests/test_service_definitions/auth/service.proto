@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package auth;
+package TEST;
 import "access_token.proto";
 import "service_key_values.proto";
 import "service_endpoints.proto";

@@ -20,9 +20,8 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	// This Service
-	handler "{{$templateExecutor.HandlerImport -}} /server"
-	svc "{{$templateExecutor.GeneratedImport -}}"
-	//pb "{{$templateExecutor.GeneratedImport -}} /pb"
+	handler "{{$templateExecutor.ImportPath -}} /handlers/server"
+	svc "{{$templateExecutor.ImportPath -}} /generated"
 )
 
 var (

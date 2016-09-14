@@ -1,5 +1,5 @@
 {{ with $templateExecutor := .}}
-package addsvc
+package svc
 
 // This file provides server-side bindings for the gRPC transport.
 // It utilizes the transport/grpc.Server.
@@ -13,7 +13,7 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	pb "{{$templateExecutor.GeneratedImport -}} /pb"
+	pb "{{$templateExecutor.ImportPath -}}"
 )
 
 

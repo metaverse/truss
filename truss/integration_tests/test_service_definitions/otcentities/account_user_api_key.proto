@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package otcentities;
+package TEST;
 
 message AccountUserApiKeyGetByIdRequest {
   int64 id = 1;

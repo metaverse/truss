@@ -1,4 +1,4 @@
-package addsvc
+package svc
 
 // This file contains methods to make individual endpoints from services,
 // request and response types to serve those endpoints, as well as encoders and
@@ -15,8 +15,8 @@ import (
 	//_ "github.com/go-kit/kit/log"
 	//_ "github.com/go-kit/kit/metrics"
 
-	"{{.HandlerImport -}} /server"
-	pb "{{.GeneratedImport -}} /pb"
+	handler "{{.ImportPath -}} /handlers/server"
+	pb "{{.ImportPath -}}"
 )
 
 // Endpoints collects all of the endpoints that compose an add service. It's

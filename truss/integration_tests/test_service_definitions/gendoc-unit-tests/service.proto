@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package gendocunittests;
+package TEST;
 import "google/api/annotations.proto";
 
 // A totally empty message, for use in these basic RPC definitions

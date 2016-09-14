@@ -22,7 +22,7 @@ func GenerateDocs(dt deftree.Deftree) []truss.NamedReadWriter {
 
 	var file truss.SimpleFile
 
-	file.Path = "service/docs/docs.md"
+	file.Path = dt.GetName() + "-service/docs/docs.md"
 	file.Write([]byte(response))
 
 	var files []truss.NamedReadWriter

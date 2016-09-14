@@ -1,5 +1,5 @@
 {{ with $templateExecutor := .}}
-package addsvc
+package svc
 
 // This file provides server-side bindings for the HTTP transport.
 // It utilizes the transport/http.Server.
@@ -24,7 +24,7 @@ import (
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	// This service
-	pb "{{$templateExecutor.GeneratedImport -}} /pb"
+	pb "{{$templateExecutor.ImportPath -}}"
 )
 
 var (

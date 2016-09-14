@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package chrono;
+package TEST;
 
 // ClockStateRequest is an empty messsage for polling for stats/state
 message ClockStateRequest {}

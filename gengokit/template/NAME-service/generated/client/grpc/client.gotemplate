@@ -18,9 +18,9 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	handler "{{$templateExecutor.HandlerImport -}} /server"
-	addsvc "{{$templateExecutor.GeneratedImport -}}"
-	pb "{{$templateExecutor.GeneratedImport -}} /pb"
+	handler "{{$templateExecutor.ImportPath -}} /handlers/server"
+	svc "{{$templateExecutor.ImportPath -}} /generated"
+	pb "{{$templateExecutor.ImportPath -}}"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the
@@ -41,8 +41,8 @@ func New(conn *grpc.ClientConn/*, tracer stdopentracing.Tracer, logger log.Logge
 			conn,
 			"{{TrimPrefix $templateExecutor.Service.FullyQualifiedName "."}}",
 			"{{$i.GetName}}",
-			addsvc.EncodeGRPC{{$i.GetName}}Request,
-			addsvc.DecodeGRPC{{$i.GetName}}Response,
+			svc.EncodeGRPC{{$i.GetName}}Request,
+			svc.DecodeGRPC{{$i.GetName}}Response,
 			pb.{{GoName $i.ResponseType.GetName}}{},
 			//grpctransport.ClientBefore(opentracing.FromGRPCRequest(tracer, "{{$i.GetName}}", logger)),
 		).Endpoint()
@@ -55,7 +55,7 @@ func New(conn *grpc.ClientConn/*, tracer stdopentracing.Tracer, logger log.Logge
 	}
 {{end}}
 
-	return addsvc.Endpoints{
+	return svc.Endpoints{
 	{{range $i := $templateExecutor.Service.Methods}}
 		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
 	{{- end}}

@@ -31,9 +31,9 @@ import (
 	//"github.com/go-kit/kit/tracing/opentracing"
 
 	// This Service
-	handler "{{$templateExecutor.HandlerImport -}} /server"
-	"{{$templateExecutor.GeneratedImport -}} "
-	pb "{{$templateExecutor.GeneratedImport -}} /pb"
+	handler "{{$templateExecutor.ImportPath -}} /handlers/server"
+	svc "{{$templateExecutor.ImportPath -}} /generated"
+	pb "{{$templateExecutor.ImportPath -}}"
 
 )
 
@@ -64,12 +64,12 @@ func main() {
 	{
 		// Business level metrics.
 		ints = prometheus.NewCounter(stdprometheus.CounterOpts{
-			Namespace: "addsvc",
+			Namespace: "svc",
 			Name:      "integers_summed",
 			Help:      "Total count of integers summed via the Sum method.",
 		}, []string{})
 		chars = prometheus.NewCounter(stdprometheus.CounterOpts{
-			Namespace: "addsvc",
+			Namespace: "svc",
 			Name:      "characters_concatenated",
 			Help:      "Total count of characters concatenated via the Concat method.",
 		}, []string{})
@@ -78,7 +78,7 @@ func main() {
 	{
 		// Transport level metrics.
 		duration = metrics.NewTimeHistogram(time.Nanosecond, prometheus.NewSummary(stdprometheus.SummaryOpts{
-			Namespace: "addsvc",
+			Namespace: "svc",
 			Name:      "request_duration_ns",
 			Help:      "Request duration in nanoseconds.",
 		}, []string{"method", "success"}))
@@ -100,7 +100,7 @@ func main() {
 				os.Exit(1)
 			}
 			tracer, err = zipkin.NewTracer(
-				zipkin.NewRecorder(collector, false, "localhost:80", "addsvc"),
+				zipkin.NewRecorder(collector, false, "localhost:80", "svc"),
 			)
 			if err != nil {
 				logger.Log("err", err)
@@ -140,13 +140,13 @@ func main() {
 		//{{ToLower $i.GetName}}Duration := duration.With(metrics.Field{Key: "method", Value: "{{$i.GetName}}})"
 		//{{ToLower $i.GetName}}Logger := log.NewContext(logger).With("method", "{{$i.GetName}})")
 
-		{{ToLower $i.GetName}}Endpoint = addsvc.Make{{$i.GetName}}Endpoint(service)
+		{{ToLower $i.GetName}}Endpoint = svc.Make{{$i.GetName}}Endpoint(service)
 		//{{ToLower $i.GetName}}Endpoint = opentracing.TraceServer(tracer, "{{$i.GetName}})")({{ToLower $i.GetName}}Endpoint)
-		//{{ToLower $i.GetName}}Endpoint = addsvc.EndpointInstrumentingMiddleware({{ToLower $i.GetName}}Duration)({{ToLower $i.GetName}}Endpoint)
-		//{{ToLower $i.GetName}}Endpoint = addsvc.EndpointLoggingMiddleware({{ToLower $i.GetName}}Logger)({{ToLower $i.GetName}}Endpoint)
+		//{{ToLower $i.GetName}}Endpoint = svc.EndpointInstrumentingMiddleware({{ToLower $i.GetName}}Duration)({{ToLower $i.GetName}}Endpoint)
+		//{{ToLower $i.GetName}}Endpoint = svc.EndpointLoggingMiddleware({{ToLower $i.GetName}}Logger)({{ToLower $i.GetName}}Endpoint)
 	}
 	{{end}}
-	endpoints := addsvc.Endpoints{
+	endpoints := svc.Endpoints{
 	{{range $i := $templateExecutor.Service.Methods}}
 		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
 	{{- end}}
@@ -182,8 +182,8 @@ func main() {
 	// HTTP transport.
 	go func() {
 		logger := log.NewContext(logger).With("transport", "HTTP")
-		//h := addsvc.MakeHTTPHandler(ctx, endpoints, tracer, logger)
-		h := addsvc.MakeHTTPHandler(ctx, endpoints, logger)
+		//h := svc.MakeHTTPHandler(ctx, endpoints, tracer, logger)
+		h := svc.MakeHTTPHandler(ctx, endpoints, logger)
 		logger.Log("addr", *httpAddr)
 		errc <- http.ListenAndServe(*httpAddr, h)
 	}()
@@ -198,7 +198,7 @@ func main() {
 			return
 		}
 
-		srv := addsvc.MakeGRPCServer(ctx, endpoints/*, tracer, logger*/)
+		srv := svc.MakeGRPCServer(ctx, endpoints/*, tracer, logger*/)
 		s := grpc.NewServer()
 		pb.Register{{$templateExecutor.Service.GetName}}Server(s, srv)
 
