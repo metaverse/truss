@@ -19,7 +19,7 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/httptransport"
 	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/truss/truss"
 )
 
@@ -43,18 +43,18 @@ type templateExecutor struct {
 	// Import path for generated packages
 	GeneratedImport string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	Service    *doctree.ProtoService
+	Service    *deftree.ProtoService
 	ClientArgs *clientarggen.ClientServiceArgs
 	// A helper struct for generating http transport functionality.
 	HTTPHelper *httptransport.Helper
 }
 
-// GenerateGokit accepts a doctree representing the ast of a group of .proto
+// GenerateGokit accepts a deftree representing the ast of a group of .proto
 // files, a []truss.NamedReadWriter representing files generated previously, and
 // a goImportPath for templating go code imports
 // GenerateGoCode returns the a []truss.NamedReadWriter representing a generated
 // gokit microservice file structure
-func GenerateGokit(dt doctree.Doctree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
+func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
 		return nil, errors.Wrap(err, "no service found aborting generating gokit microservice")
@@ -70,11 +70,11 @@ func GenerateGokit(dt doctree.Doctree, previousFiles []truss.NamedReadWriter, go
 	return files, nil
 }
 
-// getProtoService finds returns the service within a doctree.Doctree
-func getProtoService(dt doctree.Doctree) (*doctree.ProtoService, error) {
-	md := dt.(*doctree.MicroserviceDefinition)
+// getProtoService finds returns the service within a deftree.Deftree
+func getProtoService(dt deftree.Deftree) (*deftree.ProtoService, error) {
+	md := dt.(*deftree.MicroserviceDefinition)
 	files := md.Files
-	var service *doctree.ProtoService
+	var service *deftree.ProtoService
 
 	for _, file := range files {
 		if len(file.Services) > 0 {
@@ -90,7 +90,7 @@ func getProtoService(dt doctree.Doctree) (*doctree.ProtoService, error) {
 }
 
 // newGenerator returns a new generator which generates a gokit microservice
-func newGenerator(service *doctree.ProtoService, goImportPath string) *generator {
+func newGenerator(service *deftree.ProtoService, goImportPath string) *generator {
 	// import path for server and client handlers
 	handlerImportString := goImportPath + "/service"
 	// import path for generated code that user should not edit
@@ -258,7 +258,7 @@ func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter)
 // to the functions defined in the service and renders the template with the
 // path of templPath, and appends this to passed code
 func (g *generator) applyTemplateForMissingMeths(templPath string, funcIndex map[string]bool, code *bytes.Buffer) error {
-	var methodsToTemplate []*doctree.ServiceMethod
+	var methodsToTemplate []*deftree.ServiceMethod
 	for _, meth := range g.templateExec.Service.Methods {
 		methName := meth.GetName()
 		if funcIndex[methName] == false {

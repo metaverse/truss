@@ -1,17 +1,17 @@
-// Doctree, which stands for "documentation tree", creates a tree of nodes
+// Deftree, which stands for "definition tree", creates a tree of nodes
 // representing the components of a service defined through Protobuf definition
 // files. The tree is composed of nodes fulfilling the `Describable` interface,
-// with the root node fulfilling the `Doctree` interface. The `Doctree`
+// with the root node fulfilling the `Deftree` interface. The `Deftree`
 // interface is a superset of the `Describable` interface.
 //
-// The main entrypoint for the Doctree package is the `New` function, which
-// takes a Protobuf `CodeGeneratorRequest` struct and creates a Doctree
+// The main entrypoint for the Deftree package is the `New` function, which
+// takes a Protobuf `CodeGeneratorRequest` struct and creates a Deftree
 // representing all the documentation from the `CodeGeneratorRequest`.
 //
-// For a larger explanation of how and why Doctree is structured the way it is,
+// For a larger explanation of how and why deftree is structured the way it is,
 // see the comment for the 'associateComments' function in the source code of
 // the 'associate_comments.go' file.
-package doctree
+package deftree
 
 import (
 	"fmt"
@@ -47,7 +47,7 @@ func nameLink(in string) string {
 	return fmt.Sprintf("[%v](#%v)", name, name)
 }
 
-// Describable offers an interface for traversing a Doctree and finding
+// Describable offers an interface for traversing a Deftree and finding
 // information from the nodes within it.
 type Describable interface {
 	// The "Name" of this describable
@@ -56,26 +56,24 @@ type Describable interface {
 	// GetDescription returns the description of this describable
 	GetDescription() string
 	SetDescription(string)
-	// describe causes a Describable to generate a string representing itself.
+	// Describe causes a Describable to generate a string representing itself.
 	// The integer argument is used as the 'depth' that this Describable sits
 	// within a tree of Describable structs, allowing it to print its
 	// information with proper indentation. If called recursively, allows for
 	// printing of a structured tree-style view of a tree of Describables.
 	Describe(int) string
-	describeMarkdown(int) string
 	// GetByName allows one to query a Describable to see if it has a child
 	// Describable in any of its collections.
 	GetByName(string) Describable
 }
 
-// Doctree is the root interface for this package, and is chiefly implemented
+// Deftree is the root interface for this package, and is chiefly implemented
 // by MicroserviceDefinition. See MicroserviceDefinition for further
 // documentation on these Methods.
-type Doctree interface {
+type Deftree interface {
 	Describable
 	SetComment([]string, string)
 	String() string
-	Markdown() string
 }
 
 func genericDescribe(self Describable, depth int) string {
@@ -92,7 +90,7 @@ func genericDescribeMarkdown(self Describable, depth int) string {
 	return rv
 }
 
-// MicroserviceDefinition is the root node for any particular `Doctree`
+// MicroserviceDefinition is the root node for any particular `Deftree`
 type MicroserviceDefinition struct {
 	Describable
 	Name        string
@@ -122,15 +120,6 @@ func (self *MicroserviceDefinition) Describe(depth int) string {
 	for idx, file := range self.Files {
 		rv += prindent(depth, "File %v:\n", idx)
 		rv += file.Describe(depth + 1)
-	}
-	return rv
-}
-
-func (self *MicroserviceDefinition) describeMarkdown(depth int) string {
-	rv := doc_css
-	rv += genericDescribeMarkdown(self, depth)
-	for _, file := range self.Files {
-		rv += file.describeMarkdown(depth + 1)
 	}
 	return rv
 }
@@ -168,10 +157,6 @@ func (self *MicroserviceDefinition) SetComment(namepath []string, comment_body s
 // Describables, returning a string showing the structured view of the tree.
 func (self *MicroserviceDefinition) String() string {
 	return self.Describe(0)
-}
-
-func (self *MicroserviceDefinition) Markdown() string {
-	return self.describeMarkdown(1)
 }
 
 type ProtoFile struct {
@@ -213,32 +198,6 @@ func (self *ProtoFile) Describe(depth int) string {
 	for idx, enum := range self.Enums {
 		rv += prindent(depth, "Enum %v:\n", idx)
 		rv += enum.Describe(depth + 1)
-	}
-	return rv
-}
-
-func (self *ProtoFile) describeMarkdown(depth int) string {
-	rv := genericDescribeMarkdown(self, depth)
-
-	if len(self.Messages) > 0 {
-		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Messages")
-		for _, msg := range self.Messages {
-			rv += msg.describeMarkdown(depth + 2)
-		}
-	}
-
-	if len(self.Enums) > 0 {
-		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Enums")
-		for _, enum := range self.Enums {
-			rv += enum.describeMarkdown(depth + 2)
-		}
-	}
-
-	if len(self.Services) > 0 {
-		rv += prindent(0, "%v %v\n\n", strRepeat("#", depth+1), "Services")
-		for _, svc := range self.Services {
-			rv += svc.describeMarkdown(depth + 2)
-		}
 	}
 	return rv
 }
@@ -295,35 +254,6 @@ func (self *ProtoMessage) Describe(depth int) string {
 	return rv
 }
 
-func (self *ProtoMessage) describeMarkdown(depth int) string {
-	// Embed an anchor above this title, to allow for things to link to it. The
-	// 'name' of this anchor link is just the name of this ProtoMessage. This
-	// may not reliably create unique 'name's in all cases, but I've not
-	// encountered any problems with this aproach thus far so I'm keeping it.
-	rv := `<a name="` + self.Name + `"></a>` + "\n\n"
-	rv += prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-
-	// If there's no fields, avoid printing an empty table by short-circuiting
-	if len(self.Fields) < 1 {
-		rv += "\n"
-		return rv
-	}
-
-	rv += "| Name | Type | Field Number | Description|\n"
-	rv += "| ---- | ---- | ------------ | -----------|\n"
-	for _, f := range self.Fields {
-		safe_desc := f.GetDescription()
-		safe_desc = strings.Replace(safe_desc, "\n", "", -1)
-		rv += fmt.Sprintf("| %v | %v | %v | %v |\n", f.GetName(), nameLink(f.Type.Name), f.Number, safe_desc)
-	}
-	rv += "\n"
-	return rv
-
-}
-
 func (self *ProtoMessage) GetByName(name string) Describable {
 	for _, field := range self.Fields {
 		if field.GetName() == name {
@@ -359,14 +289,6 @@ func (self *MessageField) GetDescription() string {
 func (self *MessageField) SetDescription(d string) {
 	// When setting a description, clean it up
 	self.Description = scrubComments(d)
-}
-
-func (self *MessageField) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
 }
 
 func (self *MessageField) GetByName(s string) Describable {
@@ -411,17 +333,6 @@ func (self *ProtoEnum) Describe(depth int) string {
 		rv += prindent(depth, "Value %v:\n", idx)
 		rv += val.Describe(depth + 1)
 	}
-	return rv
-}
-
-func (self *ProtoEnum) describeMarkdown(depth int) string {
-	rv := genericDescribeMarkdown(self, depth)
-	rv += "| Number | Name |\n"
-	rv += "| ------ | ---- |\n"
-	for _, val := range self.Values {
-		rv += prindent(0, "| %v | %v |\n", val.Number, val.Name)
-	}
-	rv += "\n\n"
 	return rv
 }
 
@@ -483,14 +394,6 @@ func (self *FieldType) Describe(depth int) string {
 	return genericDescribe(self, depth)
 }
 
-func (self *FieldType) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
-}
-
 func (self *FieldType) GetByName(s string) Describable {
 	return nil
 }
@@ -525,26 +428,6 @@ func (self *ProtoService) Describe(depth int) string {
 	for idx, meth := range self.Methods {
 		rv += prindent(depth, "Method %v:\n", idx)
 		rv += meth.Describe(depth + 1)
-	}
-	return rv
-}
-
-func (self *ProtoService) describeMarkdown(depth int) string {
-	rv := genericDescribe(self, depth)
-
-	rv += "| Method Name | Request Type | Response Type | Description|\n"
-	rv += "| ---- | ---- | ------------ | -----------|\n"
-	for _, meth := range self.Methods {
-		req_link := nameLink(meth.RequestType.GetName())
-		res_link := nameLink(meth.ResponseType.GetName())
-
-		rv += prindent(0, "| %v | %v | %v | %v |\n", meth.GetName(), req_link, res_link, meth.GetDescription())
-	}
-	rv += "\n"
-	rv += prindent(0, "%v %v - Http Methods\n\n", strRepeat("#", depth), self.Name)
-
-	for _, meth := range self.Methods {
-		rv += meth.describeMarkdown(depth + 1)
 	}
 	return rv
 }
@@ -593,16 +476,6 @@ func (self *ServiceMethod) Describe(depth int) string {
 	for _, bind := range self.HttpBindings {
 		rv += bind.Describe(depth + 1)
 	}
-	return rv
-}
-
-func (self *ServiceMethod) describeMarkdown(depth int) string {
-	rv := ""
-
-	for _, bind := range self.HttpBindings {
-		rv += bind.describeMarkdown(depth)
-	}
-
 	return rv
 }
 
@@ -655,23 +528,6 @@ func (self *MethodHttpBinding) Describe(depth int) string {
 	return rv
 }
 
-func (self *MethodHttpBinding) describeMarkdown(depth int) string {
-	//rv := ""
-	rv := prindent(0, "%v %v `%v`\n\n", strRepeat("#", depth), strings.ToUpper(self.Verb), self.Path)
-
-	rv += self.GetDescription() + "\n\n"
-
-	rv += "| Parameter Name | Location | Type |\n"
-	rv += "| ---- | ---- | ------------ |\n"
-	for _, param := range self.Params {
-
-		rv += prindent(0, "| %v | %v | %v |\n", param.GetName(), param.Location, nameLink(param.Type))
-	}
-	rv += "\n"
-
-	return rv
-}
-
 // BindingField represents a single field within an `option` annotation for an
 // rpc method. For example, an rpc method may have an http annotation with
 // fields like `get: "/example/path"`. Each of those fields is represented by a
@@ -700,14 +556,6 @@ func (self *BindingField) GetDescription() string {
 func (self *BindingField) SetDescription(d string) {
 	// When setting a description, clean it up
 	self.Description = scrubComments(d)
-}
-
-func (self *BindingField) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
 }
 
 func (self *BindingField) GetByName(s string) Describable {
@@ -749,14 +597,6 @@ func (self *HttpParameter) GetDescription() string {
 func (self *HttpParameter) SetDescription(d string) {
 	// When setting a description, clean it up
 	self.Description = scrubComments(d)
-}
-
-func (self *HttpParameter) describeMarkdown(depth int) string {
-	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), self.Name)
-	if len(self.Description) > 1 {
-		rv += prindent(0, "%v\n\n", self.Description)
-	}
-	return rv
 }
 
 func (self *HttpParameter) GetByName(s string) Describable {

@@ -1,0 +1,55 @@
+language: go
+
+# use containers which run faster and have cache
+sudo: false
+
+# cache protobuf
+cache:
+  directories:
+  - $HOME/protobuf
+
+go:
+  - 1.7
+  - 1.6
+
+go_import_path: github.com/TuneLab/go-truss
+
+before_install:
+  # protobuf
+  - bash ./.travis/install-protobuf.sh
+  - export PATH=$HOME/protobuf/bin/:$PATH
+
+    # golang/protobuf contains protoc-gen-go which generates the .pb.go files
+  - go get github.com/golang/protobuf/...
+    # go-bindata is used to create binary data from template files
+  - go get github.com/jteeuwen/go-bindata/...
+
+    # vendor this?
+  - go get github.com/davecgh/go-spew/...
+    # used in ./gengokit/httptransport/templates_test.go
+  - go get github.com/pmezard/go-difflib/...
+
+    # these were added because when truss runs its $ go get ... after generating a microservice
+    # truss failed, the output seemed git related. This should be dealt with. 
+  - go get -u google.golang.org/grpc
+  - go get -u golang.org/x/net/context
+  - go get -u github.com/go-kit/kit/...
+
+    # generate template binary data from template files
+  - go generate ./...
+
+install:
+  # install our protoc plugin and truss
+  - go get github.com/TuneLab/go-truss/protoc-gen-truss-protocast/...
+  - go get github.com/TuneLab/go-truss/truss/...
+
+script: 
+  # The tests are spelled out as to not test the ./vendor directory
+  - go test -v ./deftree/...
+  - go test -v ./gendoc/...
+  - go test -v ./gengokit/...
+  - go test -v ./truss/...
+  - go test -v -tags=integration ./truss/... 
+
+notifications:
+  email: false

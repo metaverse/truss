@@ -1,7 +1,7 @@
 package httptransport
 
 // Method contains the distillation of information within an
-// doctree.ServiceMethod that's useful for templating http transport.
+// deftree.ServiceMethod that's useful for templating http transport.
 type Method struct {
 	Name         string
 	RequestType  string
@@ -10,7 +10,7 @@ type Method struct {
 }
 
 // Binding contains the distillation of information within an
-// doctree.HttpBinding that's useful for templating http transport.
+// deftree.HttpBinding that's useful for templating http transport.
 type Binding struct {
 	// Label is the name of this method, plus the english word for the index of
 	// this binding in this methods slice of bindings. So if this binding where
@@ -32,7 +32,7 @@ type Binding struct {
 }
 
 // Field contains the distillation of information within an
-// doctree.MessageField that's useful for templating http transport.
+// deftree.MessageField that's useful for templating http transport.
 type Field struct {
 	Name string
 	// The name of this field, but passed through the CamelCase function.
@@ -59,6 +59,9 @@ type Field struct {
 	// The string form of the function to be used to convert the incoming
 	// string msg from a string into it's intended type.
 	ConvertFunc string
+	// The string form of a type cast from 64 to 32bit if the GoType is 32bit
+	// as the ConvertFunc will always use return a 64bit type
+	TypeConversion string
 	// Indicates whether this field represents a basic protobuf type such as
 	// one of the ints, floats, strings, bools, etc. Since we can only create
 	// automatic marshaling of base types, if this is false a warning is given

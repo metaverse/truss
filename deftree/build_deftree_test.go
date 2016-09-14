@@ -1,4 +1,4 @@
-package makedt
+package deftree
 
 import (
 	"reflect"
@@ -7,10 +7,9 @@ import (
 	// This has to be imported because it modifies the state of `proto` by
 	// registering the `google.api.http` extension, allowing us to specify it
 	// in the sources below.
-	_ "github.com/TuneLab/go-truss/gendoc/doctree/makedt/googlethirdparty"
+	_ "github.com/TuneLab/go-truss/deftree/googlethirdparty"
 	//"github.com/davecgh/go-spew/spew"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
 	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
@@ -48,15 +47,15 @@ func TestNewFile(t *testing.T) {
 		t.Fatalf("proto.UnmarshalText(%s, &fd) failed with %v; want success", src, err)
 	}
 
-	dt := doctree.MicroserviceDefinition{}
+	dt := MicroserviceDefinition{}
 	newFile, err := NewFile(&fd, &dt)
 	if err != nil {
 		t.Fatalf("Error creating new file: %v\n", err)
 	}
 
-	msg := doctree.ProtoMessage{
-		Fields: []*doctree.MessageField{
-			&doctree.MessageField{
+	msg := ProtoMessage{
+		Fields: []*MessageField{
+			&MessageField{
 				Label:  "LABEL_OPTIONAL",
 				Number: 1,
 			},
@@ -66,15 +65,15 @@ func TestNewFile(t *testing.T) {
 	msg.Fields[0].SetName("string")
 	msg.Fields[0].Type.SetName("TYPE_STRING")
 
-	f := &doctree.ProtoFile{
-		Messages: []*doctree.ProtoMessage{
+	f := &ProtoFile{
+		Messages: []*ProtoMessage{
 			&msg,
 		},
-		Services: []*doctree.ProtoService{
-			&doctree.ProtoService{
+		Services: []*ProtoService{
+			&ProtoService{
 				FullyQualifiedName: ".example.ExampleService",
-				Methods: []*doctree.ServiceMethod{
-					&doctree.ServiceMethod{
+				Methods: []*ServiceMethod{
+					&ServiceMethod{
 						RequestType:  &msg,
 						ResponseType: &msg,
 					},
@@ -87,6 +86,6 @@ func TestNewFile(t *testing.T) {
 	f.Services[0].Methods[0].SetName("Echo")
 
 	if got, want := newFile, f; !reflect.DeepEqual(got, want) {
-		t.Errorf("doctree.ProtoFile = \n%#v, want = \n%#v\n", got, want)
+		t.Errorf("deftree.ProtoFile = \n%#v, want = \n%#v\n", got, want)
 	}
 }

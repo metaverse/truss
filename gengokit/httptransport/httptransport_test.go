@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/deftree"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -13,69 +13,69 @@ var (
 )
 
 func TestNewMethod(t *testing.T) {
-	dmeth := doctree.ServiceMethod{
+	dmeth := deftree.ServiceMethod{
 		Name: "Sum",
-		RequestType: &doctree.ProtoMessage{
+		RequestType: &deftree.ProtoMessage{
 			Name: "SumRequest",
 			//Description: "The sum request contains two parameters.",
-			Fields: []*doctree.MessageField{
-				&doctree.MessageField{
+			Fields: []*deftree.MessageField{
+				&deftree.MessageField{
 					Name:   "a",
 					Number: 1,
 					Label:  "LABEL_OPTIONAL",
-					Type: doctree.FieldType{
+					Type: deftree.FieldType{
 						Name: "TYPE_INT64",
 					},
 				},
-				&doctree.MessageField{
+				&deftree.MessageField{
 					Name:   "b",
 					Number: 2,
 					Label:  "LABEL_OPTIONAL",
-					Type: doctree.FieldType{
+					Type: deftree.FieldType{
 						Name: "TYPE_INT64",
 					},
 				},
 			},
 		},
-		ResponseType: &doctree.ProtoMessage{
+		ResponseType: &deftree.ProtoMessage{
 			Name: "SumReply",
-			Fields: []*doctree.MessageField{
-				&doctree.MessageField{
+			Fields: []*deftree.MessageField{
+				&deftree.MessageField{
 					Name:   "v",
 					Number: 1,
 					Label:  "LABEL_OPTIONAL",
-					Type: doctree.FieldType{
+					Type: deftree.FieldType{
 						Name: "TYPE_INT64",
 					},
 				},
-				&doctree.MessageField{
+				&deftree.MessageField{
 					Name:   "err",
 					Number: 2,
 					Label:  "LABEL_OPTIONAL",
-					Type: doctree.FieldType{
+					Type: deftree.FieldType{
 						Name: "TYPE_STRING",
 					},
 				},
 			},
 		},
-		HttpBindings: []*doctree.MethodHttpBinding{
-			&doctree.MethodHttpBinding{
+		HttpBindings: []*deftree.MethodHttpBinding{
+			&deftree.MethodHttpBinding{
 				Verb: "get",
 				Path: "/sum/{a}",
-				Fields: []*doctree.BindingField{
-					&doctree.BindingField{
+				Fields: []*deftree.BindingField{
+					&deftree.BindingField{
 						Name:  "get",
 						Kind:  "get",
 						Value: "/sum/{a}",
 					},
 				},
-				Params: []*doctree.HttpParameter{
-					&doctree.HttpParameter{
+				Params: []*deftree.HttpParameter{
+					&deftree.HttpParameter{
 						Name:     "a",
 						Location: "path",
 						Type:     "TYPE_INT64",
 					},
-					&doctree.HttpParameter{
+					&deftree.HttpParameter{
 						Name:     "b",
 						Location: "query",
 						Type:     "TYPE_INT64",
@@ -91,28 +91,30 @@ func TestNewMethod(t *testing.T) {
 		Verb:         "get",
 		Fields: []*Field{
 			&Field{
-				Name:          "a",
-				CamelName:     "A",
-				LowCamelName:  "a",
-				LocalName:     "ASum",
-				Location:      "path",
-				ProtobufType:  "TYPE_INT64",
-				GoType:        "int64",
-				ProtobufLabel: "LABEL_OPTIONAL",
-				ConvertFunc:   "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
-				IsBaseType:    true,
+				Name:           "a",
+				CamelName:      "A",
+				LowCamelName:   "a",
+				LocalName:      "ASum",
+				Location:       "path",
+				ProtobufType:   "TYPE_INT64",
+				GoType:         "int64",
+				ProtobufLabel:  "LABEL_OPTIONAL",
+				ConvertFunc:    "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
+				TypeConversion: "ASum",
+				IsBaseType:     true,
 			},
 			&Field{
-				Name:          "b",
-				CamelName:     "B",
-				LowCamelName:  "b",
-				LocalName:     "BSum",
-				Location:      "query",
-				ProtobufType:  "TYPE_INT64",
-				GoType:        "int64",
-				ProtobufLabel: "LABEL_OPTIONAL",
-				ConvertFunc:   "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
-				IsBaseType:    true,
+				Name:           "b",
+				CamelName:      "B",
+				LowCamelName:   "b",
+				LocalName:      "BSum",
+				Location:       "query",
+				ProtobufType:   "TYPE_INT64",
+				GoType:         "int64",
+				ProtobufLabel:  "LABEL_OPTIONAL",
+				ConvertFunc:    "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
+				TypeConversion: "BSum",
+				IsBaseType:     true,
 			},
 		},
 	}
