@@ -59,6 +59,9 @@ type Field struct {
 	// The string form of the function to be used to convert the incoming
 	// string msg from a string into it's intended type.
 	ConvertFunc string
+	// The string form of a type cast from 64 to 32bit if the GoType is 32bit
+	// as the ConvertFunc will always use return a 64bit type
+	TypeConversion string
 	// Indicates whether this field represents a basic protobuf type such as
 	// one of the ints, floats, strings, bools, etc. Since we can only create
 	// automatic marshaling of base types, if this is false a warning is given

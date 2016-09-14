@@ -95,6 +95,7 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		}
 		nField.GoType = gt
 		nField.ConvertFunc = createDecodeConvertFunc(nField)
+		nField.TypeConversion = createDecodeTypeConversion(nField)
 
 		nField.CamelName = gogen.CamelCase(nField.Name)
 		nField.LowCamelName = LowCamelName(nField.Name)
@@ -163,12 +164,14 @@ func (b *Binding) PathSections() []string {
 func createDecodeConvertFunc(f Field) string {
 	fType := ""
 	switch {
+	case strings.Contains(f.GoType, "uint32"):
+		fType = "%s, err := strconv.ParseUint(%s, 10, 32)"
+	case strings.Contains(f.GoType, "uint64"):
+		fType = "%s, err := strconv.ParseUint(%s, 10, 64)"
 	case strings.Contains(f.GoType, "int32"):
 		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 	case strings.Contains(f.GoType, "int64"):
 		fType = "%s, err := strconv.ParseInt(%s, 10, 64)"
-	case strings.Contains(f.GoType, "int"):
-		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 	case strings.Contains(f.GoType, "bool"):
 		fType = "%s, err := strconv.ParseBool(%s)"
 	case strings.Contains(f.GoType, "float32"):
@@ -179,6 +182,23 @@ func createDecodeConvertFunc(f Field) string {
 		fType = "%s := %s"
 	}
 	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
+}
+
+// createDecodeTypeConversion creates a go string that converts a 64 bit type to a 32 bit type
+// as strconv.ParseInt, ParseUInt, and ParseFloat always return the 64 bit type
+func createDecodeTypeConversion(f Field) string {
+	fType := ""
+	switch {
+	case strings.Contains(f.GoType, "uint32"):
+		fType = "uint32(%s)"
+	case strings.Contains(f.GoType, "int32"):
+		fType = "int32(%s)"
+	case strings.Contains(f.GoType, "float32"):
+		fType = "float32(%s)"
+	default:
+		fType = "%s"
+	}
+	return fmt.Sprintf(fType, f.LocalName)
 }
 
 // The 'basePath' of a path is the section from the start of the string till
