@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -22,7 +21,6 @@ import (
 )
 
 func main() {
-	noBuild := flag.Bool("nobuild", false, "Set -nobuild to generate code without building")
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
@@ -52,11 +50,6 @@ func main() {
 	err = protostage.Stage(protoDir)
 	exitIfError(err)
 
-	// Generate the .pb.go files containing the golang data structures
-	// From `$GOPATH/src/org/user/thing` get `org/user/thing` for importing in golang
-	goImportPath := strings.TrimPrefix(protoDir, goPath+"/src/")
-	err = protostage.GeneratePBDataStructures(definitionFiles, protoDir, goImportPath)
-
 	// Compose protocOut and service file to make a deftree
 	protocOut, serviceFile, err := protostage.Compose(definitionFiles, protoDir)
 	exitIfError(err)
@@ -65,7 +58,14 @@ func main() {
 	dt, err := deftree.New(protocOut, serviceFile)
 	exitIfError(err)
 
-	prevGen, err := readPreviousGeneration(protoDir)
+	// Generate the .pb.go files containing the golang data structures
+	// From `$GOPATH/src/org/user/thing` get `org/user/thing` for importing in golang
+	mkdir(protoDir + "/" + dt.GetName() + "-service/")
+	goImportPath := strings.TrimPrefix(protoDir, goPath+"/src/")
+	err = protostage.GeneratePBDataStructures(definitionFiles, protoDir, goImportPath, dt.GetName())
+	exitIfError(err)
+
+	prevGen, err := readPreviousGeneration(protoDir, dt.GetName())
 	exitIfError(err)
 
 	// generate docs
@@ -90,10 +90,6 @@ func main() {
 		exitIfError(errors.Wrapf(err, "could not write to %v", name))
 	}
 
-	if !*noBuild {
-		err := buildMicroservice(goImportPath)
-		exitIfError(errors.Wrap(err, "could not build microservice"))
-	}
 }
 
 // cleanProtofilePath takes a slice of file paths and returns the
@@ -156,78 +152,11 @@ func exitIfError(err error) {
 	}
 }
 
-func buildMicroservice(goImportPath string) (err error) {
-	const serverPath = "/service/DONOTEDIT/cmd/svc/..."
-	const clientPath = "/service/DONOTEDIT/cmd/cliclient/..."
-
-	// Build server and client
-	errChan := make(chan error)
-
-	go goBuild("server", goImportPath+serverPath, errChan)
-	go goBuild("cliclient", goImportPath+clientPath, errChan)
-
-	err = <-errChan
-	if err != nil {
-		return err
-	}
-
-	err = <-errChan
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// goBuild calls the `$ go get ` to install dependenices
-// and then calls `$ go build service/bin/$name $path`
-// to put the iterating binaries in the correct place
-func goBuild(name string, path string, errChan chan error) {
-
-	// $ go get
-
-	goGetExec := exec.Command(
-		"go",
-		"get",
-		"-d",
-		"-v",
-		path,
-	)
-
-	goGetExec.Stderr = os.Stderr
-
-	err := goGetExec.Run()
-
-	if err != nil {
-		errChan <- errors.Wrapf(err, "could not $ go get %v", path)
-		return
-	}
-
-	// $ go build
-
-	goBuildExec := exec.Command(
-		"go",
-		"build",
-		"-o",
-		"service/bin/"+name,
-		path,
-	)
-
-	goBuildExec.Stderr = os.Stderr
-
-	err = goBuildExec.Run()
-	if err != nil {
-		errChan <- errors.Wrapf(err, "could not $ go build %v", path)
-		return
-	}
-
-	errChan <- nil
-}
-
 // readPreviousGeneration accepts the path to the directory where the inputed .proto files are stored, protoDir,
 // it returns a []truss.NamedReadWriter for all files in the service/ dir in protoDir
-func readPreviousGeneration(protoDir string) ([]truss.NamedReadWriter, error) {
-	if fileExists(protoDir+"/service") != true {
+func readPreviousGeneration(protoDir, packageName string) ([]truss.NamedReadWriter, error) {
+	dir := protoDir + "/" + packageName + "-microsvc"
+	if fileExists(dir) != true {
 		return nil, nil
 	}
 
@@ -236,7 +165,7 @@ func readPreviousGeneration(protoDir string) ([]truss.NamedReadWriter, error) {
 		protoDir: protoDir,
 		files:    files,
 	}
-	err := filepath.Walk(protoDir+"/service", sfs.makeSimpleFile)
+	err := filepath.Walk(dir, sfs.makeSimpleFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not fully walk directory %v/service", protoDir)
 	}

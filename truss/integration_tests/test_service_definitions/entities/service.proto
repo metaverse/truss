@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package entities;
+package TEST;
 import "client.proto";
 import "client_attribution_partner.proto";
 import "partner_account.proto";

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package currencyexchange;
+package TEST;
 
 message ExchangeRateEntities {
   repeated ExchangeRateEntity Results = 1;

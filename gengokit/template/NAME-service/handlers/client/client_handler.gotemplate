@@ -2,7 +2,7 @@
 package clienthandler
 
 import (
-	pb "{{$templateExecutor.GeneratedImport -}} /pb"
+	pb "{{$templateExecutor.ImportPath -}}"
 )
 
 

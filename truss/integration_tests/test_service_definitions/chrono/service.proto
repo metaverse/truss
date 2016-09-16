@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package chrono;
+package TEST;
 
 import "clock_state.proto";
 import "enqueue.proto";

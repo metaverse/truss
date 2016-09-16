@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package currencyexchange;
+package TEST;
 import "exchange_rate.proto";
 import "google/api/annotations.proto";
 

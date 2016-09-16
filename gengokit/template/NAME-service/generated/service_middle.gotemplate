@@ -1,4 +1,4 @@
-package addsvc
+package svc
 
 // This file contains the Service definition, and a basic service
 // implementation. It also includes service middlewares.
@@ -12,7 +12,7 @@ import (
 	//_ "github.com/go-kit/kit/log"
 	//_ "github.com/go-kit/kit/metrics"
 
-	//_ "{{.GeneratedImport -}} /pb"
+	//pb "{{.ImportPath -}} "
 )
 
 // Middleware describes a service (as opposed to endpoint) middleware.

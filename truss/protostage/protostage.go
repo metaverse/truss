@@ -15,21 +15,8 @@ import (
 	templates "github.com/TuneLab/go-truss/truss/template"
 )
 
-// Stage outputs the following files and directories in place
-// that are required for protoc imports and go build.
-// .
-// └── service
-//     ├── bin
-//     └── DONOTEDIT
-//         ├── pb
-//         └── third_party
-//             └── googleapis
-//                 └── google
-//						└── api
-//							├── annotations.pb.go
-//							├── annotations.proto
-//							├── http.pb.go
-//							└── http.proto
+// Stage outputs the third_party imports that are required for protoc imports
+// and go build.
 func Stage(protoDir string) error {
 	err := buildDirectories(protoDir)
 	if err != nil {
@@ -47,15 +34,15 @@ func Stage(protoDir string) error {
 // GeneratePBDataStructures calls $ protoc with the protoc-gen-go to output
 // .pb.go files in ./service/DONOTEDIT/pb which contain the golang
 // datastructures represened in the .proto files
-func GeneratePBDataStructures(protoFiles []string, protoDir, importPath string) error {
-	const pbDataStructureDir = "/service/DONOTEDIT/pb"
+func GeneratePBDataStructures(protoFiles []string, protoDir, importPath, packageName string) error {
+	pbDataStructureDir := "/" + packageName + "-service/"
 
 	genGoCode := "--go_out=Mgoogle/api/annotations.proto=" +
 		importPath +
-		"/service/DONOTEDIT/third_party/googleapis/google/api," +
+		"/third_party/googleapis/google/api," +
 		"plugins=grpc:" +
 		protoDir +
-		"/service/DONOTEDIT/pb"
+		"/" + packageName + "-service"
 
 	_, err := exec.LookPath("protoc-gen-go")
 	if err != nil {
@@ -147,7 +134,7 @@ func getProtocOutput(protoFiles []string, protoFileDir string) ([]byte, error) {
 
 // protoc exec's $ protoc on protoFiles, on their full path which is created with protoDir
 func protoc(protoFiles []string, protoDir, outDir, plugin string) error {
-	const googleAPIHTTPImportPath = "/service/DONOTEDIT/third_party/googleapis"
+	const googleAPIHTTPImportPath = "/third_party/googleapis"
 
 	var fullPaths []string
 	for _, f := range protoFiles {
@@ -207,16 +194,7 @@ func findServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os
 	return svc, nil
 }
 
-// buildDirectories puts the following directories in place
-// .
-// └── service
-//     ├── bin
-//     └── DONOTEDIT
-//         ├── pb
-//         └── third_party
-//             └── googleapis
-//                 └── google
-//                     └── api
+// buildDirectories outputs the directories of the third_party imports
 func buildDirectories(protoDir string) error {
 	// third_party created by going through assets in template
 	// and creating directoires that are not there
@@ -226,20 +204,6 @@ func buildDirectories(protoDir string) error {
 		if err != nil {
 			return errors.Wrapf(err, "unable to create directory for %v", dir)
 		}
-	}
-
-	// Create the directory where protoc will store the compiled .pb.go files
-	p := protoDir + "/service/DONOTEDIT/pb"
-	err := mkdir(p)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create directory for %v", p)
-	}
-
-	// Create the directory where go build will put the compiled binaries
-	p = protoDir + "/service/bin"
-	err = mkdir(p)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create directory for %v", p)
 	}
 
 	return nil

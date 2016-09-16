@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package addsvc;
+package TEST;
 
 import "google/api/annotations.proto";
 

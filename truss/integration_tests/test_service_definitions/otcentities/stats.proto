@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package otcentities;
+package TEST;
 import "ad_network.proto";
 import "site.proto";
 

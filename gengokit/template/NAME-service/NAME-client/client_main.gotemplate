@@ -19,10 +19,10 @@ import (
 	//"github.com/go-kit/kit/log"
 
 	// This Service
-	handler "{{$templateExecutor.HandlerImport -}} /server"
-	clientHandler "{{$templateExecutor.HandlerImport -}} /client"
-	grpcclient "{{$templateExecutor.GeneratedImport -}} /client/grpc"
-	httpclient "{{$templateExecutor.GeneratedImport -}} /client/http"
+	handler "{{$templateExecutor.ImportPath -}} /handlers/server"
+	clientHandler "{{$templateExecutor.ImportPath -}} /handlers/client"
+	grpcclient "{{$templateExecutor.ImportPath -}} /generated/client/grpc"
+	httpclient "{{$templateExecutor.ImportPath -}} /generated/client/http"
 )
 
 func main() {
