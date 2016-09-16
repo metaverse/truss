@@ -18,6 +18,7 @@ import (
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
 	"github.com/TuneLab/go-truss/gengokit"
+	"github.com/TuneLab/go-truss/genswagger"
 )
 
 func main() {
@@ -71,12 +72,18 @@ func main() {
 	// generate docs
 	genDocFiles := gendoc.GenerateDocs(dt)
 
+	// generate swagger
+	genSwaggerFiles, err := genswagger.GenerateSwaggerFile(dt)
+	_ = err
+	//exitIfError(errors.Wrap(err, "could not genererate swagger file")
+
 	// generate gokit microservice
 	genFiles, err := gengokit.GenerateGokit(dt, prevGen, goImportPath)
 	exitIfError(err)
 
 	// append files together
 	genFiles = append(genFiles, genDocFiles...)
+	genFiles = append(genFiles, genSwaggerFiles...)
 
 	// Write files to disk
 	for _, f := range genFiles {

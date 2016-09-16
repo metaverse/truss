@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+// General package
+package general;
+
+import "google/api/annotations.proto";
+
+// RequestMessage is so foo
+message RequestMessage {
+  int32 InputA = 1;
+  int64 InputB = 2;
+  uint32 InputC = 3;
+  uint64 InputD = 4;
+  float InputD = 4;
+}
+
+// ResponseMessage is so bar
+message ResponseMessage {
+  string output = 1;
+}
+
+// ProtoService is a Microservice
+service ProtoService {
+  // ProtoMethod is simple. Like a gopher.
+  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+    // No {} in path and no body, everything is in the query
+    option (google.api.http) = {
+      get: "/route"
+    };
+  }
+}
