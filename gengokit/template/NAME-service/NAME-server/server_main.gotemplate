@@ -128,7 +128,7 @@ func main() {
 	// Business domain.
 	var service handler.Service
 	{
-		service = handler.NewBasicService()
+		service = handler.NewService()
 		//service = handler.ServiceLoggingMiddleware(logger)(service)
 		//service = handler.ServiceInstrumentingMiddleware(ints, chars)(service)
 	}

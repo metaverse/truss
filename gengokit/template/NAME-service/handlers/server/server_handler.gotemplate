@@ -17,16 +17,19 @@ import (
 
 
 
-// NewBasicService returns a naïve, stateless implementation of Service.
-func NewBasicService() Service {
-	return basicService{}
+// NewService returns a naïve, stateless implementation of Service.
+func NewService() Service {
+	return {{.PackageName}}Service{}
 }
 
-type basicService struct{}
+type {{.PackageName}}Service struct{}
 
-{{range $i := .Service.Methods}}
+{{with $Executor := .}}
+{{with $PackageName := $Executor.PackageName}}
+
+{{range $i := $Executor.Service.Methods}}
 // {{$i.GetName}} implements Service.
-func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error){
+func (s {{$PackageName}}Service) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
 	response := pb.{{GoName $i.ResponseType.GetName}}{
@@ -35,6 +38,8 @@ func (s basicService) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.Requ
 	return response, nil
 }
 {{end}}
+{{- end}}
+{{- end}}
 
 type Service interface {
 {{range $i := .Service.Methods}}

@@ -93,6 +93,8 @@ func genericDescribeMarkdown(self Describable, depth int) string {
 // MicroserviceDefinition is the root node for any particular `Deftree`
 type MicroserviceDefinition struct {
 	Describable
+	// The Name of the microservice definition is the name of the protobuf
+	// package containing the definition
 	Name        string
 	Description string
 	Files       []*ProtoFile
