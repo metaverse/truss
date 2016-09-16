@@ -1,8 +1,9 @@
 {{ with $templateExecutor := .}}
+{{ with $PackageName := $templateExecutor.PackageName}}
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{.GetName}} implements Service.
-func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{GoName .RequestType.GetName}}) (pb.{{GoName .ResponseType.GetName}}, error){
+func (s {{$PackageName}}Service) {{.GetName}}(ctx context.Context, in pb.{{GoName .RequestType.GetName}}) (pb.{{GoName .ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
 	response := pb.{{GoName .ResponseType.GetName}}{
@@ -12,4 +13,5 @@ func (s basicService) {{.GetName}}(ctx context.Context, in pb.{{GoName .RequestT
 }
 {{end}}
 
+{{- end}}
 {{- end}}

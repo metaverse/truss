@@ -40,6 +40,8 @@ type generator struct {
 type templateExecutor struct {
 	// import path for the directory containing the definition .proto files
 	ImportPath string
+	// PackageName is the name of the package containing the service definition
+	PackageName string
 	// GRPC/Protobuff service, with all parameters and return values accessible
 	Service    *deftree.ProtoService
 	ClientArgs *clientarggen.ClientServiceArgs
@@ -59,7 +61,7 @@ func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, go
 	}
 
 	importPath := goImportPath + "/" + dt.GetName() + "-service"
-	g := newGenerator(service, importPath)
+	g := newGenerator(service, importPath, dt.GetName())
 	files, err := g.GenerateResponseFiles(previousFiles, dt.GetName())
 
 	if err != nil {
@@ -89,13 +91,14 @@ func getProtoService(dt deftree.Deftree) (*deftree.ProtoService, error) {
 }
 
 // newGenerator returns a new generator which generates a gokit microservice
-func newGenerator(service *deftree.ProtoService, importPath string) *generator {
+func newGenerator(service *deftree.ProtoService, importPath string, pkgName string) *generator {
 	return &generator{
 		templateExec: templateExecutor{
-			ImportPath: importPath,
-			Service:    service,
-			ClientArgs: clientarggen.New(service),
-			HTTPHelper: httptransport.NewHelper(service),
+			ImportPath:  importPath,
+			PackageName: pkgName,
+			Service:     service,
+			ClientArgs:  clientarggen.New(service),
+			HTTPHelper:  httptransport.NewHelper(service),
 		},
 	}
 }
