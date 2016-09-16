@@ -1,6 +1,6 @@
 # gengokit
 
-gengokit is a `truss` plugin that from a `doctree` and `[]truss.SimpleFile`
+gengokit is a `truss` plugin that from a `deftree` and `[]truss.SimpleFile`
 
 1. Generates Golang code for a gokit microservice that includes:
 	- Logging
@@ -32,7 +32,7 @@ gengokit is a `truss` plugin that from a `doctree` and `[]truss.SimpleFile`
 
 `./astmodifier` provides functions to modify source code already generated and/or user modified. 
 
-`gengokit.go` executes the template files using `doctree`'s representation of the `protoc` AST. `./generator` also uses `./astmodifier` to rewrite code to insert/remove handler methods/rpcs that are defined/removed from a definition file without touching user written logic.
+`gengokit.go` executes the template files using `deftree`'s representation of the `protoc` AST. `./generator` also uses `./astmodifier` to rewrite code to insert/remove handler methods/rpcs that are defined/removed from a definition file without touching user written logic.
 
 
 # NOTE:

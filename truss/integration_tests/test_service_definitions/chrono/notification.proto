@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package chrono;
+package TEST;
 
 // NotificationRequest is the minumum data needed to
 // create and bootstrap a Task that the scheduler will

@@ -35,7 +35,7 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 		fmt.Printf("{{$field.Location}}Params: %v\n", {{$field.Location}}Params)
 		return nil, err
 	}
-	req.{{$field.CamelName}} = {{$field.LocalName}}
+	req.{{$field.CamelName}} = {{$field.TypeConversion}}
 {{end}}
 {{end}}
 	return &req, err

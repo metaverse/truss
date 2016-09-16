@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package signon;
+package TEST;
 
 message Session {
   string session_token = 1;

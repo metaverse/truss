@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package signon;
+package TEST;
 import "session.proto";
 
 service SignonService {

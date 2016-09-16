@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
@@ -19,7 +19,7 @@ import (
 
 // Helper is the base struct for the data structure containing all the
 // information necessary to correctly template the HTTP transport functionality
-// of a microservice. Helper must be built from a doctree.
+// of a microservice. Helper must be built from a deftree.
 type Helper struct {
 	Methods           []*Method
 	PathParamsBuilder string
@@ -28,7 +28,7 @@ type Helper struct {
 // NewHelper builds a helper struct from a service declaration. The other
 // "New*" functions in this file are there to make this function smaller and
 // more testable.
-func NewHelper(svc *doctree.ProtoService) *Helper {
+func NewHelper(svc *deftree.ProtoService) *Helper {
 	// The HTTPAssistFuncs global is a group of function literals defined
 	// within templates.go
 	pp := FormatCode(HTTPAssistFuncs)
@@ -42,8 +42,8 @@ func NewHelper(svc *doctree.ProtoService) *Helper {
 	return &rv
 }
 
-// NewMethod builds a Method struct from a doctree.ServiceMethod.
-func NewMethod(meth *doctree.ServiceMethod) *Method {
+// NewMethod builds a Method struct from a deftree.ServiceMethod.
+func NewMethod(meth *deftree.ServiceMethod) *Method {
 	nMeth := Method{
 		Name:         meth.GetName(),
 		RequestType:  meth.RequestType.GetName(),
@@ -57,12 +57,12 @@ func NewMethod(meth *doctree.ServiceMethod) *Method {
 	return &nMeth
 }
 
-// NewBinding creates a Binding struct based on a doctree.HttpBinding. Because
+// NewBinding creates a Binding struct based on a deftree.HttpBinding. Because
 // NewBinding requires access to some of it's parent method's fields, instead
-// of passing a doctree.HttpBinding directly, you instead pass a
-// doctree.ServiceMethod and the index of the HttpBinding within that methods
+// of passing a deftree.HttpBinding directly, you instead pass a
+// deftree.ServiceMethod and the index of the HttpBinding within that methods
 // "HttpBindings" slice.
-func NewBinding(i int, meth *doctree.ServiceMethod) *Binding {
+func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 	binding := meth.HttpBindings[i]
 	nBinding := Binding{
 		Label:        meth.GetName() + EnglishNumber(i),
@@ -95,6 +95,7 @@ func NewBinding(i int, meth *doctree.ServiceMethod) *Binding {
 		}
 		nField.GoType = gt
 		nField.ConvertFunc = createDecodeConvertFunc(nField)
+		nField.TypeConversion = createDecodeTypeConversion(nField)
 
 		nField.CamelName = gogen.CamelCase(nField.Name)
 		nField.LowCamelName = LowCamelName(nField.Name)
@@ -163,12 +164,14 @@ func (b *Binding) PathSections() []string {
 func createDecodeConvertFunc(f Field) string {
 	fType := ""
 	switch {
+	case strings.Contains(f.GoType, "uint32"):
+		fType = "%s, err := strconv.ParseUint(%s, 10, 32)"
+	case strings.Contains(f.GoType, "uint64"):
+		fType = "%s, err := strconv.ParseUint(%s, 10, 64)"
 	case strings.Contains(f.GoType, "int32"):
 		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 	case strings.Contains(f.GoType, "int64"):
 		fType = "%s, err := strconv.ParseInt(%s, 10, 64)"
-	case strings.Contains(f.GoType, "int"):
-		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 	case strings.Contains(f.GoType, "bool"):
 		fType = "%s, err := strconv.ParseBool(%s)"
 	case strings.Contains(f.GoType, "float32"):
@@ -181,6 +184,23 @@ func createDecodeConvertFunc(f Field) string {
 	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
 }
 
+// createDecodeTypeConversion creates a go string that converts a 64 bit type to a 32 bit type
+// as strconv.ParseInt, ParseUInt, and ParseFloat always return the 64 bit type
+func createDecodeTypeConversion(f Field) string {
+	fType := ""
+	switch {
+	case strings.Contains(f.GoType, "uint32"):
+		fType = "uint32(%s)"
+	case strings.Contains(f.GoType, "int32"):
+		fType = "int32(%s)"
+	case strings.Contains(f.GoType, "float32"):
+		fType = "float32(%s)"
+	default:
+		fType = "%s"
+	}
+	return fmt.Sprintf(fType, f.LocalName)
+}
+
 // The 'basePath' of a path is the section from the start of the string till
 // the first '{' character.
 func basePath(path string) string {
@@ -190,7 +210,7 @@ func basePath(path string) string {
 
 // getParam searches the slice of params for one named `name`, returning the
 // first it finds. If no params have the given name, returns nil.
-func getParam(name string, params []*doctree.HttpParameter) *doctree.HttpParameter {
+func getParam(name string, params []*deftree.HttpParameter) *deftree.HttpParameter {
 	for _, p := range params {
 		if p.GetName() == name {
 			return p

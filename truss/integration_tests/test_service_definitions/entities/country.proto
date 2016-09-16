@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package entities;
+package TEST;
 
 message CountryGetByCodeRequest {
   string code = 1;

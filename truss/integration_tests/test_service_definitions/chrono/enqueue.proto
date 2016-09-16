@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package chrono;
+package TEST;
 
 message EnqueueRequest {
   string task_id = 1;

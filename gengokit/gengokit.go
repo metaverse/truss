@@ -19,7 +19,7 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/httptransport"
 	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
-	"github.com/TuneLab/go-truss/gendoc/doctree"
+	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/truss/truss"
 )
 
@@ -38,30 +38,29 @@ type generator struct {
 // templateExecutor is passed to templates as the executing struct its fields
 // and methods are used to modify the template
 type templateExecutor struct {
-	// Import path for handler package
-	HandlerImport string
-	// Import path for generated packages
-	GeneratedImport string
+	// import path for the directory containing the definition .proto files
+	ImportPath string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	Service    *doctree.ProtoService
+	Service    *deftree.ProtoService
 	ClientArgs *clientarggen.ClientServiceArgs
 	// A helper struct for generating http transport functionality.
 	HTTPHelper *httptransport.Helper
 }
 
-// GenerateGokit accepts a doctree representing the ast of a group of .proto
+// GenerateGokit accepts a deftree representing the ast of a group of .proto
 // files, a []truss.NamedReadWriter representing files generated previously, and
 // a goImportPath for templating go code imports
 // GenerateGoCode returns the a []truss.NamedReadWriter representing a generated
 // gokit microservice file structure
-func GenerateGokit(dt doctree.Doctree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
+func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
 		return nil, errors.Wrap(err, "no service found aborting generating gokit microservice")
 	}
 
-	g := newGenerator(service, goImportPath)
-	files, err := g.GenerateResponseFiles(previousFiles)
+	importPath := goImportPath + "/" + dt.GetName() + "-service"
+	g := newGenerator(service, importPath)
+	files, err := g.GenerateResponseFiles(previousFiles, dt.GetName())
 
 	if err != nil {
 		return nil, errors.Wrap(err, "could not generate gokit microservice")
@@ -70,11 +69,11 @@ func GenerateGokit(dt doctree.Doctree, previousFiles []truss.NamedReadWriter, go
 	return files, nil
 }
 
-// getProtoService finds returns the service within a doctree.Doctree
-func getProtoService(dt doctree.Doctree) (*doctree.ProtoService, error) {
-	md := dt.(*doctree.MicroserviceDefinition)
+// getProtoService finds returns the service within a deftree.Deftree
+func getProtoService(dt deftree.Deftree) (*deftree.ProtoService, error) {
+	md := dt.(*deftree.MicroserviceDefinition)
 	files := md.Files
-	var service *doctree.ProtoService
+	var service *deftree.ProtoService
 
 	for _, file := range files {
 		if len(file.Services) > 0 {
@@ -90,19 +89,13 @@ func getProtoService(dt doctree.Doctree) (*doctree.ProtoService, error) {
 }
 
 // newGenerator returns a new generator which generates a gokit microservice
-func newGenerator(service *doctree.ProtoService, goImportPath string) *generator {
-	// import path for server and client handlers
-	handlerImportString := goImportPath + "/service"
-	// import path for generated code that user should not edit
-	generatedImportString := handlerImportString + "/DONOTEDIT"
-
+func newGenerator(service *deftree.ProtoService, importPath string) *generator {
 	return &generator{
 		templateExec: templateExecutor{
-			HandlerImport:   handlerImportString,
-			GeneratedImport: generatedImportString,
-			Service:         service,
-			ClientArgs:      clientarggen.New(service),
-			HTTPHelper:      httptransport.NewHelper(service),
+			ImportPath: importPath,
+			Service:    service,
+			ClientArgs: clientarggen.New(service),
+			HTTPHelper: httptransport.NewHelper(service),
 		},
 	}
 }
@@ -121,8 +114,8 @@ func getFileByName(n string, files []truss.NamedReadWriter) io.Reader {
 // updateServiceMethods will update the functions within an existing service.go
 // file so it contains all the functions within svcFuncs
 func (g *generator) updateServiceMethods(svcHandler io.Reader, svcFuncs []string) (outCode *bytes.Buffer, err error) {
-	const svcMethodsTemplPath = "service/partial_template/service.methods"
-	const svcInterfaceTemplPath = "service/partial_template/service.interface"
+	const svcMethodsTemplPath = "NAME-service/partial_template/service.methods"
+	const svcInterfaceTemplPath = "NAME-service/partial_template/service.interface"
 
 	astMod := astmodifier.New(svcHandler)
 
@@ -156,7 +149,7 @@ func (g *generator) updateServiceMethods(svcHandler io.Reader, svcFuncs []string
 // client_handler.go file so that it contains exactly the fucntions passed in
 // svcFuncs, no more, no less.
 func (g *generator) updateClientMethods(clientHandler io.Reader, svcFuncs []string) (outCode *bytes.Buffer, err error) {
-	const clientMethodsTemplPath = "service/partial_template/client_handler.methods"
+	const clientMethodsTemplPath = "NAME-service/partial_template/client_handler.methods"
 	astMod := astmodifier.New(clientHandler)
 
 	// Remove functions no longer in definition
@@ -181,9 +174,10 @@ func (g *generator) updateClientMethods(clientHandler io.Reader, svcFuncs []stri
 // GenerateResponseFiles applies all template files for the generated
 // microservice and returns a slice containing each templated file as a
 // truss.NamedReadWriter.
-func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter) ([]truss.NamedReadWriter, error) {
-	const serviceHandlerFilePath = "service/server/service.go"
-	const clientHandlerFilePath = "service/client/client_handler.go"
+func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter, packageName string) ([]truss.NamedReadWriter, error) {
+	// Paths to handler files that may be modified programmatically
+	serviceHandlerFilePath := packageName + "/handlers/server/server_handler.go"
+	clientHandlerFilePath := packageName + "/handlers/client/client_handler.go"
 
 	var codeGenFiles []truss.NamedReadWriter
 
@@ -244,7 +238,10 @@ func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter)
 		formattedCode := formatCode(generatedCode.Bytes())
 
 		var resp truss.SimpleFile
-		resp.Path = generatedFilePath
+		// Switch "NAME" in path with packageName.
+		//i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
+		resp.Path = strings.Replace(generatedFilePath, "NAME", packageName, -1)
+
 		resp.Write(formattedCode)
 
 		codeGenFiles = append(codeGenFiles, &resp)
@@ -258,7 +255,7 @@ func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter)
 // to the functions defined in the service and renders the template with the
 // path of templPath, and appends this to passed code
 func (g *generator) applyTemplateForMissingMeths(templPath string, funcIndex map[string]bool, code *bytes.Buffer) error {
-	var methodsToTemplate []*doctree.ServiceMethod
+	var methodsToTemplate []*deftree.ServiceMethod
 	for _, meth := range g.templateExec.Service.Methods {
 		methName := meth.GetName()
 		if funcIndex[methName] == false {

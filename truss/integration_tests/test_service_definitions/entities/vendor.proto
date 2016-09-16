@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package entities;
+package TEST;
 
 message VendorGetByIdRequest {
   int64 id = 1;

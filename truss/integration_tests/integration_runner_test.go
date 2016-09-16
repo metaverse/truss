@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"testing"
+
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -55,9 +57,7 @@ func TestTruss(t *testing.T) {
 		sDir := servicesDir + "/" + d.Name()
 
 		// Clean up the service directories in each test
-		if fileExists(sDir + "/service") {
-			os.RemoveAll(sDir + "/service")
-		}
+		removeTestFiles(sDir)
 
 		// On port relative to 8082
 		port := 8082 + i
@@ -73,10 +73,18 @@ func TestTruss(t *testing.T) {
 			continue
 		}
 
+		// Build the service to be tested
+		err = buildTestService(sDir)
+		if err != nil {
+			t.Errorf("Could not buld service. Error:%v", err)
+		}
+
+		// Run them save a reference to each run
 		go runServerAndClient(sDir, port, port+1000, runRefs)
 		runCount++
 	}
 
+	// Check all the runs, the test failed if there were any errors
 	for i := 0; i < runCount; i++ {
 		ref := <-runRefs
 		if ref.clientErr || ref.serverErr {
@@ -117,10 +125,102 @@ func truss(path string) (string, error) {
 	return string(out), err
 }
 
+// buildTestService builds a truss service with the package TEST
+// into the `serviceDir`/bin directory
+func buildTestService(serviceDir string) (err error) {
+
+	goPath := os.Getenv("GOPATH")
+	goImportPath := strings.TrimPrefix(serviceDir, goPath+"/src/")
+
+	binDir := serviceDir + "/bin"
+
+	err = mkdir(binDir)
+	if err != nil {
+		return err
+	}
+
+	const serverPath = "/TEST-service/TEST-server/..."
+	const clientPath = "/TEST-service/TEST-client/..."
+
+	// Build server and client
+	errChan := make(chan error)
+
+	go goBuild("TEST-server", binDir, goImportPath+serverPath, errChan)
+	go goBuild("TEST-client", binDir, goImportPath+clientPath, errChan)
+
+	err = <-errChan
+	if err != nil {
+		return err
+	}
+
+	err = <-errChan
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// goBuild calls the `$ go get ` to install dependenices
+// and then calls `$ go build ` to build the service
+func goBuild(name, outputPath, codePath string, errChan chan error) {
+
+	// $ go get
+
+	goGetExec := exec.Command(
+		"go",
+		"get",
+		"-d",
+		"-v",
+		codePath,
+	)
+
+	goGetExec.Stderr = os.Stderr
+
+	err := goGetExec.Run()
+
+	if err != nil {
+		errChan <- errors.Wrapf(err, "could not $ go get %v", codePath)
+		return
+	}
+
+	// $ go build
+
+	goBuildExec := exec.Command(
+		"go",
+		"build",
+		"-o",
+		outputPath+"/"+name,
+		codePath,
+	)
+
+	goBuildExec.Stderr = os.Stderr
+
+	err = goBuildExec.Run()
+	if err != nil {
+		errChan <- errors.Wrapf(err, "could not $ go build %v", codePath)
+		return
+	}
+
+	errChan <- nil
+}
+
+// mkdir acts like $ mkdir -p path
+func mkdir(path string) error {
+	dir := filepath.Dir(path)
+
+	// 0775 is the file mode that $ mkdir uses when creating a directoru
+	err := os.MkdirAll(dir, 0775)
+
+	return err
+}
+
+// runServerAndClient execs a TEST-server and TEST-client and puts a
+// runReference to their interaction on the runRefs channel
 func runServerAndClient(path string, port int, debugPort int, runRefs chan runReference) {
 	// From within a folder with a truss `service`
 	// These are the paths to the compiled binaries
-	const relativeServerPath = "/service/bin/server"
+	const relativeServerPath = "/bin/TEST-server"
 
 	// Output buffer for the server Stdout and Stderr
 	serverOut := bytes.NewBuffer(nil)
@@ -193,7 +293,7 @@ func runServerAndClient(path string, port int, debugPort int, runRefs chan runRe
 }
 
 func runClient(path string, port int) ([]byte, bool) {
-	const relativeClientPath = "/service/bin/cliclient"
+	const relativeClientPath = "/bin/TEST-client"
 
 	client := exec.Command(
 		path+relativeClientPath,
@@ -222,6 +322,7 @@ func fileExists(path string) bool {
 	return false
 }
 
+// cleanTests removes all test files from all directories in servicesDir
 func cleanTests(servicesDir string) {
 	// Clean up the service directories in each test
 	dirs, _ := ioutil.ReadDir(servicesDir)
@@ -230,9 +331,16 @@ func cleanTests(servicesDir string) {
 		if !d.IsDir() {
 			continue
 		}
+		removeTestFiles(servicesDir + "/" + d.Name())
+	}
+}
 
-		if fileExists(servicesDir + "/" + d.Name() + "/service") {
-			os.RemoveAll(servicesDir + "/" + d.Name() + "/service")
-		}
+// removeTestFiles removes all files created by running truss and building the
+// service from a single definition directory
+func removeTestFiles(defDir string) {
+	if fileExists(defDir + "/TEST-service") {
+		os.RemoveAll(defDir + "/TEST-service")
+		os.RemoveAll(defDir + "/third_party")
+		os.RemoveAll(defDir + "/bin")
 	}
 }

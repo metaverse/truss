@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package reporting;
+package TEST;
 
 service ReportingService {
   rpc ExportQueue(ExportQueueRequest) returns (ExportQueueResponse) {}
