@@ -41,12 +41,12 @@ type Endpoints struct {
 
 // Endpoints
 {{range $i := .Service.Methods}}
-func (e Endpoints) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error) {
+func (e Endpoints) {{$i.GetName}}(ctx context.Context, in *pb.{{GoName $i.RequestType.GetName}}) (*pb.{{GoName $i.ResponseType.GetName}}, error) {
 	response, err := e.{{$i.GetName}}Endpoint(ctx, in)
 	if err != nil {
-		return pb.{{GoName $i.ResponseType.GetName}}{}, err
+		return nil, err
 	}
-	return *response.(*pb.{{GoName $i.ResponseType.GetName}}), nil
+	return response.(*pb.{{GoName $i.ResponseType.GetName}}), nil
 }
 {{end}}
 
@@ -55,11 +55,11 @@ func (e Endpoints) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.Request
 func Make{{$i.GetName}}Endpoint(s handler.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		req := request.(*pb.{{GoName $i.RequestType.GetName}})
-		v, err := s.{{$i.GetName}}(ctx, *req)
+		v, err := s.{{$i.GetName}}(ctx, req)
 		if err != nil {
-			return nil, err // special case; see comment on ErrIntOverflow
+			return nil, err
 		}
-		return &v, nil
+		return v, nil
 	}
 }
 {{end}}

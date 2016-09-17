@@ -29,13 +29,15 @@ type {{.PackageName}}Service struct{}
 
 {{range $i := $Executor.Service.Methods}}
 // {{$i.GetName}} implements Service.
-func (s {{$PackageName}}Service) {{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error){
+func (s {{$PackageName}}Service) {{$i.GetName}}(ctx context.Context, in *pb.{{GoName $i.RequestType.GetName}}) (*pb.{{GoName $i.ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
 	response := pb.{{GoName $i.ResponseType.GetName}}{
-		//
+		{{range $j := $i.ResponseType.Fields -}}
+		// {{GoName $j.GetName }}: 
+		{{end -}}
 	}
-	return response, nil
+	return &response, nil
 }
 {{end}}
 {{- end}}
@@ -43,6 +45,6 @@ func (s {{$PackageName}}Service) {{$i.GetName}}(ctx context.Context, in pb.{{GoN
 
 type Service interface {
 {{range $i := .Service.Methods}}
-	{{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error)
+	{{$i.GetName}}(ctx context.Context, in *pb.{{GoName $i.RequestType.GetName}}) (*pb.{{GoName $i.ResponseType.GetName}}, error)
 {{- end}}
 }

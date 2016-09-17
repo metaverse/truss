@@ -1,5 +1,5 @@
 type Service interface {
 {{range $i := .Service.Methods}}
-	{{$i.GetName}}(ctx context.Context, in pb.{{GoName $i.RequestType.GetName}}) (pb.{{GoName $i.ResponseType.GetName}}, error)
+	{{$i.GetName}}(ctx context.Context, in *pb.{{GoName $i.RequestType.GetName}}) (*pb.{{GoName $i.ResponseType.GetName}}, error)
 {{- end}}
 }

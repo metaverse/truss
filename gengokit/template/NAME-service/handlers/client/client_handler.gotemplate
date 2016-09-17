@@ -8,7 +8,7 @@ import (
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{$i.GetName}} implements Service.
-func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (pb.{{GoName $i.RequestType.GetName}}, error){
+func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.GetName}}, error){
 {{- with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
 	{{- range $param := $meth.Args -}}
 		{{- if not $param.IsBaseType -}}
@@ -25,7 +25,7 @@ func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetNam
 	{{end -}}
 {{- end -}}
 	}
-	return request, nil
+	return &request, nil
 }
 {{end}}
 
