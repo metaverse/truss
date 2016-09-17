@@ -90,8 +90,8 @@ func EncodeGRPC{{$i.GetName}}Response(_ context.Context, response interface{}) (
 // EncodeGRPC{{$i.GetName}}Request is a transport/grpc.EncodeRequestFunc that converts a
 // user-domain {{ToLower $i.GetName}} request to a gRPC {{ToLower $i.GetName}} request. Primarily useful in a client.
 func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (interface{}, error) {
-	req := request.(pb.{{GoName $i.RequestType.GetName}})
-	return &req, nil
+	req := request.(*pb.{{GoName $i.RequestType.GetName}})
+	return req, nil
 }
 {{end}}
 

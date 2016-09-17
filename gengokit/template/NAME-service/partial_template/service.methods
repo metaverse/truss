@@ -3,13 +3,15 @@
 
 {{range $i := $templateExecutor.Service.Methods}}
 // {{.GetName}} implements Service.
-func (s {{$PackageName}}Service) {{.GetName}}(ctx context.Context, in pb.{{GoName .RequestType.GetName}}) (pb.{{GoName .ResponseType.GetName}}, error){
+func (s {{$PackageName}}Service) {{.GetName}}(ctx context.Context, in *pb.{{GoName .RequestType.GetName}}) (*pb.{{GoName .ResponseType.GetName}}, error){
 	_ = ctx
 	_ = in
 	response := pb.{{GoName .ResponseType.GetName}}{
-		//
+		{{range $j := $i.ResponseType.Fields -}}
+		// {{GoName $j.GetName }}: 
+		{{end -}}
 	}
-	return response, nil
+	return &response, nil
 }
 {{end}}
 
