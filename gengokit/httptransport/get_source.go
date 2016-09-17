@@ -25,7 +25,7 @@ func FuncSourceCode(val interface{}) (string, error) {
 
 	// Parse the go file into the ast
 	fset := token.NewFileSet()
-	fileAst, err := parser.ParseFile(fset, fpath, nil, 0)
+	fileAst, err := parser.ParseFile(fset, fpath, nil, parser.ParseComments)
 	if err != nil {
 		return "", fmt.Errorf("ERROR: go parser couldn't parse file '%v'\n", fpath)
 	}
@@ -65,7 +65,7 @@ func AllFuncSourceCode(val interface{}) (string, error) {
 
 	// Parse the go file into the ast
 	fset := token.NewFileSet()
-	fileAst, err := parser.ParseFile(fset, fpath, nil, 0)
+	fileAst, err := parser.ParseFile(fset, fpath, nil, parser.ParseComments)
 	if err != nil {
 		return "", fmt.Errorf("ERROR: go parser couldn't parse file '%v'\n", fpath)
 	}
