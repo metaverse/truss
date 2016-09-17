@@ -111,19 +111,16 @@ func getFileByName(n string, files []truss.NamedReadWriter) io.Reader {
 	return nil
 }
 
-// updateServiceMethods will update the functions within an existing service.go
+// updateServerMethods will update the functions within an existing server_handler.go
 // file so it contains all the functions within svcFuncs
-func (g *generator) updateServiceMethods(svcHandler io.Reader, svcFuncs []string) (outCode *bytes.Buffer, err error) {
+func (g *generator) updateServerMethods(svcHandler io.Reader, svcFuncs []string) (outCode *bytes.Buffer, err error) {
 	const svcMethodsTemplPath = "NAME-service/partial_template/service.methods"
 	const svcInterfaceTemplPath = "NAME-service/partial_template/service.interface"
 
 	astMod := astmodifier.New(svcHandler)
 
-	//TODO: Discuss if functions should be removed from the service file, when using truss I did not like that it removed function I wrote myself
-	//astMod.RemoveFunctionsExecpt(svcFuncs)
+	astMod.RemoveFunctionsExecpt(svcFuncs)
 	astMod.RemoveInterface("Service")
-
-	log.WithField("Code", astMod.String()).Debug("Server service handlers before template")
 
 	// Index the handler functions, apply handler template for all function in service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
@@ -155,8 +152,6 @@ func (g *generator) updateClientMethods(clientHandler io.Reader, svcFuncs []stri
 	// Remove functions no longer in definition
 	astMod.RemoveFunctionsExecpt(svcFuncs)
 
-	log.WithField("Code", astMod.String()).Debug("Client handlers before template")
-
 	// Index handler functions, apply handler template for all function in
 	// service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
@@ -176,22 +171,21 @@ func (g *generator) updateClientMethods(clientHandler io.Reader, svcFuncs []stri
 // truss.NamedReadWriter.
 func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter, packageName string) ([]truss.NamedReadWriter, error) {
 	// Paths to handler files that may be modified programmatically
-	serviceHandlerFilePath := packageName + "/handlers/server/server_handler.go"
-	clientHandlerFilePath := packageName + "/handlers/client/client_handler.go"
+	serverHandlerFilePath := "-service/handlers/server/server_handler.go"
+	clientHandlerFilePath := "-service/handlers/client/client_handler.go"
 
 	var codeGenFiles []truss.NamedReadWriter
 
 	// serviceFunctions is used later as the master list of all service methods
-	// which should exist within the `server/service.go` and
-	// `client/client_handler.go` files.
+	// which should exist within the handler files
 	var serviceFunctions []string
 	for _, meth := range g.templateExec.Service.Methods {
 		serviceFunctions = append(serviceFunctions, meth.GetName())
 	}
 	serviceFunctions = append(serviceFunctions, "NewBasicService")
 
-	serviceHandlerFile := getFileByName(serviceHandlerFilePath, previousFiles)
-	clientHandlerFile := getFileByName(clientHandlerFilePath, previousFiles)
+	serverHandlerFile := getFileByName(packageName+serverHandlerFilePath, previousFiles)
+	clientHandlerFile := getFileByName(packageName+clientHandlerFilePath, previousFiles)
 
 	for _, templateFilePath := range templateFileAssets.AssetNames() {
 		if filepath.Ext(templateFilePath) != ".gotemplate" {
@@ -203,20 +197,18 @@ func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter,
 		var generatedCode *bytes.Buffer
 		var err error
 
-		if templateFilePath == serviceHandlerFilePath+"template" && serviceHandlerFile != nil {
+		if templateFilePath == "NAME"+serverHandlerFilePath+"template" && serverHandlerFile != nil {
 			// If there's an existing service file, update its contents
 
-			generatedFilePath = serviceHandlerFilePath
-			generatedCode, err = g.updateServiceMethods(serviceHandlerFile, serviceFunctions)
+			generatedCode, err = g.updateServerMethods(serverHandlerFile, serviceFunctions)
 
 			if err != nil {
 				return nil, errors.Wrap(err, "could not modifiy service handler file")
 			}
 
-		} else if templateFilePath == clientHandlerFilePath+"template" && clientHandlerFile != nil {
+		} else if templateFilePath == "NAME"+clientHandlerFilePath+"template" && clientHandlerFile != nil {
 			// If there's an existing client_handler file, update its contents
 
-			generatedFilePath = clientHandlerFilePath
 			generatedCode, err = g.updateClientMethods(clientHandlerFile, serviceFunctions)
 
 			if err != nil {
@@ -224,9 +216,6 @@ func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter,
 			}
 
 		} else {
-			generatedFilePath = templateFilePath
-			// Change file path from .gotemplate to .go
-			generatedFilePath = strings.TrimSuffix(generatedFilePath, "template")
 
 			generatedCode, err = applyTemplateFromPath(templateFilePath, g.templateExec)
 			if err != nil {
@@ -234,10 +223,15 @@ func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter,
 			}
 		}
 
+		generatedFilePath = templateFilePath
+		// Change file path from .gotemplate to .go
+		generatedFilePath = strings.TrimSuffix(generatedFilePath, "template")
+
 		// Turn code buffer into string and format it
 		formattedCode := formatCode(generatedCode.Bytes())
 
 		var resp truss.SimpleFile
+
 		// Switch "NAME" in path with packageName.
 		//i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
 		resp.Path = strings.Replace(generatedFilePath, "NAME", packageName, -1)

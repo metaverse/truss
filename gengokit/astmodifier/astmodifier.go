@@ -44,7 +44,7 @@ type interfaceRemover struct {
 // New returns a new astModifier from a source file which modifies code intelligently
 func NewFromFile(sourcePath string) *astModifier {
 	fset := token.NewFileSet()
-	fileAst, err := parser.ParseFile(fset, sourcePath, nil, 0)
+	fileAst, err := parser.ParseFile(fset, sourcePath, nil, parser.ParseComments)
 	if err != nil {
 		log.WithError(err).Fatal("server/service.go could not be parsed by go/parser into AST")
 	}
@@ -67,7 +67,7 @@ func NewFromFile(sourcePath string) *astModifier {
 // New returns a new astModifier from a source file which modifies code intelligently
 func New(source io.Reader) *astModifier {
 	fset := token.NewFileSet()
-	fileAst, err := parser.ParseFile(fset, "", source, 0)
+	fileAst, err := parser.ParseFile(fset, "", source, parser.ParseComments)
 	if err != nil {
 		log.WithError(err).Fatal("server/service.go could not be parsed by go/parser into AST")
 	}
