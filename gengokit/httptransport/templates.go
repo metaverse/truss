@@ -105,7 +105,14 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 
 // PathParamsTemplate is a source code literal of the code for the PathParams
 // function found in embeddeable_funcs.go
-var PathParamsTemplate = `func PathParams(url string, urlTmpl string) (map[string]string, error) {
+var PathParamsTemplate = `// PathParams takes a url and a gRPC-annotation style url template, and
+// returns a map of the named parameters in the template and their values in
+// the given url.
+//
+// PathParams does not support the entirety of the URL template syntax defined
+// in third_party/googleapis/google/api/httprule.proto. Only a small subset of
+// the functionality defined there is implemented here.
+func PathParams(url string, urlTmpl string) (map[string]string, error) {
 	rv := map[string]string{}
 	pmp := BuildParamMap(urlTmpl)
 
@@ -120,6 +127,19 @@ var PathParamsTemplate = `func PathParams(url string, urlTmpl string) (map[strin
 // BuildParamMapTemplate is a source code literal of the code for the
 // BuildParamMap function found in embeddeable_funcs.go
 var BuildParamMapTemplate = `
+// BuildParamMap takes a string representing a url template and returns a map
+// indicating the location of each parameter within that url, where the
+// location is the index as if in a slash-separated sequence of path
+// components. For example, given the url template:
+//
+//     "/v1/{a}/{b}"
+//
+// The returned param map would look like:
+//
+//     map[string]int {
+//         "a": 2,
+//         "b": 3,
+//     }
 func BuildParamMap(urlTmpl string) map[string]int {
 	rv := map[string]int{}
 
@@ -136,6 +156,8 @@ func BuildParamMap(urlTmpl string) map[string]int {
 // RemoveBracesTemplate is a source code literal of the code for the
 // RemoveBraces function found in embeddeable_funcs.go
 var RemoveBracesTemplate = `
+// RemoveBraces replace all curly braces in the provided string, opening and
+// closing, with empty strings.
 func RemoveBraces(val string) string {
 	val = strings.Replace(val, "{", "", -1)
 	val = strings.Replace(val, "}", "", -1)
@@ -145,6 +167,10 @@ func RemoveBraces(val string) string {
 // QueryParamsTemplate is a source code literal of the code for the QueryParams
 // function found in embeddeable_funcs.go
 var QueryParamsTemplate = `
+// QueryParams takes query parameters in the form of url.Values, and returns a
+// bare map of the string representation of each key to the string
+// representation for each value. The representations of repeated query
+// parameters is undefined.
 func QueryParams(vals url.Values) (map[string]string, error) {
 
 	rv := map[string]string{}
