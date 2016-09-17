@@ -155,7 +155,7 @@ func exitIfError(err error) {
 // readPreviousGeneration accepts the path to the directory where the inputed .proto files are stored, protoDir,
 // it returns a []truss.NamedReadWriter for all files in the service/ dir in protoDir
 func readPreviousGeneration(protoDir, packageName string) ([]truss.NamedReadWriter, error) {
-	dir := protoDir + "/" + packageName + "-microsvc"
+	dir := protoDir + "/" + packageName + "-service"
 	if fileExists(dir) != true {
 		return nil, nil
 	}
@@ -167,7 +167,7 @@ func readPreviousGeneration(protoDir, packageName string) ([]truss.NamedReadWrit
 	}
 	err := filepath.Walk(dir, sfs.makeSimpleFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not fully walk directory %v/service", protoDir)
+		return nil, errors.Wrapf(err, "could not fully walk directory %v", protoDir)
 	}
 
 	return sfs.files, nil
