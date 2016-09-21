@@ -14,6 +14,47 @@ import (
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
+func TestNewFromString(t *testing.T) {
+	const def = `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "google/api/annotations.proto";
+
+		// RequestMessage is so foo
+		message RequestMessage {
+		  string input = 1;
+		}
+
+		// ResponseMessage is so bar
+		message ResponseMessage {
+		  string output = 1;
+		}
+
+		// ProtoService is a service
+		service ProtoService {
+		  // ProtoMethod is simple. Like a gopher.
+		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+			// No {} in path and no body, everything is in the query
+			option (google.api.http) = {
+			  get: "/route"
+			};
+		  }
+		}
+	`
+
+	deftree, err := NewFromString(def)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if got, want := deftree.GetName(), "general"; got != want {
+		t.Errorf("\n`%v` was deftree package name\n`%v` was wanted", got, want)
+	}
+}
+
 func TestNewFile(t *testing.T) {
 	src := `
 		name: "path/to/example.proto",
