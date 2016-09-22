@@ -24,6 +24,7 @@ import (
 	grpcclient "{{$templateExecutor.ImportPath -}} /generated/client/grpc"
 	httpclient "{{$templateExecutor.ImportPath -}} /generated/client/http"
 )
+{{$templateExecutor.ClientArgs.AllCarveFuncs}}
 
 func main() {
 	// The addcli presumes no service discovery system, and expects users to
@@ -109,6 +110,9 @@ func main() {
 	switch *method {
 {{range $i := $templateExecutor.Service.Methods}}
 	case "{{ToLower $i.GetName}}":
+		{{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}
+		{{.MarshalFlags}}
+		{{- end}}
 		request, _ := clientHandler.{{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
 		v, err := service.{{$i.GetName}}(context.Background(), request)
 		if err != nil {

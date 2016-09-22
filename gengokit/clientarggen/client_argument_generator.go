@@ -52,10 +52,10 @@ type MethodArgs struct {
 //
 //     func Sum(ASum int64, BSum int64) (pb.SumRequest, error) {
 //              └────────────────────┘
-func (self *MethodArgs) FunctionArgs() string {
+func (m *MethodArgs) FunctionArgs() string {
 	tmp := []string{}
-	for _, a := range self.Args {
-		tmp = append(tmp, fmt.Sprintf("%s %s", a.FlagArg, a.FlagType))
+	for _, a := range m.Args {
+		tmp = append(tmp, fmt.Sprintf("%s %s", a.GoArg, a.GoType))
 	}
 	return strings.Join(tmp, ", ")
 }
@@ -65,12 +65,26 @@ func (self *MethodArgs) FunctionArgs() string {
 //
 //     request, _ := clientHandler.Sum(ASum,  BSum)
 //                                     └──────────┘
-func (self *MethodArgs) CallArgs() string {
+func (m *MethodArgs) CallArgs() string {
 	tmp := []string{}
-	for _, a := range self.Args {
-		tmp = append(tmp, createFlagConversion(*a))
+	for _, a := range m.Args {
+		tmp = append(tmp, a.GoArg)
 	}
 	return strings.Join(tmp, ", ")
+}
+
+// MarshalFlags returns the code for intantiating the GoArgs for this method
+// while calling the code to marshal flag args into the correct go types.
+// Example:
+//
+//     ASum := int32(flagASum)
+//     └─────────────────────┘
+func (m *MethodArgs) MarshalFlags() string {
+	tmp := []string{}
+	for _, a := range m.Args {
+		tmp = append(tmp, a.GoConvertInvoc)
+	}
+	return strings.Join(tmp, "\n")
 }
 
 type ClientServiceArgs struct {
@@ -82,11 +96,21 @@ type ClientServiceArgs struct {
 // template to declare all the flag arguments for a client at once, and without
 // doing all this iteration in a template where it would be much less
 // understandable.
-func (self *ClientServiceArgs) AllFlags() string {
+func (c *ClientServiceArgs) AllFlags() string {
 	tmp := []string{}
-	for _, m := range self.MethArgs {
+	for _, m := range c.MethArgs {
 		for _, a := range m.Args {
 			tmp = append(tmp, a.FlagConvertFunc)
+		}
+	}
+	return strings.Join(tmp, "\n")
+}
+
+func (c *ClientServiceArgs) AllCarveFuncs() string {
+	tmp := []string{}
+	for _, m := range c.MethArgs {
+		for _, a := range m.Args {
+			tmp = append(tmp, a.GoConvertFunc)
 		}
 	}
 	return strings.Join(tmp, "\n")
@@ -161,11 +185,22 @@ func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
 	} else {
 		newArg.GoType = "string"
 	}
+	// The GoType is a slice of the GoType if it's a repeated field
+	if newArg.Repeated {
+		newArg.GoType = "[]" + newArg.GoType
+	}
 
 	newArg.GoConvertFunc = GenerateCarveFunc(&newArg)
-	newArg.GoConvertInvoc = GenerateCarveInvocation(&newArg)
+	newArg.GoConvertInvoc = goConvInvoc(newArg)
 
 	return &newArg
+}
+
+func goConvInvoc(a ClientArg) string {
+	if a.Repeated {
+		return GenerateCarveInvocation(&a)
+	}
+	return fmt.Sprintf(`%s := %s`, a.GoArg, flagTypeConversion(a))
 }
 
 // createFlagConvertFunc creates the go string for the flag invocation to parse
@@ -194,12 +229,12 @@ func createFlagConvertFunc(a ClientArg) string {
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
 }
 
-// createFlagConversion creates the proper syntax for converting a flag into
+// flagTypeConversion creates the proper syntax for converting a flag into
 // it's correct type. This is done because not every go type that a method
 // field could be has a cooresponding flag command type. So this stage must
 // exist to convert the subset of types which the flag package provides into
 // other golang types, and the dereferencing is just a side effect of that.
-func createFlagConversion(a ClientArg) string {
+func flagTypeConversion(a ClientArg) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.FlagType, "uint32"):
