@@ -23,13 +23,22 @@ import (
 // message) then the developer is going to have to write a handler for that
 // themselves.
 type ClientArg struct {
-	Name            string
+	Name string
+
 	FlagName        string
 	FlagArg         string
-	ProtbufType     string
-	GoType          string
+	FlagType        string
 	FlagConvertFunc string
-	IsBaseType      bool
+
+	GoArg          string
+	GoType         string
+	GoConvertInvoc string
+	GoConvertFunc  string
+
+	ProtbufType string
+
+	IsBaseType bool
+	Repeated   bool
 }
 
 type MethodArgs struct {
@@ -46,7 +55,7 @@ type MethodArgs struct {
 func (self *MethodArgs) FunctionArgs() string {
 	tmp := []string{}
 	for _, a := range self.Args {
-		tmp = append(tmp, fmt.Sprintf("%s %s", a.FlagArg, a.GoType))
+		tmp = append(tmp, fmt.Sprintf("%s %s", a.FlagArg, a.FlagType))
 	}
 	return strings.Join(tmp, ", ")
 }
@@ -109,31 +118,54 @@ func New(svc *deftree.ProtoService) *ClientServiceArgs {
 	for _, meth := range svc.Methods {
 		m := MethodArgs{}
 		for _, field := range meth.RequestType.Fields {
-			newArg := ClientArg{}
-			newArg.Name = field.GetName()
-			newArg.FlagName = fmt.Sprintf("%s.%s", strings.ToLower(meth.GetName()), strings.ToLower(field.GetName()))
-			newArg.FlagArg = fmt.Sprintf("%s%s", generatego.CamelCase(newArg.Name), generatego.CamelCase(meth.GetName()))
-
-			newArg.ProtbufType = field.Type.GetName()
-
-			var gt string
-			var ok bool
-			if gt, ok = ProtoToGoTypeMap[field.Type.GetName()]; !ok || field.Label == "LABEL_REPEATED" {
-				gt = "string"
-				newArg.IsBaseType = false
-			} else {
-				newArg.IsBaseType = true
-			}
-			newArg.GoType = gt
-
-			newArg.FlagConvertFunc = createFlagConvertFunc(newArg)
-
-			m.Args = append(m.Args, &newArg)
+			newArg := newClientArg(meth.GetName(), field)
+			m.Args = append(m.Args, newArg)
 		}
 		svcArgs.MethArgs[meth.GetName()] = &m
 	}
 
 	return &svcArgs
+}
+
+func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
+	newArg := ClientArg{}
+	newArg.Name = field.GetName()
+
+	if field.Label == "LABEL_REPEATED" {
+		newArg.Repeated = true
+	}
+	newArg.ProtbufType = field.Type.GetName()
+
+	newArg.FlagName = fmt.Sprintf("%s.%s", strings.ToLower(methName), strings.ToLower(field.GetName()))
+	newArg.FlagArg = fmt.Sprintf("flag%s%s", generatego.CamelCase(newArg.Name), generatego.CamelCase(methName))
+
+	var ft string
+	var ok bool
+	// For types outside the base types, have flag treat them as strings
+	if ft, ok = ProtoToGoTypeMap[field.Type.GetName()]; !ok {
+		ft = "string"
+		newArg.IsBaseType = false
+	} else {
+		newArg.IsBaseType = true
+	}
+	if newArg.Repeated {
+		ft = "string"
+	}
+	newArg.FlagType = ft
+	newArg.FlagConvertFunc = createFlagConvertFunc(newArg)
+
+	newArg.GoArg = fmt.Sprintf("%s%s", generatego.CamelCase(newArg.Name), generatego.CamelCase(methName))
+	// For types outside the base types, treat them as strings
+	if newArg.IsBaseType {
+		newArg.GoType = ProtoToGoTypeMap[field.Type.GetName()]
+	} else {
+		newArg.GoType = "string"
+	}
+
+	newArg.GoConvertFunc = GenerateCarveFunc(&newArg)
+	newArg.GoConvertInvoc = GenerateCarveInvocation(&newArg)
+
+	return &newArg
 }
 
 // createFlagConvertFunc creates the go string for the flag invocation to parse
@@ -142,21 +174,21 @@ func New(svc *deftree.ProtoService) *ClientServiceArgs {
 func createFlagConvertFunc(a ClientArg) string {
 	fType := ""
 	switch {
-	case strings.Contains(a.GoType, "uint32"):
+	case strings.Contains(a.FlagType, "uint32"):
 		fType = `%s = flag.Uint("%s", 0, %s)`
-	case strings.Contains(a.GoType, "uint64"):
+	case strings.Contains(a.FlagType, "uint64"):
 		fType = `%s = flag.Uint64("%s", 0, %s)`
-	case strings.Contains(a.GoType, "int32"):
+	case strings.Contains(a.FlagType, "int32"):
 		fType = `%s = flag.Int("%s", 0, %s)`
-	case strings.Contains(a.GoType, "int64"):
+	case strings.Contains(a.FlagType, "int64"):
 		fType = `%s = flag.Int64("%s", 0, %s)`
-	case strings.Contains(a.GoType, "bool"):
+	case strings.Contains(a.FlagType, "bool"):
 		fType = `%s = flag.Bool("%s", false, %s)`
-	case strings.Contains(a.GoType, "float32"):
+	case strings.Contains(a.FlagType, "float32"):
 		fType = `%s = flag.Float64("%s", 0.0, %s)`
-	case strings.Contains(a.GoType, "float64"):
+	case strings.Contains(a.FlagType, "float64"):
 		fType = `%s = flag.Float64("%s", 0.0, %s)`
-	case strings.Contains(a.GoType, "string"):
+	case strings.Contains(a.FlagType, "string"):
 		fType = `%s = flag.String("%s", "", %s)`
 	}
 	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
@@ -170,11 +202,11 @@ func createFlagConvertFunc(a ClientArg) string {
 func createFlagConversion(a ClientArg) string {
 	fType := ""
 	switch {
-	case strings.Contains(a.GoType, "uint32"):
+	case strings.Contains(a.FlagType, "uint32"):
 		fType = "uint32(*%s)"
-	case strings.Contains(a.GoType, "int32"):
+	case strings.Contains(a.FlagType, "int32"):
 		fType = "int32(*%s)"
-	case strings.Contains(a.GoType, "float32"):
+	case strings.Contains(a.FlagType, "float32"):
 		fType = "float32(*%s)"
 	default:
 		fType = "*%s"
