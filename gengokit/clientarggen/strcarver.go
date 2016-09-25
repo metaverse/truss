@@ -60,13 +60,13 @@ func GenerateCarveInvocation(m *ClientArg) string {
 	return code
 }
 
-var invocTemplate = `{{.GoArg}} := Carve{{.GoArg}}({{.FlagArg}})`
+var invocTemplate = `{{.GoArg}} := Carve{{.GoArg}}(*{{.FlagArg}})`
 
 var CarveTemplate = `
-func Carve{{.GoArg}}(inpt {{.FlagType}}) []{{.GoType}} {
+func Carve{{.GoArg}}(inpt {{.FlagType}}) {{.GoType}} {
 	inpt = strings.Trim(inpt, "[] ")
 	slc := strings.Split(inpt, ",")
-	var rv []{{.GoType}}
+	var rv {{.GoType}}
 
 	for _, item := range slc {
 		item = strings.Trim(item, " ")

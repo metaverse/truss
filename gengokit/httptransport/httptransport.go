@@ -87,7 +87,8 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		var gt string
 		var ok bool
 		tmap := clientarggen.ProtoToGoTypeMap
-		if gt, ok = tmap[nField.ProtobufType]; !ok || field.Label == "LABEL_REPEATED" {
+		//if gt, ok = tmap[nField.ProtobufType]; !ok || field.Label == "LABEL_REPEATED" {
+		if gt, ok = tmap[nField.ProtobufType]; !ok {
 			gt = "string"
 			nField.IsBaseType = false
 		} else {
@@ -157,6 +158,43 @@ func (b *Binding) PathSections() []string {
 		}
 	}
 	return rv
+}
+
+func (f *Field) DecodeLogic() (string, error) {
+	repeatedQueryLogic := `
+for _, {{.LocalName}}Str := range r.URL.Query()["{{.Name}}"] {
+	{{.ConvertFunc}}
+	if err != nil {
+		fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
+		fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
+		return nil, err
+	}
+	req.{{.CamelName}} = append(req.{{.CamelName}}, {{.TypeConversion}})
+}
+`
+	genericLogic := `
+{{.LocalName}}Str := {{.Location}}Params["{{.Name}}"]
+{{.ConvertFunc}}
+// TODO: Better error handling
+if err != nil {
+	fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
+	fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
+	return nil, err
+}
+req.{{.CamelName}} = {{.TypeConversion}}
+`
+	var selected string
+	if f.Location == "query" && f.ProtobufLabel == "LABEL_REPEATED" {
+		selected = repeatedQueryLogic
+	} else if f.Location != "body" {
+		selected = genericLogic
+	}
+	code, err := ApplyTemplate("FieldEncodeLogic", selected, f, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
 }
 
 // createDecodeConvertFunc creates a go string representing the function to

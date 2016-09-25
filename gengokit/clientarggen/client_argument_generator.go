@@ -106,11 +106,14 @@ func (c *ClientServiceArgs) AllFlags() string {
 	return strings.Join(tmp, "\n")
 }
 
+// AllCarveFuncs returns the code for each carve function for each repeated field.
 func (c *ClientServiceArgs) AllCarveFuncs() string {
 	tmp := []string{}
 	for _, m := range c.MethArgs {
 		for _, a := range m.Args {
-			tmp = append(tmp, a.GoConvertFunc)
+			if a.Repeated {
+				tmp = append(tmp, a.GoConvertFunc)
+			}
 		}
 	}
 	return strings.Join(tmp, "\n")
@@ -188,9 +191,9 @@ func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
 	// The GoType is a slice of the GoType if it's a repeated field
 	if newArg.Repeated {
 		newArg.GoType = "[]" + newArg.GoType
+		newArg.GoConvertFunc = GenerateCarveFunc(&newArg)
 	}
 
-	newArg.GoConvertFunc = GenerateCarveFunc(&newArg)
 	newArg.GoConvertInvoc = goConvInvoc(newArg)
 
 	return &newArg
@@ -246,5 +249,5 @@ func flagTypeConversion(a ClientArg) string {
 	default:
 		fType = "*%s"
 	}
-	return fmt.Sprintf(fType, generatego.CamelCase(a.FlagArg))
+	return fmt.Sprintf(fType, a.FlagArg)
 }

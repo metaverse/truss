@@ -41,7 +41,7 @@ func TestCarveInteger32(t *testing.T) {
 		Name:     "integerthirtytwo",
 		FlagType: "string",
 		GoArg:    "Integerthirtytwo",
-		GoType:   "int32",
+		GoType:   "[]int32",
 	}
 	expected := []int32{12, 13, 2, 1, 4, 5}
 	cases := []string{
@@ -59,7 +59,7 @@ func TestCarveInteger64(t *testing.T) {
 		Name:     "integersixtyfour",
 		FlagType: "string",
 		GoArg:    "Integersixtyfour",
-		GoType:   "int64",
+		GoType:   "[]int64",
 	}
 	expected := []int64{12, 13, 2, 1, 4, 5}
 	cases := []string{
@@ -77,7 +77,7 @@ func TestCarveUint32(t *testing.T) {
 		Name:     "uintthirtytwo",
 		FlagType: "string",
 		GoArg:    "Uintthirtytwo",
-		GoType:   "uint32",
+		GoType:   "[]uint32",
 	}
 	expected := []uint32{12, 13, 2, 1, 4, 5}
 	cases := []string{
@@ -95,7 +95,7 @@ func TestCarveUint64(t *testing.T) {
 		Name:     "uintsixtyfour",
 		FlagType: "string",
 		GoArg:    "Uintsixtyfour",
-		GoType:   "uint64",
+		GoType:   "[]uint64",
 	}
 	expected := []uint64{12, 13, 2, 1, 4, 5}
 	cases := []string{
@@ -113,7 +113,7 @@ func TestCarveFloat32(t *testing.T) {
 		Name:     "floatthirtytwo",
 		FlagType: "string",
 		GoArg:    "Floatthirtytwo",
-		GoType:   "float32",
+		GoType:   "[]float32",
 	}
 	expected := []float32{12.0, 13.0, 2.0, 1.0, 4, 5}
 	cases := []string{
@@ -131,7 +131,7 @@ func TestCarveFloat64(t *testing.T) {
 		Name:     "floatsixtyfour",
 		FlagType: "string",
 		GoArg:    "Floatsixtyfour",
-		GoType:   "float64",
+		GoType:   "[]float64",
 	}
 	expected := []float64{12.0, 13.0, 2.0, 1.0, 4, 5}
 	cases := []string{
@@ -149,7 +149,7 @@ func TestCarveBool(t *testing.T) {
 		Name:     "bool",
 		FlagType: "string",
 		GoArg:    "Bool",
-		GoType:   "bool",
+		GoType:   "[]bool",
 	}
 	expected := []bool{true, false, false, true, true}
 	cases := []string{
@@ -167,7 +167,7 @@ func TestCarveString(t *testing.T) {
 		Name:     "string",
 		FlagType: "string",
 		GoArg:    "String",
-		GoType:   "string",
+		GoType:   "[]string",
 	}
 	expected := []string{"foo", "Bar", "kaboom!", "BANG", "example"}
 	cases := []string{

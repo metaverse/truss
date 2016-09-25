@@ -5,7 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	//"strings"
+	"strconv"
+	"strings"
 	"time"
 
 	//"github.com/lightstep/lightstep-tracer-go"
@@ -24,6 +25,12 @@ import (
 	grpcclient "{{$templateExecutor.ImportPath -}} /generated/client/grpc"
 	httpclient "{{$templateExecutor.ImportPath -}} /generated/client/http"
 )
+
+var (
+	_ = strconv.ParseInt
+	_ = strings.Split
+)
+
 {{$templateExecutor.ClientArgs.AllCarveFuncs}}
 
 func main() {
@@ -123,7 +130,7 @@ func main() {
 		fmt.Println({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
 		fmt.Println("Server Responded with:")
 		fmt.Println(v)
-	{{end}}
+{{end}}
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)
