@@ -8,9 +8,13 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
 )
 
-var _ = gentesthelper.FuncSourceCode
-
-type Carver func(string) interface{}
+// The goal of these tests is to verify the functionality of each basic types
+// Carve function. For each basic type, we test that a series of strings can be
+// properly marshaled into a slice of the correct types. Each carver function
+// exists in templated.go, and after verifying that each functions properly, we
+// check that the generated source code is the same as the source code of the
+// ones we used to test the functionality. This allows for unit testing while
+// preventing the generated code and the verified code from drifting apart.
 
 // runCarveTest is a generic test runner for testing the functionality of
 // the generated slice parsing functions.

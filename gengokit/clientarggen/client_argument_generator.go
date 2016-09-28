@@ -23,24 +23,55 @@ import (
 // message) then the developer is going to have to write a handler for that
 // themselves.
 type ClientArg struct {
+	// Name contains the name of the arg as it appeared in the original
+	// protobuf definition.
 	Name string
 
-	FlagName        string
-	FlagArg         string
-	FlagType        string
+	// FlagName is the name of the command line flag to be passed to set this
+	// argument.
+	FlagName string
+	// FlagArg is the name of the Go variable that will hold the result of
+	// parsing the command line flag.
+	FlagArg string
+	// FlagType is the the type provided to the flag library and determines the
+	// Go type of the variable named FlagArg.
+	FlagType string
+	// FlagConvertFunc is the code for invoking the flag library to parse the
+	// command line parameter named FlagName and store it in the Go variable
+	// FlagArg.
 	FlagConvertFunc string
 
-	GoArg          string
-	GoType         string
+	// GoArg is the Go variable that is of the same type as the corresponding
+	// field of the message struct.
+	GoArg string
+	// GoType is the type of this arg's field on the message struct.
+	GoType string
+	// GoConvertInvoc is the code for initializing GoArg with either a typecast
+	// from FlagArg or the invocation of a generated carve function, if this
+	// arg is repeated.
 	GoConvertInvoc string
-	GoConvertFunc  string
+	// GoConvertFunc is the code for the function which can marshal a string
+	// into a slice of the correct type. Defined only if this arg is repeated.
+	GoConvertFunc string
 
+	// ProtobufType contains the raw value of the type of the original protobuf
+	// field corresponding to this arg, as provided by the protocol buffer
+	// compiler. For a list of these basic types and their corresponding Go
+	// types, see the ProtoToGoTypeMap map in this file.
 	ProtbufType string
 
+	// IsBaseType is true if this arg corresponds to a protobuf field which is
+	// any of the basic types, or a basic type but repeated. If this the field
+	// was a nested message or a map, IsBaseType is false.
 	IsBaseType bool
-	Repeated   bool
+	// Repeated is true if this arg corresponds to a protobuf field which is
+	// given an identifier of "repeated", meaning it will represented in Go as
+	// a slice of it's type.
+	Repeated bool
 }
 
+// MethodArgs is a struct containing a slice of all the ClientArgs for this
+// Method.
 type MethodArgs struct {
 	Args []*ClientArg
 }
@@ -87,6 +118,8 @@ func (m *MethodArgs) MarshalFlags() string {
 	return strings.Join(tmp, "\n")
 }
 
+// ClientServiceArgs is a map from the name of a method to a slice of all the
+// ClientArgs for that method.
 type ClientServiceArgs struct {
 	MethArgs map[string]*MethodArgs
 }
@@ -154,6 +187,7 @@ func New(svc *deftree.ProtoService) *ClientServiceArgs {
 	return &svcArgs
 }
 
+// newClientArg returns a ClientArg generated from the provided method name and MessageField
 func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
 	newArg := ClientArg{}
 	newArg.Name = field.GetName()
@@ -199,6 +233,9 @@ func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
 	return &newArg
 }
 
+// goConvInvoc returns the code for converting from the flagArg to the goArg,
+// either via a simple flagTypeConversion or via an invocation of a generated
+// carve function (in the case of an "repeated" arg).
 func goConvInvoc(a ClientArg) string {
 	if a.Repeated {
 		return GenerateCarveInvocation(&a)
