@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"go/format"
 	"io"
-	//"io/ioutil"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,10 +31,6 @@ func init() {
 	})
 }
 
-type generator struct {
-	templateExec templateExecutor
-}
-
 // templateExecutor is passed to templates as the executing struct its fields
 // and methods are used to modify the template
 type templateExecutor struct {
@@ -47,28 +43,63 @@ type templateExecutor struct {
 	ClientArgs *clientarggen.ClientServiceArgs
 	// A helper struct for generating http transport functionality.
 	HTTPHelper *httptransport.Helper
+	funcMap    template.FuncMap
 }
 
-// GenerateGokit accepts a deftree representing the ast of a group of .proto
-// files, a []truss.NamedReadWriter representing files generated previously, and
-// a goImportPath for templating go code imports
-// GenerateGoCode returns the a []truss.NamedReadWriter representing a generated
-// gokit microservice file structure
-func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
+// newTemplateExecutor accepts a deftree and a goImportPath to construct a
+// templateExecutor for templating a service
+func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExecutor, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
-		return nil, errors.Wrap(err, "no service found aborting generating gokit microservice")
+		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
 	}
 
 	importPath := goImportPath + "/" + dt.GetName() + "-service"
-	g := newGenerator(service, importPath, dt.GetName())
-	files, err := g.GenerateResponseFiles(previousFiles, dt.GetName())
+	funcMap := template.FuncMap{
+		"ToLower":    strings.ToLower,
+		"Title":      strings.Title,
+		"GoName":     generatego.CamelCase,
+		"TrimPrefix": strings.TrimPrefix,
+	}
+	return &templateExecutor{
+		ImportPath:  importPath,
+		PackageName: dt.GetName(),
+		Service:     service,
+		ClientArgs:  clientarggen.New(service),
+		HTTPHelper:  httptransport.NewHelper(service),
+		funcMap:     funcMap,
+	}, nil
+}
 
+// GenerateGokit accepts a deftree representing the ast of a group of .proto
+// files, a []truss.NamedReadWriter representing files generated previously
+// (which may be nil for no previously generated files), and a goImportPath for
+// templating go code imports. GenerateGokit returns the a
+// []truss.NamedReadWriter representing a generated gokit service file
+// structure
+func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
+	te, err := newTemplateExecutor(dt, goImportPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not generate gokit microservice")
+		return nil, errors.Wrap(err, "could not create template executor")
 	}
 
-	return files, nil
+	fpm := filesToFilepathMap(previousFiles)
+
+	var codeGenFiles []truss.NamedReadWriter
+
+	for _, templFP := range templateFileAssets.AssetNames() {
+		file, err := generateResponseFile(templFP, te, fpm)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not render template")
+		}
+		if file == nil {
+			continue
+		}
+
+		codeGenFiles = append(codeGenFiles, file)
+	}
+
+	return codeGenFiles, nil
 }
 
 // getProtoService finds returns the service within a deftree.Deftree
@@ -86,37 +117,105 @@ func getProtoService(dt deftree.Deftree) (*deftree.ProtoService, error) {
 	if service == nil {
 		return nil, errors.New("no service found")
 	}
-
 	return service, nil
 }
 
-// newGenerator returns a new generator which generates a gokit microservice
-func newGenerator(service *deftree.ProtoService, importPath string, pkgName string) *generator {
-	return &generator{
-		templateExec: templateExecutor{
-			ImportPath:  importPath,
-			PackageName: pkgName,
-			Service:     service,
-			ClientArgs:  clientarggen.New(service),
-			HTTPHelper:  httptransport.NewHelper(service),
-		},
+// generateResponseFile contains logic to choose how to render a template file
+// based on path and if that file was generated previously. It accepts a
+// template path to render, a templateExecutor to apply to the template, and a
+// map of paths to files for the previous generation. It returns a
+// truss.NamedReadWriter representing the generated file
+func generateResponseFile(templFP string, te *templateExecutor, prevGenMap map[string]io.Reader) (truss.NamedReadWriter, error) {
+	// Only .gotemplate files are rendered
+	if filepath.Ext(templFP) != ".gotemplate" {
+		log.WithField("Template file", templFP).Debug("Skipping rendering non-buildable partial template")
+		return nil, nil
 	}
-}
 
-// getFileContentByName searches though a []truss.NamedReadWriter and returns the
-// contents of the file with the name n
-func getFileByName(n string, files []truss.NamedReadWriter) io.Reader {
-	for _, f := range files {
-		if f.Name() == n {
-			return f
+	var genCode io.Reader
+	var err error
+
+	// Get the actual path to the file rather than the template file path
+	actualFP := templatePathToActual(templFP, te.PackageName)
+
+	// Map of template paths to template rendering functions
+	renderFuncs := map[string]func(io.Reader, *templateExecutor) (io.Reader, error){
+		"NAME-service/handlers/server/server_handler.gotemplate": updateServerMethods,
+		"NAME-service/handlers/client/client_handler.gotemplate": updateClientMethods,
+	}
+
+	// If we are rendering a template with a renderFunc and the file existed
+	// previously then use that function
+	if renderFuncs[templFP] != nil {
+		file := prevGenMap[actualFP]
+		if file != nil {
+			genCode, err = renderFuncs[templFP](file, te)
 		}
 	}
-	return nil
+
+	if err != nil {
+		return nil, errors.Wrap(err, "could not render template")
+	}
+
+	// if no code has been generated just apply the template
+	if genCode == nil {
+		genCode, err = applyTemplateFromPath(templFP, te)
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "could not render template")
+	}
+
+	codeBytes, err := ioutil.ReadAll(genCode)
+	if err != nil {
+		return nil, err
+	}
+
+	// ignore error as we want to write the code either way to inspect after
+	// writing to disk
+	formattedCode := formatCode(codeBytes)
+
+	var resp truss.SimpleFile
+
+	// Set the path to the file and write the code to the file
+	resp.Path = actualFP
+	_, err = resp.Write(formattedCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
-// updateServerMethods will update the functions within an existing server_handler.go
-// file so it contains all the functions within svcFuncs
-func (g *generator) updateServerMethods(svcHandler io.Reader, svcFuncs []string) (outCode *bytes.Buffer, err error) {
+// templatePathToActual accepts a templateFilePath and the packageName of the
+// service and returns what the relative file path of what should be written to
+// disk
+func templatePathToActual(templFilePath, packageName string) string {
+	// Switch "NAME" in path with packageName.
+	//i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
+	actual := strings.Replace(templFilePath, "NAME", packageName, -1)
+
+	actual = strings.TrimSuffix(actual, "template")
+
+	return actual
+}
+
+// filesTofilepathMap accepts a slice of truss.NamedReadWriters and returns a map of filepaths
+// as strings to files as io.Reader
+func filesToFilepathMap(previousFiles []truss.NamedReadWriter) map[string]io.Reader {
+	pathToFile := make(map[string]io.Reader, len(previousFiles))
+	for _, f := range previousFiles {
+		pathToFile[f.Name()] = f
+	}
+	return pathToFile
+}
+
+// updateServerMethods accepts NAME-service/handlers/server/server_handlers.go
+// as an io.Reader and modifies it to contains only functions returned by
+// serviceFunctionNames.
+func updateServerMethods(svcHandler io.Reader, te *templateExecutor) (outCode io.Reader, err error) {
+	svcFuncs := serviceFunctionsNames(te.Service.Methods)
+
 	const svcMethodsTemplPath = "NAME-service/partial_template/service.methods"
 	const svcInterfaceTemplPath = "NAME-service/partial_template/service.interface"
 
@@ -125,31 +224,39 @@ func (g *generator) updateServerMethods(svcHandler io.Reader, svcFuncs []string)
 	astMod.RemoveFunctionsExecpt(svcFuncs)
 	astMod.RemoveInterface("Service")
 
-	// Index the handler functions, apply handler template for all function in service definition that are not defined in handler
+	// Index the handler functions, apply handler template for all function in
+	// service definition that are not defined in handler
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
 
-	err = g.applyTemplateForMissingMeths(svcMethodsTemplPath, currentFuncs, code)
+	trimmedTe := te.trimServiceFuncs(currentFuncs)
+
+	newFuncs, err := applyTemplateFromPath(svcMethodsTemplPath, trimmedTe)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply service methods template")
 	}
 
+	code.ReadFrom(newFuncs)
+
 	// Insert updated Service interface
-	outBuf, err := applyTemplateFromPath(svcInterfaceTemplPath, g.templateExec)
+	svcInterface, err := applyTemplateFromPath(svcInterfaceTemplPath, te)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply service interface template")
 	}
 
-	code.Write(outBuf.Bytes())
+	code.ReadFrom(svcInterface)
 
 	return code, nil
 }
 
-// updateClientMethods will update the functions within an existing
-// client_handler.go file so that it contains exactly the fucntions passed in
-// svcFuncs, no more, no less.
-func (g *generator) updateClientMethods(clientHandler io.Reader, svcFuncs []string) (outCode *bytes.Buffer, err error) {
+// updateClientMethods accepts NAME-service/handlers/client/client_handler.go
+// as an io.Reader and modifies it to contains only functions returned by
+// serviceFunctionNames.
+func updateClientMethods(clientHandler io.Reader, te *templateExecutor) (outCode io.Reader, err error) {
+	svcFuncs := serviceFunctionsNames(te.Service.Methods)
+
 	const clientMethodsTemplPath = "NAME-service/partial_template/client_handler.methods"
+
 	astMod := astmodifier.New(clientHandler)
 
 	// Remove functions no longer in definition
@@ -160,134 +267,62 @@ func (g *generator) updateClientMethods(clientHandler io.Reader, svcFuncs []stri
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
 
-	err = g.applyTemplateForMissingMeths(clientMethodsTemplPath, currentFuncs, code)
+	// Get a templateExecutor that is identical but with only functions in the
+	// definition file and not in the previously generated file
+	trimmedTe := te.trimServiceFuncs(currentFuncs)
 
+	newFuncs, err := applyTemplateFromPath(clientMethodsTemplPath, trimmedTe)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply client methods template")
 	}
 
+	code.ReadFrom(newFuncs)
+
 	return code, nil
 }
 
-// GenerateResponseFiles applies all template files for the generated
-// microservice and returns a slice containing each templated file as a
-// truss.NamedReadWriter.
-func (g *generator) GenerateResponseFiles(previousFiles []truss.NamedReadWriter, packageName string) ([]truss.NamedReadWriter, error) {
-	// Paths to handler files that may be modified programmatically
-	serverHandlerFilePath := "-service/handlers/server/server_handler.go"
-	clientHandlerFilePath := "-service/handlers/client/client_handler.go"
-
-	var codeGenFiles []truss.NamedReadWriter
-
-	// serviceFunctions is used later as the master list of all service methods
-	// which should exist within the handler files
-	var serviceFunctions []string
-	for _, meth := range g.templateExec.Service.Methods {
-		serviceFunctions = append(serviceFunctions, meth.GetName())
+// serviceFunctionNames returns a slice of function names which are in the
+// definition files plus the function "NewService". Used for inserting and
+// removing functions from previously generated handler files
+func serviceFunctionsNames(methods []*deftree.ServiceMethod) []string {
+	var svcFuncs []string
+	for _, m := range methods {
+		svcFuncs = append(svcFuncs, m.GetName())
 	}
-	serviceFunctions = append(serviceFunctions, "NewBasicService")
+	svcFuncs = append(svcFuncs, "NewService")
 
-	serverHandlerFile := getFileByName(packageName+serverHandlerFilePath, previousFiles)
-	clientHandlerFile := getFileByName(packageName+clientHandlerFilePath, previousFiles)
+	return svcFuncs
+}
 
-	for _, templateFilePath := range templateFileAssets.AssetNames() {
-		if filepath.Ext(templateFilePath) != ".gotemplate" {
-			log.WithField("Template file", templateFilePath).Debug("Skipping rendering non-buildable partial template")
+// trimServiceFuncs removes functions in funcsInFile from the
+// templateExecutor and returns a pointer to a new templateExecutor
+func (te templateExecutor) trimServiceFuncs(funcsInFile map[string]bool) *templateExecutor {
+	var methodsToTemplate []*deftree.ServiceMethod
+
+	for _, m := range te.Service.Methods {
+		mName := m.GetName()
+
+		if funcsInFile[mName] {
+			log.WithField("Method", mName).Info("Handler method already exists")
 			continue
 		}
-
-		var generatedFilePath string
-		var generatedCode *bytes.Buffer
-		var err error
-
-		if templateFilePath == "NAME"+serverHandlerFilePath+"template" && serverHandlerFile != nil {
-			// If there's an existing service file, update its contents
-
-			generatedCode, err = g.updateServerMethods(serverHandlerFile, serviceFunctions)
-
-			if err != nil {
-				return nil, errors.Wrap(err, "could not modifiy service handler file")
-			}
-
-		} else if templateFilePath == "NAME"+clientHandlerFilePath+"template" && clientHandlerFile != nil {
-			// If there's an existing client_handler file, update its contents
-
-			generatedCode, err = g.updateClientMethods(clientHandlerFile, serviceFunctions)
-
-			if err != nil {
-				return nil, errors.Wrap(err, "could not modifiy client handler file")
-			}
-
-		} else {
-
-			generatedCode, err = applyTemplateFromPath(templateFilePath, g.templateExec)
-			if err != nil {
-				return nil, errors.Wrap(err, "could not render template")
-			}
-		}
-
-		generatedFilePath = templateFilePath
-		// Change file path from .gotemplate to .go
-		generatedFilePath = strings.TrimSuffix(generatedFilePath, "template")
-
-		// Turn code buffer into string and format it
-		formattedCode := formatCode(generatedCode.Bytes())
-
-		var resp truss.SimpleFile
-
-		// Switch "NAME" in path with packageName.
-		//i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
-		resp.Path = strings.Replace(generatedFilePath, "NAME", packageName, -1)
-
-		resp.Write(formattedCode)
-
-		codeGenFiles = append(codeGenFiles, &resp)
+		methodsToTemplate = append(methodsToTemplate, m)
+		log.WithField("Method", mName).Info("Rendering template for method")
 	}
 
-	return codeGenFiles, nil
-}
-
-// applyTemplateForMissingMeths accepts a funcIndex which represents functions
-// already present in a gofile, applyTemplateForMissingMeths compares this map
-// to the functions defined in the service and renders the template with the
-// path of templPath, and appends this to passed code
-func (g *generator) applyTemplateForMissingMeths(templPath string, funcIndex map[string]bool, code *bytes.Buffer) error {
-	var methodsToTemplate []*deftree.ServiceMethod
-	for _, meth := range g.templateExec.Service.Methods {
-		methName := meth.GetName()
-		if funcIndex[methName] == false {
-			methodsToTemplate = append(methodsToTemplate, meth)
-			log.WithField("Method", methName).Info("Rendering template for method")
-		} else {
-			log.WithField("Method", methName).Info("Handler method already exists")
-		}
-	}
-
-	// Create temporary templateExec with only the methods we want to append
-	// We must also dereference the templateExec's Service and change our newly created
-	// Service's pointer to it's messages to be methodsToTemplate
-	templateExecWithOnlyMissingMethods := g.templateExec
-	tempService := *g.templateExec.Service
+	// templateExec's Service is dereference and that new Service's
+	// pointer to its messages is changed to be methodsToTemplate
+	tempService := *te.Service
 	tempService.Methods = methodsToTemplate
-	templateExecWithOnlyMissingMethods.Service = &tempService
 
-	// Apply the template and write it to code
-	templateOut, err := applyTemplateFromPath(templPath, templateExecWithOnlyMissingMethods)
-	if err != nil {
-		return errors.Wrapf(err, "could not apply template for missing methods: %v", templPath)
-	}
+	te.Service = &tempService
 
-	_, err = code.Write(templateOut.Bytes())
-	if err != nil {
-		return errors.Wrap(err, "could not append rendered template to code")
-	}
-
-	return nil
+	return &te
 }
 
-// applyTemplateFromPath accepts a path to a template and an interface to execute on that template
-// returns a *bytes.Buffer containing the results of that execution
-func applyTemplateFromPath(templFilePath string, executor interface{}) (*bytes.Buffer, error) {
+// applyTemplateFromPath accepts a path to a template and a templateExecutor and calls
+// applyTemplate with the template at that template path and returns the result
+func applyTemplateFromPath(templFilePath string, executor *templateExecutor) (io.Reader, error) {
 
 	templBytes, err := templateFileAssets.Asset(templFilePath)
 	if err != nil {
@@ -298,20 +333,12 @@ func applyTemplateFromPath(templFilePath string, executor interface{}) (*bytes.B
 }
 
 // applyTemplate accepts a []byte, and a string representing the content and
-// name of a template and an interface to execute on that template returns a
-// *bytes.Buffer containing the results of that execution
-func applyTemplate(templBytes []byte, templName string, executor interface{}) (*bytes.Buffer, error) {
-
+// name of a template and a templateExecutor to execute on that template. Returns a
+// io.Reader containing the results of that execution
+func applyTemplate(templBytes []byte, templName string, executor *templateExecutor) (io.Reader, error) {
 	templateString := string(templBytes)
 
-	funcMap := template.FuncMap{
-		"ToLower":    strings.ToLower,
-		"Title":      strings.Title,
-		"GoName":     generatego.CamelCase,
-		"TrimPrefix": strings.TrimPrefix,
-	}
-
-	codeTemplate, err := template.New(templName).Funcs(funcMap).Parse(templateString)
+	codeTemplate, err := template.New(templName).Funcs(executor.funcMap).Parse(templateString)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template")
@@ -334,8 +361,8 @@ func formatCode(code []byte) []byte {
 
 	if err != nil {
 		log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
-		// Set formatted to code so at least we get something to examine
-		formatted = code
+		// return code so at least we get something to examine
+		return code
 	}
 
 	return formatted

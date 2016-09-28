@@ -6,17 +6,19 @@ package deftree
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/TuneLab/go-truss/deftree/svcparse"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pkg/errors"
+
+	"github.com/TuneLab/go-truss/deftree/svcparse"
+	"github.com/TuneLab/go-truss/truss/protostage"
 )
 
 func init() {
@@ -29,47 +31,6 @@ func init() {
 
 	// Only log the warning severity or above.
 	log.SetLevel(log.InfoLevel)
-}
-
-// Finds the package name of the proto files named on the command line
-func findDeftreePackage(req *plugin.CodeGeneratorRequest) string {
-	for _, cmdFile := range req.GetFileToGenerate() {
-		for _, protoFile := range req.GetProtoFile() {
-			if protoFile.GetName() == cmdFile {
-				return protoFile.GetPackage()
-			}
-		}
-	}
-	return ""
-}
-
-// Finds a message given a fully qualified name to that message. The provided
-// path may be either a fully qualfied name of a message, or just the bare name
-// for a message.
-func findMessage(md *MicroserviceDefinition, newFile *ProtoFile, path string) (*ProtoMessage, error) {
-	if path[0] == '.' {
-		parts := strings.Split(path, ".")
-		for _, file := range md.Files {
-			for _, msg := range file.Messages {
-				if parts[2] == msg.GetName() {
-					return msg, nil
-				}
-			}
-		}
-		for _, msg := range newFile.Messages {
-			if parts[2] == msg.GetName() {
-				return msg, nil
-			}
-		}
-	} else {
-		for _, msg := range newFile.Messages {
-			if path == msg.GetName() {
-				return msg, nil
-			}
-		}
-	}
-	return nil, fmt.Errorf("couldn't find message.")
-
 }
 
 // New accepts a Protobuf plugin.CodeGeneratorRequest and the contents of the
@@ -115,6 +76,50 @@ func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (Deftree, erro
 	}
 
 	return &dt, nil
+}
+
+func NewFromString(def string) (Deftree, error) {
+	const defFileName = "definition.proto"
+
+	protoDir, err := ioutil.TempDir("", "truss-deftree-")
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create temp directory to store proto definition")
+	}
+	defer os.RemoveAll(protoDir)
+
+	err = ioutil.WriteFile(filepath.Join(protoDir, defFileName), []byte(def), 0666)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not write proto definition to file")
+	}
+
+	err = protostage.Stage(protoDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to prepare filesystem for generating deftree")
+	}
+
+	req, svcFile, err := protostage.Compose([]string{defFileName}, protoDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get CodeGeneratorRequest for generating deftree")
+	}
+
+	deftree, err := New(req, svcFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "can not create new deftree")
+	}
+
+	return deftree, nil
+}
+
+// Finds the package name of the proto files named on the command line
+func findDeftreePackage(req *plugin.CodeGeneratorRequest) string {
+	for _, cmdFile := range req.GetFileToGenerate() {
+		for _, protoFile := range req.GetProtoFile() {
+			if protoFile.GetName() == cmdFile {
+				return protoFile.GetPackage()
+			}
+		}
+	}
+	return ""
 }
 
 // Build a new deftree.File struct
@@ -192,6 +197,34 @@ func NewMessage(msg *descriptor.DescriptorProto) (*ProtoMessage, error) {
 		newMsg.Fields = append(newMsg.Fields, &newField)
 	}
 	return &newMsg, nil
+}
+
+// Finds a message given a fully qualified name to that message. The provided
+// path may be either a fully qualfied name of a message, or just the bare name
+// for a message.
+func findMessage(md *MicroserviceDefinition, newFile *ProtoFile, path string) (*ProtoMessage, error) {
+	if path[0] == '.' {
+		parts := strings.Split(path, ".")
+		for _, file := range md.Files {
+			for _, msg := range file.Messages {
+				if parts[2] == msg.GetName() {
+					return msg, nil
+				}
+			}
+		}
+		for _, msg := range newFile.Messages {
+			if parts[2] == msg.GetName() {
+				return msg, nil
+			}
+		}
+	} else {
+		for _, msg := range newFile.Messages {
+			if path == msg.GetName() {
+				return msg, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("couldn't find message")
 }
 
 // NewService creates a new *ProtoService from a
