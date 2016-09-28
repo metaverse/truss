@@ -52,7 +52,7 @@ var ClientEncodeTemplate = `
 // the http request (path, query, and body).
 func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, request interface{}) error {
 	fmt.Printf("Encoding request %v\n", request)
-	req := request.(pb.{{GoName $binding.Parent.RequestType}})
+	req := request.(*pb.{{GoName $binding.Parent.RequestType}})
 	_ = req
 
 	// Set the path parameters
