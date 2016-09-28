@@ -3,7 +3,7 @@ package httptransport
 import (
 	"testing"
 
-	"github.com/pmezard/go-difflib/difflib"
+	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
 )
 
 func TestGenClientEncode(t *testing.T) {
@@ -60,7 +60,7 @@ func TestGenClientEncode(t *testing.T) {
 // the http request (path, query, and body).
 func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interface{}) error {
 	fmt.Printf("Encoding request %v\n", request)
-	req := request.(pb.SumRequest)
+	req := request.(*pb.SumRequest)
 	_ = req
 
 	// Set the path parameters
@@ -69,8 +69,6 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 		"sum",
 		fmt.Sprint(req.A),
 	}, "/")
-	//r.URL.Scheme,
-	//r.URL.Host,
 	u, err := url.Parse(path)
 	if err != nil {
 		return err
@@ -98,7 +96,7 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 `
 	if got, want := str, desired; got != want {
 		t.Errorf("Generated code differs from result.\ngot = %s\nwant = %s", got, want)
-		t.Log(DiffStrings(got, want))
+		t.Log(gentesthelper.DiffStrings(got, want))
 	}
 }
 
@@ -162,14 +160,12 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 
 	pathParams, err := PathParams(r.URL.Path, "/sum/{a}")
 	_ = pathParams
-	// TODO: Better error handling
 	if err != nil {
 		fmt.Printf("Error while reading path params: %v\n", err)
 		return nil, err
 	}
 	queryParams, err := QueryParams(r.URL.Query())
 	_ = queryParams
-	// TODO: Better error handling
 	if err != nil {
 		fmt.Printf("Error while reading query params: %v\n", err)
 		return nil, err
@@ -201,7 +197,7 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 `
 	if got, want := str, desired; got != want {
 		t.Errorf("Generated code differs from result.\ngot = %s\nwant = %s", got, want)
-		t.Log(DiffStrings(got, want))
+		t.Log(gentesthelper.DiffStrings(got, want))
 	}
 }
 
@@ -214,18 +210,6 @@ func TestHTTPAssistFuncs(t *testing.T) {
 
 	if got, want := tmplfncs, FormatCode(source); got != want {
 		t.Errorf("Assistant functions in templates differ from the source of those functions as they exist within the codebase")
-		t.Log(DiffStrings(got, want))
+		t.Log(gentesthelper.DiffStrings(got, want))
 	}
-}
-
-func DiffStrings(a, b string) string {
-	t := difflib.UnifiedDiff{
-		A:        difflib.SplitLines(a),
-		B:        difflib.SplitLines(b),
-		FromFile: "A",
-		ToFile:   "B",
-		Context:  5,
-	}
-	text, _ := difflib.GetUnifiedDiffString(t)
-	return text
 }
