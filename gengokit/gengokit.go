@@ -51,7 +51,7 @@ type templateExecutor struct {
 func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExecutor, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
-		return nil, errors.Wrap(err, "no service found aborting generating gokit service")
+		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
 	}
 
 	importPath := goImportPath + "/" + dt.GetName() + "-service"
@@ -78,7 +78,6 @@ func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExec
 // []truss.NamedReadWriter representing a generated gokit service file
 // structure
 func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
-
 	te, err := newTemplateExecutor(dt, goImportPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template executor")
@@ -167,7 +166,6 @@ func generateResponseFile(templFP string, te *templateExecutor, prevGenMap map[s
 		return nil, errors.Wrap(err, "could not render template")
 	}
 
-	// Turn code buffer into string and format it
 	codeBytes, err := ioutil.ReadAll(genCode)
 	if err != nil {
 		return nil, err
@@ -175,13 +173,16 @@ func generateResponseFile(templFP string, te *templateExecutor, prevGenMap map[s
 
 	// ignore error as we want to write the code either way to inspect after
 	// writing to disk
-	formattedCode, _ := formatCode(codeBytes)
+	formattedCode := formatCode(codeBytes)
 
 	var resp truss.SimpleFile
 
 	// Set the path to the file and write the code to the file
 	resp.Path = actualFP
-	resp.Write(formattedCode)
+	_, err = resp.Write(formattedCode)
+	if err != nil {
+		return nil, err
+	}
 
 	return &resp, nil
 }
@@ -201,8 +202,8 @@ func templatePathToActual(templFilePath, packageName string) string {
 
 // filesTofilepathMap accepts a slice of truss.NamedReadWriters and returns a map of filepaths
 // as strings to files as io.Reader
-func filesToFilepathMap(previousFiles []truss.NamedReadWriter) (pathToFile map[string]io.Reader) {
-	pathToFile = make(map[string]io.Reader)
+func filesToFilepathMap(previousFiles []truss.NamedReadWriter) map[string]io.Reader {
+	pathToFile := make(map[string]io.Reader, len(previousFiles))
 	for _, f := range previousFiles {
 		pathToFile[f.Name()] = f
 	}
@@ -228,22 +229,22 @@ func updateServerMethods(svcHandler io.Reader, te *templateExecutor) (outCode io
 	currentFuncs := astMod.IndexFunctions()
 	code := astMod.Buffer()
 
-	trimmedTe, err := trimTemplateExecutorServiceFuncs(*te, currentFuncs)
+	trimmedTe := te.trimServiceFuncs(currentFuncs)
 
-	out, err := applyTemplateFromPath(svcMethodsTemplPath, trimmedTe)
+	newFuncs, err := applyTemplateFromPath(svcMethodsTemplPath, trimmedTe)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply service methods template")
 	}
 
-	code.ReadFrom(out)
+	code.ReadFrom(newFuncs)
 
 	// Insert updated Service interface
-	out, err = applyTemplateFromPath(svcInterfaceTemplPath, te)
+	svcInterface, err := applyTemplateFromPath(svcInterfaceTemplPath, te)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply service interface template")
 	}
 
-	code.ReadFrom(out)
+	code.ReadFrom(svcInterface)
 
 	return code, nil
 }
@@ -268,14 +269,14 @@ func updateClientMethods(clientHandler io.Reader, te *templateExecutor) (outCode
 
 	// Get a templateExecutor that is identical but with only functions in the
 	// definition file and not in the previously generated file
-	trimmedTe, err := trimTemplateExecutorServiceFuncs(*te, currentFuncs)
+	trimmedTe := te.trimServiceFuncs(currentFuncs)
 
-	out, err := applyTemplateFromPath(clientMethodsTemplPath, trimmedTe)
+	newFuncs, err := applyTemplateFromPath(clientMethodsTemplPath, trimmedTe)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to apply client methods template")
 	}
 
-	code.ReadFrom(out)
+	code.ReadFrom(newFuncs)
 
 	return code, nil
 }
@@ -283,40 +284,40 @@ func updateClientMethods(clientHandler io.Reader, te *templateExecutor) (outCode
 // serviceFunctionNames returns a slice of function names which are in the
 // definition files plus the function "NewService". Used for inserting and
 // removing functions from previously generated handler files
-func serviceFunctionsNames(meths []*deftree.ServiceMethod) []string {
+func serviceFunctionsNames(methods []*deftree.ServiceMethod) []string {
 	var svcFuncs []string
-	for _, meth := range meths {
-		svcFuncs = append(svcFuncs, meth.GetName())
+	for _, m := range methods {
+		svcFuncs = append(svcFuncs, m.GetName())
 	}
 	svcFuncs = append(svcFuncs, "NewService")
 
 	return svcFuncs
 }
 
-// trimTemplateExecutorServiceFuncs removes functions in funcsInFile from the
-// passed templateExecutor and returns a pointer to that templateExecutor
-func trimTemplateExecutorServiceFuncs(te templateExecutor, funcsInFile map[string]bool) (*templateExecutor, error) {
+// trimServiceFuncs removes functions in funcsInFile from the
+// templateExecutor and returns a pointer to a new templateExecutor
+func (te templateExecutor) trimServiceFuncs(funcsInFile map[string]bool) *templateExecutor {
 	var methodsToTemplate []*deftree.ServiceMethod
 
-	for _, meth := range te.Service.Methods {
-		methName := meth.GetName()
+	for _, m := range te.Service.Methods {
+		mName := m.GetName()
 
-		if funcsInFile[methName] == false {
-			methodsToTemplate = append(methodsToTemplate, meth)
-			log.WithField("Method", methName).Info("Rendering template for method")
-		} else {
-			log.WithField("Method", methName).Info("Handler method already exists")
+		if funcsInFile[mName] {
+			log.WithField("Method", mName).Info("Handler method already exists")
+			continue
 		}
+		methodsToTemplate = append(methodsToTemplate, m)
+		log.WithField("Method", mName).Info("Rendering template for method")
 	}
 
 	// templateExec's Service is dereference and that new Service's
-	// pointer to it's messages is changed to be methodsToTemplate
+	// pointer to its messages is changed to be methodsToTemplate
 	tempService := *te.Service
 	tempService.Methods = methodsToTemplate
 
 	te.Service = &tempService
 
-	return &te, nil
+	return &te
 }
 
 // applyTemplateFromPath accepts a path to a template and a templateExecutor and calls
@@ -335,7 +336,6 @@ func applyTemplateFromPath(templFilePath string, executor *templateExecutor) (io
 // name of a template and a templateExecutor to execute on that template. Returns a
 // io.Reader containing the results of that execution
 func applyTemplate(templBytes []byte, templName string, executor *templateExecutor) (io.Reader, error) {
-
 	templateString := string(templBytes)
 
 	codeTemplate, err := template.New(templName).Funcs(executor.funcMap).Parse(templateString)
@@ -356,14 +356,14 @@ func applyTemplate(templBytes []byte, templName string, executor *templateExecut
 // formatCode takes a string representing golang code and attempts to return a
 // formated copy of that code.  If formatting fails, a warning is logged and
 // the original code is returned.
-func formatCode(code []byte) ([]byte, error) {
+func formatCode(code []byte) []byte {
 	formatted, err := format.Source(code)
 
 	if err != nil {
 		log.WithError(err).Warn("Code formatting error, generated service will not build, outputting unformatted code")
 		// return code so at least we get something to examine
-		return code, err
+		return code
 	}
 
-	return formatted, nil
+	return formatted
 }

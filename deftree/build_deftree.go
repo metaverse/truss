@@ -82,11 +82,14 @@ func NewFromString(def string) (Deftree, error) {
 	const defFileName = "definition.proto"
 
 	protoDir, err := ioutil.TempDir("", "truss-deftree-")
+	if err != nil {
+		return nil, errors.Wrap(err, "could not create temp directory to store proto definition")
+	}
 	defer os.RemoveAll(protoDir)
 
-	err = ioutil.WriteFile(protoDir+"/"+defFileName, []byte(def), 0666)
+	err = ioutil.WriteFile(filepath.Join(protoDir, defFileName), []byte(def), 0666)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not write proto definition to filesystem")
+		return nil, errors.Wrap(err, "could not write proto definition to file")
 	}
 
 	err = protostage.Stage(protoDir)
@@ -221,7 +224,7 @@ func findMessage(md *MicroserviceDefinition, newFile *ProtoFile, path string) (*
 			}
 		}
 	}
-	return nil, fmt.Errorf("couldn't find message.")
+	return nil, fmt.Errorf("couldn't find message")
 }
 
 // NewService creates a new *ProtoService from a

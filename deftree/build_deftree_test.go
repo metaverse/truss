@@ -51,7 +51,7 @@ func TestNewFromString(t *testing.T) {
 	}
 
 	if got, want := deftree.GetName(), "general"; got != want {
-		t.Errorf("\n`%v` was deftree package name\n`%v` was wanted", got, want)
+		t.Errorf("`%v` was deftree package name \n`%v` was wanted", got, want)
 	}
 }
 
