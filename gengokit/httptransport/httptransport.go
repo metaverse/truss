@@ -11,11 +11,20 @@ import (
 	"text/template"
 	"unicode"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 )
+
+func init() {
+	log.SetLevel(log.InfoLevel)
+	log.SetOutput(os.Stderr)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
+}
 
 // Helper is the base struct for the data structure containing all the
 // information necessary to correctly template the HTTP transport functionality
@@ -87,7 +96,6 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		var gt string
 		var ok bool
 		tmap := clientarggen.ProtoToGoTypeMap
-		//if gt, ok = tmap[nField.ProtobufType]; !ok || field.Label == "LABEL_REPEATED" {
 		if gt, ok = tmap[nField.ProtobufType]; !ok {
 			gt = "string"
 			nField.IsBaseType = false
@@ -102,6 +110,24 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		nField.LowCamelName = LowCamelName(nField.Name)
 
 		nBinding.Fields = append(nBinding.Fields, &nField)
+
+		// Emit warnings for certain cases
+		if nField.IsBaseType == false {
+			wrn := []string{
+				"%s.%s is a custom type '%s', only base types and repeated base ",
+				"types are supported. As a result, the generated HTTP ",
+				"transport will fail to compile. Remove non-base types.",
+			}
+			log.Warnf(strings.Join("", wrn), meth.GetName(), nField.Name, nField.ProtobufType)
+		}
+		if field.Label == "LABEL_REPEATED" && nField.Location == "path" {
+			wrn := []string{
+				"%s.%s is a repeated field specified to be in the path. ",
+				"Currently, repeated fields are not supported in the path ",
+				"and may result in generated code which fails to compile.",
+			}
+			log.Warnf(strings.Join("", wrn), meth.GetName(), nField.Name)
+		}
 	}
 	return &nBinding
 }
