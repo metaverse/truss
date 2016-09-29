@@ -60,7 +60,7 @@ func TestGenClientEncode(t *testing.T) {
 // the http request (path, query, and body).
 func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interface{}) error {
 	fmt.Printf("Encoding request %v\n", request)
-	req := request.(pb.SumRequest)
+	req := request.(*pb.SumRequest)
 	_ = req
 
 	// Set the path parameters
