@@ -20,7 +20,7 @@ func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetNam
 {{- with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
 	{{range $param := $meth.Args -}}
 		{{- if $param.IsBaseType}}
-		{{GoName $param.Name}} : {{GoName $param.FlagArg}},
+		{{GoName $param.Name}} : {{$param.GoArg}},
 		{{- end -}}
 	{{end -}}
 {{- end -}}
