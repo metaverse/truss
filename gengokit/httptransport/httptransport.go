@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"unicode"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
@@ -87,7 +88,7 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		var gt string
 		var ok bool
 		tmap := clientarggen.ProtoToGoTypeMap
-		if gt, ok = tmap[nField.ProtobufType]; !ok || field.Label == "LABEL_REPEATED" {
+		if gt, ok = tmap[nField.ProtobufType]; !ok {
 			gt = "string"
 			nField.IsBaseType = false
 		} else {
@@ -101,6 +102,24 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		nField.LowCamelName = LowCamelName(nField.Name)
 
 		nBinding.Fields = append(nBinding.Fields, &nField)
+
+		// Emit warnings for certain cases
+		if !nField.IsBaseType {
+			log.Warnf("%s.%s is a custom type '%s', only base types and repeated base "+
+				"types are supported. As a result, the generated HTTP "+
+				"transport will fail to compile. Remove non-base types.",
+				meth.GetName(),
+				nField.Name,
+				nField.ProtobufType)
+		}
+		if field.Label == "LABEL_REPEATED" && nField.Location == "path" {
+			log.Warnf(
+				"%s.%s is a repeated field specified to be in the path. "+
+					"Repeated fields are not supported in the path and may"+
+					"result in generated code which fails to compile.",
+				meth.GetName(),
+				nField.Name)
+		}
 	}
 	return &nBinding
 }
@@ -157,6 +176,45 @@ func (b *Binding) PathSections() []string {
 		}
 	}
 	return rv
+}
+
+// GenQueryUnmarshaler returns the generated code for server-side unmarshaling
+// of a query parameter into it's correct field on the request struct.
+func (f *Field) GenQueryUnmarshaler() (string, error) {
+	repeatedQueryLogic := `
+for _, {{.LocalName}}Str := range r.URL.Query()["{{.Name}}"] {
+	{{.ConvertFunc}}
+	if err != nil {
+		fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
+		fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
+		return nil, err
+	}
+	req.{{.CamelName}} = append(req.{{.CamelName}}, {{.TypeConversion}})
+}
+`
+	genericLogic := `
+{{.LocalName}}Str := {{.Location}}Params["{{.Name}}"]
+{{.ConvertFunc}}
+// TODO: Better error handling
+if err != nil {
+	fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
+	fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
+	return nil, err
+}
+req.{{.CamelName}} = {{.TypeConversion}}
+`
+	var selected string
+	if f.Location == "query" && f.ProtobufLabel == "LABEL_REPEATED" {
+		selected = repeatedQueryLogic
+	} else if f.Location != "body" {
+		selected = genericLogic
+	}
+	code, err := ApplyTemplate("FieldEncodeLogic", selected, f, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
 }
 
 // createDecodeConvertFunc creates a go string representing the function to
