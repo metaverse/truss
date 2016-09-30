@@ -13,29 +13,19 @@ func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (in
 
 	pathParams, err := PathParams(r.URL.Path, "{{$binding.PathTemplate}}")
 	_ = pathParams
-	// TODO: Better error handling
 	if err != nil {
 		fmt.Printf("Error while reading path params: %v\n", err)
 		return nil, err
 	}
 	queryParams, err := QueryParams(r.URL.Query())
 	_ = queryParams
-	// TODO: Better error handling
 	if err != nil {
 		fmt.Printf("Error while reading query params: %v\n", err)
 		return nil, err
 	}
 {{range $field := $binding.Fields}}
 {{if ne $field.Location "body"}}
-	{{$field.LocalName}}Str := {{$field.Location}}Params["{{$field.Name}}"]
-	{{$field.ConvertFunc}}
-	// TODO: Better error handling
-	if err != nil {
-		fmt.Printf("Error while extracting {{$field.LocalName}} from {{$field.Location}}: %v\n", err)
-		fmt.Printf("{{$field.Location}}Params: %v\n", {{$field.Location}}Params)
-		return nil, err
-	}
-	req.{{$field.CamelName}} = {{$field.TypeConversion}}
+	{{$field.GenQueryUnmarshaler}}
 {{end}}
 {{end}}
 	return &req, err
@@ -61,8 +51,6 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 		{{$section}},
 	{{- end}}
 	}, "/")
-	//r.URL.Scheme,
-	//r.URL.Host,
 	u, err := url.Parse(path)
 	if err != nil {
 		return err
@@ -74,7 +62,13 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 	values := r.URL.Query()
 {{- range $field := $binding.Fields }}
 {{- if eq $field.Location "query"}}
-	values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
+	{{- if eq $field.ProtobufLabel "LABEL_REPEATED"}}
+		for _, v := range req.{{$field.CamelName}} {
+			values.Add("{{$field.Name}}", fmt.Sprint(v))
+		}
+	{{else}}
+		values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
+	{{- end }}
 {{- end }}
 {{- end}}
 
