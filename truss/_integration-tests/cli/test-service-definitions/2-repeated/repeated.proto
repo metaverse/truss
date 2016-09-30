@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package TEST;
+
+import "google/api/annotations.proto";
+
+service Repeated {
+  rpc GetRepeated (ComplexTypeRequest) returns (ComplexTypeResponse) {
+    option (google.api.http) = {
+      get: "/1"
+    };
+  }
+
+
+  rpc PostRepeated (ComplexTypeRequest) returns (ComplexTypeRequest) {
+    option (google.api.http) = {
+      post: "/2"
+      body: "*"
+    };
+  }
+}
+
+message RepeatedTypeRequest {
+  repeated double A = 1;
+  repeated float B = 2;
+  repeated int32 C = 3;
+  repeated int64 D = 4;
+  repeated uint32 E = 5;
+  repeated uint64 F = 6;
+  repeated sint32 G = 7;
+  repeated sint64 H = 8;
+  repeated fixed32 I = 9;
+  repeated fixed64 J = 10;
+  repeated sfixed32 K = 11;
+  repeated bool L = 12;
+  repeated string M = 13;
+  repeated bytes N = 14;
+}
+
+
+message RepeatedTypeResponse {
+  repeated double A = 1;
+  repeated float B = 2;
+  repeated int32 C = 3;
+  repeated int64 D = 4;
+  repeated uint32 E = 5;
+  repeated uint64 F = 6;
+  repeated sint32 G = 7;
+  repeated sint64 H = 8;
+  repeated fixed32 I = 9;
+  repeated fixed64 J = 10;
+  repeated sfixed32 K = 11;
+  repeated bool L = 12;
+  repeated string M = 13;
+  repeated bytes N = 14;
+}
+
