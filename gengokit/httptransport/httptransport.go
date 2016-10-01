@@ -37,8 +37,10 @@ func NewHelper(svc *deftree.ProtoService) *Helper {
 		PathParamsBuilder: pp,
 	}
 	for _, meth := range svc.Methods {
-		nMeth := NewMethod(meth)
-		rv.Methods = append(rv.Methods, nMeth)
+		if len(meth.HttpBindings) > 0 {
+			nMeth := NewMethod(meth)
+			rv.Methods = append(rv.Methods, nMeth)
+		}
 	}
 	return &rv
 }
@@ -72,6 +74,12 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		Verb:         binding.Verb,
 	}
 	for _, field := range meth.RequestType.Fields {
+		// Skip map fields, as they're currently incorrectly implemented by
+		// deftree
+		// TODO implement correct map support in http transport
+		if field.IsMap {
+			continue
+		}
 		// Param is specifically an http parameter, while field is a
 		// field in a protobuf msg. nField is a distillation of the
 		// relevant information to translate the http parameter into a
@@ -85,16 +93,32 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 			ProtobufLabel: field.Label,
 			LocalName:     fmt.Sprintf("%s%s", gogen.CamelCase(field.GetName()), gogen.CamelCase(meth.GetName())),
 		}
+
+		if field.Label == "LABEL_REPEATED" {
+			nField.Repeated = true
+		}
 		var gt string
 		var ok bool
 		tmap := clientarggen.ProtoToGoTypeMap
 		if gt, ok = tmap[nField.ProtobufType]; !ok {
-			gt = "string"
 			nField.IsBaseType = false
+			tn := field.Type.GetName()
+			sections := strings.Split(tn, ".")
+			tn = sections[len(sections)-1]
+			gt = "pb." + tn
 		} else {
 			nField.IsBaseType = true
 		}
+
 		nField.GoType = gt
+		if nField.Repeated {
+			if nField.IsBaseType {
+				nField.GoType = "[]" + nField.GoType
+			} else {
+				nField.GoType = "[]*" + nField.GoType
+			}
+		}
+
 		nField.ConvertFunc = createDecodeConvertFunc(nField)
 		nField.TypeConversion = createDecodeTypeConversion(nField)
 
@@ -104,15 +128,15 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		nBinding.Fields = append(nBinding.Fields, &nField)
 
 		// Emit warnings for certain cases
-		if !nField.IsBaseType {
-			log.Warnf("%s.%s is a custom type '%s', only base types and repeated base "+
-				"types are supported. As a result, the generated HTTP "+
-				"transport will fail to compile. Remove non-base types.",
+		if !nField.IsBaseType && nField.Location != "body" {
+			log.Warnf(
+				"%s.%s is a non-base type specified to be located outside of "+
+					"the body. Non-base types outside the body may result in "+
+					"generated code which fails to compile.",
 				meth.GetName(),
-				nField.Name,
-				nField.ProtobufType)
+				nField.Name)
 		}
-		if field.Label == "LABEL_REPEATED" && nField.Location == "path" {
+		if nField.Repeated && nField.Location == "path" {
 			log.Warnf(
 				"%s.%s is a repeated field specified to be in the path. "+
 					"Repeated fields are not supported in the path and may"+
@@ -181,17 +205,6 @@ func (b *Binding) PathSections() []string {
 // GenQueryUnmarshaler returns the generated code for server-side unmarshaling
 // of a query parameter into it's correct field on the request struct.
 func (f *Field) GenQueryUnmarshaler() (string, error) {
-	repeatedQueryLogic := `
-for _, {{.LocalName}}Str := range r.URL.Query()["{{.Name}}"] {
-	{{.ConvertFunc}}
-	if err != nil {
-		fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
-		fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
-		return nil, err
-	}
-	req.{{.CamelName}} = append(req.{{.CamelName}}, {{.TypeConversion}})
-}
-`
 	genericLogic := `
 {{.LocalName}}Str := {{.Location}}Params["{{.Name}}"]
 {{.ConvertFunc}}
@@ -203,13 +216,7 @@ if err != nil {
 }
 req.{{.CamelName}} = {{.TypeConversion}}
 `
-	var selected string
-	if f.Location == "query" && f.ProtobufLabel == "LABEL_REPEATED" {
-		selected = repeatedQueryLogic
-	} else if f.Location != "body" {
-		selected = genericLogic
-	}
-	code, err := ApplyTemplate("FieldEncodeLogic", selected, f, TemplateFuncs)
+	code, err := ApplyTemplate("FieldEncodeLogic", genericLogic, f, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -238,6 +245,41 @@ func createDecodeConvertFunc(f Field) string {
 		fType = "%s, err := strconv.ParseFloat(%s, 64)"
 	case strings.Contains(f.GoType, "string"):
 		fType = "%s := %s"
+	}
+	// Use json unmarshalling for any custom/repeated messages
+	if !f.IsBaseType || f.Repeated {
+		// Args representing single custom message types are represented as
+		// pointers. To do a bare assignment to a pointer, our rvalue must be a
+		// pointer as well. So we special case args of a single custom message
+		// type so that the variable LocalName is declared as a pointer.
+		singleCustomTypeUnmarshalTmpl := `
+var {{.LocalName}} *{{.GoType}}
+{{.LocalName}} = &{{.GoType}}{}
+err = json.Unmarshal([]byte({{.LocalName}}Str), {{.LocalName}})`
+		// All repeated args of any type are represented as slices, and bare
+		// assignments to a slice accept a slice as the rvalue. As a result,
+		// LocalName will be declared as a slice, and json.Unmarshal handles
+		// everything else for us.
+		repeatedUnmarshalTmpl := `
+var {{.LocalName}} {{.GoType}}
+err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})`
+		errorCheckingTmpl := `
+if err != nil {
+	return nil, errors.Wrapf(err, "couldn't decode {{.LocalName}} from %v", {{.LocalName}}Str)
+}`
+
+		var preamble string
+		if !f.Repeated {
+			preamble = singleCustomTypeUnmarshalTmpl
+		} else {
+			preamble = repeatedUnmarshalTmpl
+		}
+		jsonConvTmpl := preamble + errorCheckingTmpl
+		code, err := ApplyTemplate("UnmarshalNonBaseType", jsonConvTmpl, f, nil)
+		if err != nil {
+			panic(fmt.Sprintf("Couldn't apply template: %v", err))
+		}
+		return code
 	}
 	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
 }

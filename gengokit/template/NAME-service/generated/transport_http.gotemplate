@@ -7,7 +7,6 @@ package svc
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -19,6 +18,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/log"
+	"github.com/pkg/errors"
 	//"github.com/go-kit/kit/endpoint"
 	//"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -33,6 +33,7 @@ var (
 	_ = strconv.Atoi
 	_ = httptransport.NewServer
 	_ = ioutil.NopCloser
+	_ = pb.Register{{$templateExecutor.Service.GetName}}Server
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
@@ -61,7 +62,11 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 func HttpDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) httptransport.DecodeRequestFunc {
 	return func(ctx context.Context, r *http.Request) (interface{}, error) {
 		logger.Log("method", r.Method, "url", r.URL.String())
-		return next(ctx, r)
+		rv, err := next(ctx, r)
+		if err != nil {
+			logger.Log("method", r.Method, "url", r.URL.String(), "Error", err)
+		}
+		return rv, err
 	}
 }
 

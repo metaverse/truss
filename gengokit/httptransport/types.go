@@ -67,4 +67,8 @@ type Field struct {
 	// automatic marshaling of base types, if this is false a warning is given
 	// to the user.
 	IsBaseType bool
+	// Repeated is true if this arg corresponds to a protobuf field which is
+	// given an identifier of "repeated", meaning it will represented in Go as
+	// a slice of it's type.
+	Repeated bool
 }

@@ -10,3 +10,13 @@ The truss integration runner does the following tasks:
 ## Test service definition requirements
 
 Each service definition must have the package name `TEST`, all letters uppercase.
+
+## Note on disabled tests
+
+Currently, map support is broken and will always generate failing code. Till
+map support is implemented, the following tests are disabled:
+
+    credentials
+	dispatcher
+	entities
+

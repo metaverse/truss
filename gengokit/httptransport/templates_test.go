@@ -71,13 +71,16 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 	}, "/")
 	u, err := url.Parse(path)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't unmarshal path %q", path)
 	}
 	r.URL.RawPath = u.RawPath
 	r.URL.Path = u.Path
 
 	// Set the query parameters
 	values := r.URL.Query()
+	var tmp []byte
+	_ = tmp
+
 	values.Add("b", fmt.Sprint(req.B))
 
 	r.URL.RawQuery = values.Encode()
@@ -86,7 +89,7 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 	var buf bytes.Buffer
 	toRet := map[string]interface{}{}
 	if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 	}
 	r.Body = ioutil.NopCloser(&buf)
 	fmt.Printf("URL: %v\n", r.URL)
@@ -157,18 +160,21 @@ func TestGenServerDecode(t *testing.T) {
 func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var req pb.SumRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "decoding body of http request")
+	}
 
 	pathParams, err := PathParams(r.URL.Path, "/sum/{a}")
 	_ = pathParams
 	if err != nil {
 		fmt.Printf("Error while reading path params: %v\n", err)
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
 	}
 	queryParams, err := QueryParams(r.URL.Query())
 	_ = queryParams
 	if err != nil {
 		fmt.Printf("Error while reading query params: %v\n", err)
-		return nil, err
+		return nil, errors.Wrapf(err, "Error while reading query params: %v", r.URL.Query())
 	}
 
 	ASumStr := pathParams["a"]

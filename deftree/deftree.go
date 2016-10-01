@@ -274,6 +274,7 @@ type MessageField struct {
 	// Label is one of either "LABEL_OPTIONAL", "LABEL_REPEATED", or
 	// "LABEL_REQUIRED"
 	Label string
+	IsMap bool
 }
 
 func (self *MessageField) GetName() string {
