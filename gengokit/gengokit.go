@@ -36,6 +36,8 @@ func init() {
 type templateExecutor struct {
 	// import path for the directory containing the definition .proto files
 	ImportPath string
+	// import path for .pb.go files containing service structs
+	PBImportPath string
 	// PackageName is the name of the package containing the service definition
 	PackageName string
 	// GRPC/Protobuff service, with all parameters and return values accessible
@@ -48,13 +50,12 @@ type templateExecutor struct {
 
 // newTemplateExecutor accepts a deftree and a goImportPath to construct a
 // templateExecutor for templating a service
-func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExecutor, error) {
+func newTemplateExecutor(dt deftree.Deftree, goImportPath, goPBImportPath string) (*templateExecutor, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
 		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
 	}
 
-	importPath := goImportPath
 	funcMap := template.FuncMap{
 		"ToLower":    strings.ToLower,
 		"Title":      strings.Title,
@@ -62,12 +63,13 @@ func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExec
 		"TrimPrefix": strings.TrimPrefix,
 	}
 	return &templateExecutor{
-		ImportPath:  importPath,
-		PackageName: dt.GetName(),
-		Service:     service,
-		ClientArgs:  clientarggen.New(service),
-		HTTPHelper:  httptransport.NewHelper(service),
-		funcMap:     funcMap,
+		ImportPath:   goImportPath,
+		PBImportPath: goPBImportPath,
+		PackageName:  dt.GetName(),
+		Service:      service,
+		ClientArgs:   clientarggen.New(service),
+		HTTPHelper:   httptransport.NewHelper(service),
+		funcMap:      funcMap,
 	}, nil
 }
 
@@ -77,8 +79,8 @@ func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExec
 // templating go code imports. GenerateGokit returns the a
 // []truss.NamedReadWriter representing a generated gokit service file
 // structure
-func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
-	te, err := newTemplateExecutor(dt, goImportPath)
+func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath, goPBImportPath string) ([]truss.NamedReadWriter, error) {
+	te, err := newTemplateExecutor(dt, goImportPath, goPBImportPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template executor")
 	}

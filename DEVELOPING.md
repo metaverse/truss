@@ -4,7 +4,7 @@
 
 1. Everything required to install `truss`
 2. go-bindata for compiling templates into binary `$ go get
-   github.com/jteeuwen/go-bindata`
+   github.com/jteeuwen/go-bindata/...`
 
 ## Building
 
@@ -15,7 +15,7 @@ this is done with:
 $ go generate github.com/TuneLab/go-truss/...
 ```
 
-Then to build truss and it's two protoc plugins to your $GOPATH/bin directory:
+Then to build truss and its protoc plugin to your $GOPATH/bin directory:
 
 ```
 $ go install github.com/TuneLab/go-truss/...
@@ -66,13 +66,3 @@ Additional internal packages of note used by these programs are:
 - `deftree`, located in `deftree/`, which makes sense of the protobuf file
   passed to it by `protoc`, and is used by `gengokit` and
   `gendoc`
-
-## Docker
-
-BETA
-
-To build the docker image `$ docker build -t tunelab/gob/truss .`
-
-To use the docker image as `truss` on .proto files `$ docker run -it --rm
---name test -v $PWD:/gopath/src/microservice -w /gopath/src/microservice
-tunelab/gob/truss *.proto`

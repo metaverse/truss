@@ -35,6 +35,12 @@ func TestBasicTypes(t *testing.T) {
 	testEndToEnd("1-basic", t)
 }
 
+func TestBasicTypesWithPBOutFlag(t *testing.T) {
+	testEndToEnd("1-basic", t,
+		"-pbout",
+		"github.com/TuneLab/go-truss/truss/_integration-tests/cli/test-service-definitions/1-basic/pbout")
+}
+
 // Disabled until repeated types are implemented for cliclient
 func _TestRepeatedTypes(t *testing.T) {
 	testEndToEnd("2-repeated", t)
@@ -62,13 +68,16 @@ type runReference struct {
 	serverOutput     string
 }
 
-func testEndToEnd(defDir string, t *testing.T) {
+func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 	port := 45360
 	wd, _ := os.Getwd()
 
 	fullpath := filepath.Join(wd, definitionDirectory, defDir)
 
-	trussOut, err := truss(fullpath)
+	// Remove tests if they exists
+	removeTestFiles(fullpath)
+
+	trussOut, err := truss(fullpath, trussOptions...)
 
 	// If truss fails, test error and skip communication
 	if err != nil {
@@ -78,7 +87,7 @@ func testEndToEnd(defDir string, t *testing.T) {
 	// Build the service to be tested
 	err = buildTestService(fullpath)
 	if err != nil {
-		t.Fatalf("Could not buld service. Error: %v", err)
+		t.Fatalf("Could not build service. Error: %v", err)
 	}
 
 	// Run them save a reference to each run
@@ -97,7 +106,7 @@ func testEndToEnd(defDir string, t *testing.T) {
 
 // truss calls truss on *.proto in path
 // Truss logs to Stdout when generation passes or fails
-func truss(path string) (string, error) {
+func truss(path string, options ...string) (string, error) {
 	var protofiles []string
 	files, err := ioutil.ReadDir(path)
 	for _, f := range files {
@@ -109,9 +118,11 @@ func truss(path string) (string, error) {
 		}
 	}
 
+	args := append(options, protofiles...)
+
 	trussExec := exec.Command(
 		"truss",
-		protofiles...,
+		args...,
 	)
 	trussExec.Dir = path
 
@@ -201,16 +212,6 @@ func goBuild(name, outputPath, relCodePath string, errChan chan error) {
 	}
 
 	errChan <- nil
-}
-
-// mkdir acts like $ mkdir -p path
-func mkdir(path string) error {
-	dir := filepath.Dir(path)
-
-	// 0775 is the file mode that $ mkdir uses when creating a directoru
-	err := os.MkdirAll(dir, 0775)
-
-	return err
 }
 
 // runServerAndClient execs a TEST-server and TEST-client and puts a
@@ -342,16 +343,23 @@ func cleanTests(servicesDir string) {
 		if !d.IsDir() {
 			continue
 		}
-		removeTestFiles(servicesDir + "/" + d.Name())
+		removeTestFiles(filepath.Join(servicesDir, d.Name()))
 	}
 }
 
 // removeTestFiles removes all files created by running truss and building the
 // service from a single definition directory
 func removeTestFiles(defDir string) {
-	if fileExists(defDir + "/TEST-service") {
-		os.RemoveAll(defDir + "/TEST-service")
-		os.RemoveAll(defDir + "/third_party")
-		os.RemoveAll(defDir + "/bin")
-	}
+	os.RemoveAll(filepath.Join(defDir, "TEST-service"))
+	os.RemoveAll(filepath.Join(defDir, "bin"))
+	os.RemoveAll(filepath.Join(defDir, "pbout"))
+	mkdir(filepath.Join(defDir, "pbout"))
+}
+
+// mkdir acts like $ mkdir -p path
+func mkdir(path string) error {
+	// 0775 is the file mode that $ mkdir uses when creating a directoru
+	err := os.MkdirAll(path, 0775)
+
+	return err
 }

@@ -12,82 +12,136 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/truss/truss"
 	"github.com/TuneLab/go-truss/truss/protostuff"
+	"github.com/TuneLab/go-truss/truss/truss"
 
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
 	"github.com/TuneLab/go-truss/gengokit"
 )
 
+var pbOutFlag = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
+
 func main() {
 	flag.Parse()
+	goPath := os.Getenv("GOPATH")
+
+	var pbOut string
+	if *pbOutFlag != "" {
+		pbOut = filepath.Join(goPath, "src", *pbOutFlag)
+		if !fileExists(pbOut) {
+			exitIfError(errors.Errorf("Go package directory does not exist: %q", pbOut))
+		}
+	}
 
 	if len(flag.Args()) == 0 {
-		exitIfError(errors.New("no arguments passed"))
+		flag.Usage()
+		os.Exit(1)
 	}
 
 	rawDefinitionPaths := flag.Args()
 
 	protoDir, definitionFiles, err := cleanProtofilePath(rawDefinitionPaths)
-
-	// Check truss is running in $GOPATH
-	goPath := os.Getenv("GOPATH")
+	exitIfError(err)
 
 	if !strings.HasPrefix(protoDir, goPath) {
 		exitIfError(errors.New("truss envoked on files outside of $GOPATH"))
 	}
 
-	protocOut, err := protostuff.CodeGeneratorRequest(definitionFiles, protoDir)
+	dt, err := buildDeftree(definitionFiles, protoDir)
 	exitIfError(err)
 
-	svcFile, err := protostuff.ServiceFile(protocOut, protoDir)
-	exitIfError(err)
-
-	// Make a deftree
-	dt, err := deftree.New(protocOut, svcFile)
-	exitIfError(err)
-
-	// Generate the .pb.go files containing the golang data structures
-	// From `$GOPATH/src/org/user/thing` get `org/user/thing` for importing in golang
 	svcName := dt.GetName() + "-service"
 	svcDir := filepath.Join(protoDir, svcName)
-	err = mkdir(svcDir)
-	exitIfError(err)
-
-	err = protostuff.GeneratePBataStructures(definitionFiles, svcDir)
-	exitIfError(err)
 
 	prevGen, err := readPreviousGeneration(protoDir, svcDir)
 	exitIfError(err)
 
-	// generate docs
-	genDocFiles := gendoc.GenerateDocs(dt)
-
-	// generate gokit microservice
-	goSvcImportPath, err := filepath.Rel(filepath.Join(goPath, "src"), svcDir)
-	exitIfError(err)
-	genFiles, err := gengokit.GenerateGokit(dt, prevGen, goSvcImportPath)
+	err = mkdir(svcDir)
 	exitIfError(err)
 
-	// append files together
-	genFiles = append(genFiles, genDocFiles...)
-
-	// Write files to disk
-	for _, f := range genFiles {
-		name := f.Name()
-
-		fullPath := filepath.Join(protoDir, name)
-		err := mkdir(fullPath)
-		exitIfError(err)
-
-		file, err := os.Create(fullPath)
-		exitIfError(errors.Wrapf(err, "could create file %v", fullPath))
-
-		_, err = io.Copy(file, f)
-		exitIfError(errors.Wrapf(err, "could not write to %v", fullPath))
+	// If not output directory for the .pb.go files has been selected then put them in the svcDir
+	if pbOut == "" {
+		pbOut = svcDir
 	}
 
+	err = protostuff.GeneratePBDotGo(definitionFiles, svcDir, protoDir, pbOut)
+	exitIfError(err)
+
+	//  gokit service
+	goSvcImportPath, goPBImportPath, err := trussGoImports(svcDir, pbOut, goPath)
+
+	genGokitFiles, err := gengokit.GenerateGokit(dt, prevGen, goSvcImportPath, goPBImportPath)
+	exitIfError(err)
+
+	for _, f := range genGokitFiles {
+		err := writeFile(f, protoDir)
+		exitIfError(err)
+	}
+
+	// docs
+	genDocFiles := gendoc.GenerateDocs(dt)
+	for _, f := range genDocFiles {
+		err := writeFile(f, protoDir)
+		exitIfError(err)
+	}
+}
+
+func trussGoImports(svcDir, pbOutDir, goPath string) (string, string, error) {
+	goSvcImportPath, err := filepath.Rel(filepath.Join(goPath, "src"), svcDir)
+	if err != nil {
+		return "", "", err
+	}
+
+	goPBImportPath, err := filepath.Rel(filepath.Join(goPath, "src"), pbOutDir)
+	if err != nil {
+		return "", "", err
+	}
+
+	return goSvcImportPath, goPBImportPath, nil
+}
+
+func writeFile(f truss.NamedReadWriter, protoDir string) error {
+	name := f.Name()
+
+	fullPath := filepath.Join(protoDir, name)
+	err := mkdir(fullPath)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(fullPath)
+	if err != nil {
+		return errors.Wrapf(err, "could create file %v", fullPath)
+	}
+
+	_, err = io.Copy(file, f)
+	if err != nil {
+		return errors.Wrapf(err, "could not write to %v", fullPath)
+	}
+
+	return nil
+}
+
+func buildDeftree(definitionFiles []string, protoDir string) (deftree.Deftree, error) {
+	protocOut, err := protostuff.CodeGeneratorRequest(definitionFiles, protoDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not use create a proto CodeGeneratorRequest")
+	}
+
+	svcFile, err := protostuff.ServiceFile(protocOut, protoDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "coult not find service definition file")
+
+	}
+
+	// Make a deftree
+	dt, err := deftree.New(protocOut, svcFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not construct deftree")
+	}
+
+	return dt, nil
 }
 
 // cleanProtofilePath takes a slice of file paths and returns the

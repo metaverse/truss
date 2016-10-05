@@ -71,7 +71,7 @@ func TestNewTemplateExecutor(t *testing.T) {
 
 	const goImportPath = "github.com/TuneLab/go-truss/gengokit/general-service"
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goImportPath, goImportPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goImportPath, goImportPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func stringToTemplateExector(def, importPath string) (*templateExecutor, error) 
 		return nil, err
 	}
 
-	te, err := newTemplateExecutor(dt, importPath)
+	te, err := newTemplateExecutor(dt, importPath, importPath)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +339,7 @@ func TestUpdateServerMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goImportPath, goImportPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,7 +462,7 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goImportPath, goImportPath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -472,7 +472,7 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te2, err := newTemplateExecutor(dt2, goImportPath)
+	te2, err := newTemplateExecutor(dt2, goImportPath, goImportPath)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,31 +14,34 @@ import (
 	assets "github.com/TuneLab/go-truss/truss/template"
 )
 
-// GeneratePBDataStructures expects to be passed
-// datastructures represened in the .proto files
-func GeneratePBataStructures(protoFiles []string, svcDir string) error {
-
+// GeneratePBDotGo
+func GeneratePBDotGo(protoFiles []string, svcDir, protoDir, outDir string) error {
 	err := outputGoogleImport(svcDir)
 	if err != nil {
 		return err
 	}
+
 	importPath, err := filepath.Rel(filepath.Join(os.Getenv("GOPATH"), "src"), svcDir)
 	if err != nil {
 		return err
 	}
 
+	err = mkdir(outDir)
+	if err != nil {
+		return errors.Wrap(err, "could not make output directory")
+	}
+
 	genGoCode := "--go_out=Mgoogle/api/annotations.proto=" +
 		importPath + "/third_party/googleapis/google/api," +
 		"plugins=grpc:" +
-		svcDir
+		outDir
 
 	_, err = exec.LookPath("protoc-gen-go")
 	if err != nil {
 		return errors.Wrap(err, "protoc-gen-go not exist in $PATH")
 	}
 
-	protoDir := filepath.Dir(svcDir)
-	err = protoc(protoFiles, protoDir, svcDir, svcDir, genGoCode)
+	err = protoc(protoFiles, protoDir, svcDir, genGoCode)
 	if err != nil {
 		return errors.Wrap(err, "could not generate go code from .proto files")
 	}
@@ -64,8 +67,7 @@ func CodeGeneratorRequest(protoFiles []string, protoDir string) (*plugin.CodeGen
 }
 
 // ServiceFile searches through the files in the request and returns the
-// path to the first one which contains a service declaration. If no file in
-// the request contains a service, returns an empty string.
+// file which contains a service declaration.
 func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.File, error) {
 	var svcFileName string
 	for _, file := range req.GetProtoFile() {
@@ -107,8 +109,9 @@ func getProtocOutput(protoFiles []string, protoFileDir string) ([]byte, error) {
 		return nil, errors.Wrapf(err, "could not write protoc imports to dir: %s", protocOutDir)
 	}
 
-	const plugin = "--truss-protocast_out=."
-	err = protoc(protoFiles, protoFileDir, protocOutDir, protocOutDir, plugin)
+	pluginCall := filepath.Join("--truss-protocast_out=", protocOutDir)
+
+	err = protoc(protoFiles, protoFileDir, protocOutDir, pluginCall)
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc failed")
 	}
@@ -133,7 +136,7 @@ func getProtocOutput(protoFiles []string, protoFileDir string) ([]byte, error) {
 }
 
 // protoc exec's $ protoc on protoFiles, on their full path which is created with protoDir
-func protoc(protoFiles []string, protoDir, outDir, importDir, plugin string) error {
+func protoc(protoFiles []string, protoDir, importDir, plugin string) error {
 	const googleAPIImportPath = "/third_party/googleapis"
 
 	var fullPaths []string
@@ -153,8 +156,6 @@ func protoc(protoFiles []string, protoDir, outDir, importDir, plugin string) err
 		"protoc",
 		cmdArgs...,
 	)
-
-	protocExec.Dir = outDir
 
 	outBytes, err := protocExec.CombinedOutput()
 	if err != nil {
