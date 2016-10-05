@@ -69,15 +69,11 @@ func TestNewTemplateExecutor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	const goImportPath = "github.com/TuneLab/go-truss/gengokit"
+	const goImportPath = "github.com/TuneLab/go-truss/gengokit/general-service"
 
 	te, err := newTemplateExecutor(dt, goImportPath)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if got, want := te.ImportPath, goImportPath+"/general-service"; got != want {
-		t.Fatalf("\n`%v` was ImportPath\n`%v` was wanted", got, want)
 	}
 
 	if got, want := te.PackageName, dt.GetName(); got != want {

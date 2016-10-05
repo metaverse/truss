@@ -54,7 +54,7 @@ func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExec
 		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
 	}
 
-	importPath := goImportPath + "/" + dt.GetName() + "-service"
+	importPath := goImportPath
 	funcMap := template.FuncMap{
 		"ToLower":    strings.ToLower,
 		"Title":      strings.Title,

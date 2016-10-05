@@ -12,8 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/truss/protostage"
 	"github.com/TuneLab/go-truss/truss/truss"
+	"github.com/TuneLab/go-truss/truss/protostuff"
 
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
@@ -31,14 +31,6 @@ func main() {
 
 	protoDir, definitionFiles, err := cleanProtofilePath(rawDefinitionPaths)
 
-	var files []*os.File
-	for _, f := range definitionFiles {
-		protoF, err := os.Open(f)
-		exitIfError(errors.Wrapf(err, "could not open %v", protoF))
-
-		files = append(files, protoF)
-	}
-
 	// Check truss is running in $GOPATH
 	goPath := os.Getenv("GOPATH")
 
@@ -46,33 +38,36 @@ func main() {
 		exitIfError(errors.New("truss envoked on files outside of $GOPATH"))
 	}
 
-	// Stage directories and files needed on disk
-	err = protostage.Stage(protoDir)
+	protocOut, err := protostuff.CodeGeneratorRequest(definitionFiles, protoDir)
 	exitIfError(err)
 
-	// Compose protocOut and service file to make a deftree
-	protocOut, serviceFile, err := protostage.Compose(definitionFiles, protoDir)
+	svcFile, err := protostuff.ServiceFile(protocOut, protoDir)
 	exitIfError(err)
 
 	// Make a deftree
-	dt, err := deftree.New(protocOut, serviceFile)
+	dt, err := deftree.New(protocOut, svcFile)
 	exitIfError(err)
 
 	// Generate the .pb.go files containing the golang data structures
 	// From `$GOPATH/src/org/user/thing` get `org/user/thing` for importing in golang
-	mkdir(protoDir + "/" + dt.GetName() + "-service/")
-	goImportPath := strings.TrimPrefix(protoDir, goPath+"/src/")
-	err = protostage.GeneratePBDataStructures(definitionFiles, protoDir, goImportPath, dt.GetName())
+	svcName := dt.GetName() + "-service"
+	svcDir := filepath.Join(protoDir, svcName)
+	err = mkdir(svcDir)
 	exitIfError(err)
 
-	prevGen, err := readPreviousGeneration(protoDir, dt.GetName())
+	err = protostuff.GeneratePBataStructures(definitionFiles, svcDir)
+	exitIfError(err)
+
+	prevGen, err := readPreviousGeneration(protoDir, svcDir)
 	exitIfError(err)
 
 	// generate docs
 	genDocFiles := gendoc.GenerateDocs(dt)
 
 	// generate gokit microservice
-	genFiles, err := gengokit.GenerateGokit(dt, prevGen, goImportPath)
+	goSvcImportPath, err := filepath.Rel(filepath.Join(goPath, "src"), svcDir)
+	exitIfError(err)
+	genFiles, err := gengokit.GenerateGokit(dt, prevGen, goSvcImportPath)
 	exitIfError(err)
 
 	// append files together
@@ -82,12 +77,15 @@ func main() {
 	for _, f := range genFiles {
 		name := f.Name()
 
-		mkdir(name)
-		file, err := os.Create(name)
-		exitIfError(errors.Wrapf(err, "could create file %v", name))
+		fullPath := filepath.Join(protoDir, name)
+		err := mkdir(fullPath)
+		exitIfError(err)
+
+		file, err := os.Create(fullPath)
+		exitIfError(errors.Wrapf(err, "could create file %v", fullPath))
 
 		_, err = io.Copy(file, f)
-		exitIfError(errors.Wrapf(err, "could not write to %v", name))
+		exitIfError(errors.Wrapf(err, "could not write to %v", fullPath))
 	}
 
 }
@@ -154,9 +152,8 @@ func exitIfError(err error) {
 
 // readPreviousGeneration accepts the path to the directory where the inputed .proto files are stored, protoDir,
 // it returns a []truss.NamedReadWriter for all files in the service/ dir in protoDir
-func readPreviousGeneration(protoDir, packageName string) ([]truss.NamedReadWriter, error) {
-	dir := protoDir + "/" + packageName + "-service"
-	if fileExists(dir) != true {
+func readPreviousGeneration(protoDir, serviceDir string) ([]truss.NamedReadWriter, error) {
+	if fileExists(serviceDir) != true {
 		return nil, nil
 	}
 
@@ -165,7 +162,7 @@ func readPreviousGeneration(protoDir, packageName string) ([]truss.NamedReadWrit
 		protoDir: protoDir,
 		files:    files,
 	}
-	err := filepath.Walk(dir, sfs.makeSimpleFile)
+	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not fully walk directory %v", protoDir)
 	}
@@ -194,7 +191,6 @@ func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, 
 		return errors.Wrapf(ioErr, "could not read file: %v", path)
 	}
 
-	// name will be in the always start with "service/"
 	// trim the prefix of the path to the proto files from the full path to the file
 	name := strings.TrimPrefix(path, sfs.protoDir+"/")
 	var file truss.SimpleFile
