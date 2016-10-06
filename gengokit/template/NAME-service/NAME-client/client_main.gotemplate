@@ -2,10 +2,12 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	//"strings"
+	"strconv"
+	"strings"
 	"time"
 
 	//"github.com/lightstep/lightstep-tracer-go"
@@ -16,6 +18,8 @@ import (
 	"google.golang.org/grpc"
 	//"sourcegraph.com/sourcegraph/appdash"
 
+	"github.com/pkg/errors"
+
 	//"github.com/go-kit/kit/log"
 
 	// This Service
@@ -23,7 +27,17 @@ import (
 	clientHandler "{{$templateExecutor.ImportPath -}} /handlers/client"
 	grpcclient "{{$templateExecutor.ImportPath -}} /generated/client/grpc"
 	httpclient "{{$templateExecutor.ImportPath -}} /generated/client/http"
+	pb "{{$templateExecutor.ImportPath -}}"
 )
+
+var (
+	_ = strconv.ParseInt
+	_ = strings.Split
+	_ = json.Compact
+	_ = errors.Wrapf
+	_ = pb.Register{{$templateExecutor.Service.GetName}}Server
+)
+
 
 func main() {
 	// The addcli presumes no service discovery system, and expects users to
@@ -92,7 +106,7 @@ func main() {
 	} else if *grpcAddr != "" {
 		conn, err := grpc.Dial(*grpcAddr, grpc.WithInsecure(), grpc.WithTimeout(time.Second))
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v", err)
+			fmt.Fprintf(os.Stderr, "Error while dialing grpc connection: %v", err)
 			os.Exit(1)
 		}
 		defer conn.Close()
@@ -109,17 +123,26 @@ func main() {
 	switch *method {
 {{range $i := $templateExecutor.Service.Methods}}
 	case "{{ToLower $i.GetName}}":
-		request, _ := clientHandler.{{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
+		{{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}
+		var err error
+		{{.MarshalFlags}}
+		{{- end}}
+		request, err := clientHandler.{{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$i.GetName}}: %v\n", err)
+			os.Exit(1)
+		}
+
 		v, err := service.{{$i.GetName}}(context.Background(), request)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error calling service.{{$i.GetName}}: %v\n", err)
 			os.Exit(1)
 		}
 		fmt.Println("Client Requested with:")
 		fmt.Println({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
 		fmt.Println("Server Responded with:")
 		fmt.Println(v)
-	{{end}}
+{{end}}
 
 	default:
 		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)

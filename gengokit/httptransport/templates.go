@@ -10,18 +10,21 @@ var ServerDecodeTemplate = `
 func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
 	var req pb.{{GoName $binding.Parent.RequestType}}
 	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return nil, errors.Wrap(err, "decoding body of http request")
+	}
 
 	pathParams, err := PathParams(r.URL.Path, "{{$binding.PathTemplate}}")
 	_ = pathParams
 	if err != nil {
 		fmt.Printf("Error while reading path params: %v\n", err)
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
 	}
 	queryParams, err := QueryParams(r.URL.Query())
 	_ = queryParams
 	if err != nil {
 		fmt.Printf("Error while reading query params: %v\n", err)
-		return nil, err
+		return nil, errors.Wrapf(err, "Error while reading query params: %v", r.URL.Query())
 	}
 {{range $field := $binding.Fields}}
 {{if ne $field.Location "body"}}
@@ -53,19 +56,29 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 	}, "/")
 	u, err := url.Parse(path)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't unmarshal path %q", path)
 	}
 	r.URL.RawPath = u.RawPath
 	r.URL.Path = u.Path
 
 	// Set the query parameters
 	values := r.URL.Query()
+	var tmp []byte
+	_ = tmp
 {{- range $field := $binding.Fields }}
 {{- if eq $field.Location "query"}}
+{{/*
 	{{- if eq $field.ProtobufLabel "LABEL_REPEATED"}}
 		for _, v := range req.{{$field.CamelName}} {
 			values.Add("{{$field.Name}}", fmt.Sprint(v))
 		}
+*/}}
+	{{if or (not $field.IsBaseType) $field.Repeated}}
+		tmp, err = json.Marshal(req.{{$field.CamelName}})
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal req.{{$field.CamelName}}")
+		}
+		values.Add("{{$field.Name}}", string(tmp))
 	{{else}}
 		values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
 	{{- end }}
@@ -84,7 +97,7 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 {{- end -}}
 	}
 	if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 	}
 	r.Body = ioutil.NopCloser(&buf)
 	fmt.Printf("URL: %v\n", r.URL)
