@@ -3,11 +3,13 @@
 ## Dependencies
 
 1. Everything required to install `truss`
-2. go-bindata for compiling templates into binary `$ go get github.com/jteeuwen/go-bindata`
+2. go-bindata for compiling templates into binary `$ go get
+   github.com/jteeuwen/go-bindata`
 
 ## Building
 
-Whenever templates are modified, the templates must be recompiled to binary, this is done with:
+Whenever templates are modified, the templates must be recompiled to binary,
+this is done with:
 
 ```
 $ go generate github.com/TuneLab/go-truss/...
@@ -19,37 +21,58 @@ Then to build truss and it's two protoc plugins to your $GOPATH/bin directory:
 $ go install github.com/TuneLab/go-truss/...
 ```
 
-## Testing
-
-Before submitting a pull request always run tests that cover modified code. Also build truss and run truss's integration test. This can be done by
+Both can be done from the Makefile in the root directory:
 
 ```
-$ cd $GOPATH/src/github.com/TuneLab/go-truss/truss
-$ make clean && make && make test
+$ cd $GOPATH/github.com/TuneLab/go-truss
+$ make
+```
+
+## Testing
+
+Before submitting a pull request always run tests that cover modified code.
+Also build truss and run truss's integration test. This can be done by
+
+```
+$ cd $GOPATH/src/github.com/TuneLab/go-truss
+$ make
+$ make test
 # If the tests failed and you want to remove generated code
 $ make testclean
 ```
 
 ## Structure
 
-Truss is composed of several libraries and programs which work in tandem. Here
-are the main things to know about the internals of this project.
+Truss works as follows:
 
-- `truss` is the program which unites the functionality of all other components in this project, spending most of it's time executing other programs. It's source lives in the `truss/` directory.
-- `protoc-gen-truss-gokit` is a program and `protoc` plugin. It is responsible for creating and managing the files which make up your microservice. It's source lives in the `protoc-gen-truss-gokit/` directory.
-- `protoc-gen-truss-doc` is a program and `protoc` plugin. It is responsible for creating documentation from the protobuf definition. It's source lives in the `protoc-gen-truss-doc/` directory.
+1. Read in a group of `.proto` files
+2. Execute `protoc` with our `protoc-gen-protocast` protoc plugin, which
+   outputs the protoc AST representation of the .proto files
+3. Parse protoc's AST output and  the `.proto` file with the
+   `grpc Service` definition for http annotations using `go-truss/deftree`
+4. Use `protoc` and `protoc-gen-go` to generate `.pb.go` files containing
+   protobuf structs and transport for golang
+5. Use the constructed `deftree` with `gengokit` to template out basic gokit service with grpc
+   and http/json transport and empty handlers
+6. Generate documentation from comments with `gendocs`
+
+If there was already generated code in the filesystem then truss will not
+overwrite user code in the /NAME-service/handlers directory
 
 Additional internal packages of note used by these programs are:
 
-- `astmodifier`, located in `protoc-gen-truss-gokit/astmodifier/`, used to modify go files in place, and used by `protoc-gen-truss-gokit`
-- `deftree`, located in `deftree/`, which makes sense of the protobuf file passed to it by `protoc`, and is used by `protoc-gen-truss-gokit` and `protoc-gen-truss-doc`
+- `astmodifier`, located in `gengokit/astmodifier/`, used to
+  modify go files in place, and used by gengokit`
+- `deftree`, located in `deftree/`, which makes sense of the protobuf file
+  passed to it by `protoc`, and is used by `gengokit` and
+  `gendoc`
 
 ## Docker
 
 BETA
 
-To build the docker image
-`$ docker build -t tunelab/gob/truss .`
+To build the docker image `$ docker build -t tunelab/gob/truss .`
 
-To use the docker image as `truss` on .proto files
-`$ docker run -it --rm --name test -v $PWD:/gopath/src/microservice -w /gopath/src/microservice tunelab/gob/truss *.proto`
+To use the docker image as `truss` on .proto files `$ docker run -it --rm
+--name test -v $PWD:/gopath/src/microservice -w /gopath/src/microservice
+tunelab/gob/truss *.proto`

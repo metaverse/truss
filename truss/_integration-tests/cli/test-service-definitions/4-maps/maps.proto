@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package TEST;
+
+import "google/api/annotations.proto";
+
+service Map {
+  rpc GetMap (MapTypeRequest) returns (MapTypeResponse) {
+    option (google.api.http) = {
+      get: "/1"
+    };
+  }
+
+  rpc PostMap (MapTypeRequest) returns (MapTypeRequest) {
+    option (google.api.http) = {
+      post: "/2"
+      body: "*"
+    };
+  }
+}
+
+message MapTypeRequest {
+  NestedMapMessageA A = 1;
+  repeated NestedMapMessageB B = 2;
+  map<string,double> AA = 11;
+  map<string,float> BB = 12;
+  map<string,int32> CC = 13;
+  map<string,int64> DD  = 14;
+  map<string,uint32> EE  = 15;
+  map<string,uint64> FF  = 16;
+  map<string,sint32> GG  = 17;
+  map<string,sint64> HH  = 18;
+  map<string,fixed32> II  = 19;
+  map<string,fixed64> JJ  = 20;
+  map<string,sfixed32> KK  = 21;
+  map<string,bool> LL  = 22;
+  map<string,string> MM  = 23;
+
+  map<int64,double> AAA  = 31;
+  map<int64,float> BBB  = 32;
+  map<int64,int32> CCC  = 33;
+  map<int64,int64> DDD    = 34;
+  map<int64,uint32> EEE    = 35;
+  map<int64,uint64> FFF    = 36;
+  map<int64,sint32> GGG    = 37;
+  map<int64,sint64> HHH    = 38;
+  map<int64,fixed32> III    = 39;
+  map<int64,fixed64> JJJ    = 40;
+  map<int64,sfixed32> KKK    = 41;
+  map<int64,bool> LLL    = 42;
+  map<int64,string> MMM    = 43;
+}
+
+message NestedMapMessageA {
+  NestedMapMessageC A = 1;
+}
+
+message NestedMapMessageB {
+  repeated NestedMapMessageC A = 1;
+}
+
+message NestedMapMessageC {
+  map<string,string> A = 1;
+}
+
+
+message MapTypeResponse {
+  NestedMapMessageA A = 1;
+  repeated NestedMapMessageB B = 2;
+  map<string,double> AA = 11;
+  map<string,float> BB = 12;
+  map<string,int32> CC = 13;
+  map<string,int64> DD  = 14;
+  map<string,uint32> EE  = 15;
+  map<string,uint64> FF  = 16;
+  map<string,sint32> GG  = 17;
+  map<string,sint64> HH  = 18;
+  map<string,fixed32> II  = 19;
+  map<string,fixed64> JJ  = 20;
+  map<string,sfixed32> KK  = 21;
+  map<string,bool> LL  = 22;
+  map<string,string> MM  = 23;
+
+  map<int64,double> AAA  = 31;
+  map<int64,float> BBB  = 32;
+  map<int64,int32> CCC  = 33;
+  map<int64,int64> DDD    = 34;
+  map<int64,uint32> EEE    = 35;
+  map<int64,uint64> FFF    = 36;
+  map<int64,sint32> GGG    = 37;
+  map<int64,sint64> HHH    = 38;
+  map<int64,fixed32> III    = 39;
+  map<int64,fixed64> JJJ    = 40;
+  map<int64,sfixed32> KKK    = 41;
+  map<int64,bool> LLL    = 42;
+  map<int64,string> MMM    = 43;
+}
+

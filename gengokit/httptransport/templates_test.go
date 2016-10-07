@@ -160,7 +160,8 @@ func TestGenServerDecode(t *testing.T) {
 func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var req pb.SumRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
+	// err = io.EOF if r.Body was empty
+	if err != nil && err != io.EOF {
 		return nil, errors.Wrap(err, "decoding body of http request")
 	}
 

@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package TEST;
+
+import "google/api/annotations.proto";
+
+service Nested {
+  rpc GetNested (NestedTypeRequest) returns (NestedTypeResponse) {
+    option (google.api.http) = {
+      get: "/1"
+    };
+  }
+
+
+  rpc PostNested (NestedTypeRequest) returns (NestedTypeRequest) {
+    option (google.api.http) = {
+      post: "/2"
+      body: "*"
+    };
+  }
+}
+
+message NestedTypeRequest {
+  NestedMessageA A = 1;
+  repeated NestedMessageB B = 17;
+  EnumType C = 18;
+}
+
+message NestedMessageA {
+  NestedMessageC A = 1;
+}
+
+message NestedMessageB {
+  repeated NestedMessageC A = 1;
+}
+
+message NestedMessageC {
+  int64 A = 1;
+}
+
+enum EnumType {
+  A = 0;
+  B = 1;
+  C = 2;
+}
+
+message NestedTypeResponse {
+  NestedMessageA A = 16;
+  repeated NestedMessageB B = 17;
+  EnumType C = 18;
+}
+
