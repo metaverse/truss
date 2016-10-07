@@ -28,6 +28,8 @@ import (
 
 var httpserver *httptest.Server
 
+var _ = io.Copy
+
 func init() {
 	var logger log.Logger
 	logger = log.NewNopLogger()
@@ -83,21 +85,24 @@ func TestGetWithQueryRequest(t *testing.T) {
 	B = 45360
 	want := A + B
 
-	route := fmt.Sprintf("%s?%s=%d&%s=%d", "getwithquery", "A", A, "B", B)
+	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
+		respBytes, err := httpRequestBuilder{
+			method: method,
+			route:  fmt.Sprintf(routeFormat, routeFields...),
+			body:   bodyBytes,
+		}.Test(t)
 
-	respBytes, err := testHTTPRequest("GET", route, bytes.NewBuffer(nil))
-	if err != nil {
-		t.Fatal(err)
+		err = json.Unmarshal(respBytes, &resp)
+		if err != nil {
+			t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+		}
+
+		if resp.V != want {
+			t.Fatalf("Expect: %d, got %d", want, resp.V)
+		}
 	}
 
-	err = json.Unmarshal(respBytes, &resp)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if resp.V != want {
-		t.Fatalf("Expect: %d, got %d", want, resp.V)
-	}
+	testHTTP(nil, "GET", "getwithquery?%s=%d&%s=%d", "A", A, "B", B)
 }
 
 func TestGetWithRepeatedQueryClient(t *testing.T) {
@@ -127,21 +132,28 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 	A = []int64{12, 45360}
 	want := A[0] + A[1]
 
-	route := fmt.Sprintf("%s?%s=%d&%s=%d", "getwithrepeatedquery", "A", A[0], "A", A[1])
+	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
+		respBytes, err := httpRequestBuilder{
+			method: method,
+			route:  fmt.Sprintf(routeFormat, routeFields...),
+			body:   bodyBytes,
+		}.Test(t)
 
-	respBytes, err := testHTTPRequest("GET", route, bytes.NewBuffer(nil))
-	if err != nil {
-		t.Fatal(err)
+		err = json.Unmarshal(respBytes, &resp)
+		if err != nil {
+			t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+		}
+
+		if resp.V != want {
+			t.Fatalf("Expect: %d, got %d", want, resp.V)
+		}
 	}
 
-	err = json.Unmarshal(respBytes, &resp)
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "json unmashal error"))
-	}
-
-	if resp.V != want {
-		t.Fatalf("Expect: %d, got %d", want, resp.V)
-	}
+	testHTTP(nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
+	// csv style
+	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
+	// multi / golang style
+	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d]", "A", A[0], "A", A[1])
 }
 
 func TestPostWithNestedMessageBodyClient(t *testing.T) {
@@ -163,7 +175,6 @@ func TestPostWithNestedMessageBodyClient(t *testing.T) {
 		t.Fatalf("httpclient returned error: %q", err)
 	}
 
-	_ = resp
 	if resp.V != want {
 		t.Fatalf("Expect: %d, got %d", want, resp.V)
 	}
@@ -176,33 +187,48 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 	A = 12
 	B = 45360
 	want := A + B
+
+	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
+		respBytes, err := httpRequestBuilder{
+			method: method,
+			route:  fmt.Sprintf(routeFormat, routeFields...),
+			body:   bodyBytes,
+		}.Test(t)
+
+		err = json.Unmarshal(respBytes, &resp)
+		if err != nil {
+			t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+		}
+
+		if resp.V != want {
+			t.Fatalf("Expect: %d, got %d", want, resp.V)
+		}
+	}
+
 	jsonStr := fmt.Sprintf(`{ "NM": { "A": %d, "B": %d}}`, A, B)
 
-	route := "postwithnestedmessagebody"
-
-	respBytes, err := testHTTPRequest("GET", route, bytes.NewBuffer([]byte(jsonStr)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = json.Unmarshal(respBytes, &resp)
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "json unmashal error"))
-	}
-
-	if resp.V != want {
-		t.Fatalf("Expect: %d, got %d", want, resp.V)
-	}
+	testHTTP([]byte(jsonStr), "POST", "postwithnestedmessagebody")
 }
 
-func testHTTPRequest(httpMethod, route string, body io.Reader) ([]byte, error) {
-	httpReq, err := http.NewRequest(httpMethod, httpserver.URL+"/"+route, body)
+type httpRequestBuilder struct {
+	method string
+	route  string
+	body   []byte
+}
+
+func (h httpRequestBuilder) Test(t *testing.T) ([]byte, error) {
+	t.Logf("Method: %q | Route: %q", h.method, h.route)
+	httpReq, err := http.NewRequest(h.method, httpserver.URL+"/"+h.route, bytes.NewReader(h.body))
 	if err != nil {
 		return nil, err
 	}
 
+	return testHTTPRequest(httpReq)
+}
+
+func testHTTPRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{}
-	httpResp, err := client.Do(httpReq)
+	httpResp, err := client.Do(req)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not end http request")
 	}

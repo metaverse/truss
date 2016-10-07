@@ -16,11 +16,11 @@ test:
 	truss httptest.proto
 	cp -r handlers httptest-service
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test
+	go test -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	truss httptest.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test
+	go test -v
 	$(MAKE) clean
 
 clean:
