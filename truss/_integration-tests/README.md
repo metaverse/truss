@@ -5,21 +5,23 @@ behaves.
 
 # ./http
 
-The http directory contains HTTP transport tests. They include tests of
-the generated HTTP transport client libraries against the server as well as
-testing hand made HTTP requests against the server.
+The `http` directory contains tests for the generated HTTP client libraries and
+standard Go `net/http` requests.
+
+The test harness works as follows:
 
 - Runs truss against `http/httptest.proto`
 - Copy `http/handlers` into `http/handlers/httptest-service`
-- Run go test
+- Run `go test -v`
+- Runs truss again against `http/httptest.proto` (for regeneration tests)
+- Run `go test -v`
 
 `http/handlers` has implemented handlers for the server. They add things
 together for the purposes of testing.
 
-`http_test.go` imports the generated code,
-starts up a `httptest` server with the service HTTP handler, and then runs
-requests against this server, checking for errors and that the inputted values
-add to the outputted values
+`http_test.go` imports the generated code, starts up a `httptest` server with
+the service HTTP handler, and then runs requests against this server, checking
+for errors and that the inputted values add to the outputted value.
 
 # ./cli 
 
