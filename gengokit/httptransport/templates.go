@@ -10,7 +10,8 @@ var ServerDecodeTemplate = `
 func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
 	var req pb.{{GoName $binding.Parent.RequestType}}
 	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
+	// err = io.EOF if r.Body was empty
+	if err != nil && err != io.EOF {
 		return nil, errors.Wrap(err, "decoding body of http request")
 	}
 
