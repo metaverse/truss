@@ -7,28 +7,29 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
+	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
 type Catalog struct {
-	PkgName        string
-	Origin         *ast.File
-	Messages       []*Message
-	Enums          []*Enum
-	ServiceMethods []*ServiceMethod
+	PkgName  string
+	origin   *ast.File
+	Messages []*Message
+	Enums    []*Enum
+	Service  *Service
 }
 
 type Message struct {
 	Name   string
-	Origin *ast.TypeSpec
+	origin *ast.TypeSpec
 	Fields []*Field
 }
 
 type Enum struct {
 	Name   string
-	Origin *ast.TypeSpec
+	origin *ast.TypeSpec
 }
 
 type Map struct {
@@ -37,18 +38,26 @@ type Map struct {
 	Value *FieldType
 }
 
+type Service struct {
+	Name    string
+	Methods []*ServiceMethod
+}
+
 type ServiceMethod struct {
-	Name   string
-	Origin *ast.TypeSpec
+	Name         string
+	RequestType  *FieldType
+	ResponseType *FieldType
+	origin       *ast.TypeSpec
 }
 
 type Field struct {
 	Name   string
-	Type   FieldType
-	Origin *ast.Field
+	Type   *FieldType
+	origin *ast.Field
 }
 
 type FieldType struct {
+	// Name will contain the name of the type, for example "string" or "bool"
 	Name      string
 	Enum      *Enum
 	Message   *Message
@@ -56,7 +65,7 @@ type FieldType struct {
 	StarExpr  bool
 	ArrayType bool
 	// May be one of four types: *ast.MapType, *ast.Ident, *ast.StarExpr, or *ast.ArrayType
-	Origin ast.Expr
+	origin ast.Expr
 }
 
 func retrieveTypeSpecs(f *ast.File) ([]*ast.TypeSpec, error) {
@@ -94,7 +103,7 @@ func New(goFiles []io.Reader, protoFile io.Reader) (*Catalog, error) {
 
 	typespecs, _ := retrieveTypeSpecs(fileAst)
 	for _, t := range typespecs {
-		//sp.Dump(t)
+		sp.Dump(t)
 		switch typdf := t.Type.(type) {
 		case *ast.Ident:
 			if typdf.Name == "int32" {
@@ -111,13 +120,21 @@ func New(goFiles []io.Reader, protoFile io.Reader) (*Catalog, error) {
 			}
 			rv.Messages = append(rv.Messages, nmsg)
 		case *ast.InterfaceType:
-			nmeth, err := NewServiceMethod(t)
-			if err != nil {
-				return nil, errors.Wrapf(err, "error parsing service method %q", t.Name.Name)
+			// Each service will have two interfaces ("{SVCNAME}Server" and
+			// "{SVCNAME}Client") each containing the same information that we
+			// care about, but structured a bit differently. For simplicity,
+			// skip the "Client" interface.
+			if strings.HasSuffix("Client", t.Name.Name) {
+				break
 			}
-			rv.ServiceMethods = append(rv.ServiceMethods, nmeth)
+			nsvc, err := NewService(t)
+			if err != nil {
+				return nil, errors.Wrapf(err, "error parsing service %q", t.Name.Name)
+			}
+			rv.Service = nsvc
 		}
 	}
+	resolveTypes(&rv)
 	sp.Dump(rv)
 
 	return &rv, nil
@@ -137,7 +154,8 @@ func NewMessage(m *ast.TypeSpec) (*Message, error) {
 	}
 	sp := spew.ConfigState{Indent: "   "}
 
-	sp.Dump(m)
+	_ = sp
+	//sp.Dump(m)
 	strct := m.Type.(*ast.StructType)
 	for _, f := range strct.Fields.List {
 		nfield, err := NewField(f)
@@ -157,32 +175,110 @@ func NewMap(m *ast.TypeSpec) (*Map, error) {
 	}, nil
 }
 
-func NewServiceMethod(s *ast.TypeSpec) (*ServiceMethod, error) {
-	return &ServiceMethod{
+// NewService returns a new Service struct derived from an *ast.TypeSpec with a
+// Type of *ast.InterfaceType.
+func NewService(s *ast.TypeSpec) (*Service, error) {
+	rv := &Service{
 		Name: s.Name.Name,
-		//Origin: s,
-	}, nil
+	}
+	asvc := s.Type.(*ast.InterfaceType)
+	for _, m := range asvc.Methods.List {
+		nmeth, err := NewServiceMethod(m)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Couldn't create service method %q of service %q", m.Names[0].Name, rv.Name)
+		}
+		rv.Methods = append(rv.Methods, nmeth)
+	}
+	return rv, nil
 }
 
+// NewServiceMethod returns a new ServiceMethod derived from the provided
+// *ast.Field. The given *ast.Field is intended to have a Type of *ast.FuncType
+// from an *ast.InterfaceType's Methods.List attribute. Providing an *ast.Field
+// with a different structure may return an error.
+func NewServiceMethod(m *ast.Field) (*ServiceMethod, error) {
+	rv := &ServiceMethod{
+		Name: m.Names[0].Name,
+	}
+	ft, ok := m.Type.(*ast.FuncType)
+	if !ok {
+		return nil, errors.New("Provided *ast.Field.Type is not of type *ast.FuncType; cannot proceed")
+	}
+
+	input := ft.Params.List
+	output := ft.Results.List
+
+	// Zero'th param of a serverMethod is Context.context, while first param is
+	// this methods RequestType
+	rq := input[1]
+	rs := output[0]
+
+	makeFieldType := func(in *ast.Field) (*FieldType, error) {
+		star, ok := in.Type.(*ast.StarExpr)
+		if !ok {
+			return nil, errors.New("could not create FieldType, in.Type is not *ast.StarExpr")
+		}
+		ident, ok := star.X.(*ast.Ident)
+		if !ok {
+			return nil, errors.New("could not create FieldType, star.Type is not *ast.Ident")
+		}
+		return &FieldType{
+			Name:     ident.Name,
+			StarExpr: true,
+			origin:   in.Type,
+		}, nil
+	}
+
+	var err error
+	rv.RequestType, err = makeFieldType(rq)
+	if err != nil {
+		return nil, errors.Wrapf(err, "RequestType creation of service method %q failed", rv.Name)
+	}
+	rv.ResponseType, err = makeFieldType(rs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "ResponseType creation of service method %q failed", rv.Name)
+	}
+
+	return rv, nil
+}
+
+// NewField returns a Field struct with information distilled from an
+// *ast.Field. The following is an informational table of how the proto-to-go
+// concepts map to the Types of an ast.Field. An arrow indicates "nested
+// within".
+//
+//     | Type Genres | Repeated               | Naked         |
+//     |-------------|------------------------|---------------|
+//     | Enum        | Array -> Ident         | Ident         |
+//     | Message     | Array -> Star -> Ident | Star -> Ident |
+//     | BaseType    | Array -> Ident         | Ident         |
+//
+// Map types will always have a Key which is ident, and a value that is one of
+// the Type Genres specified in the table above.
 func NewField(f *ast.Field) (*Field, error) {
 	rv := &Field{
 		Name: f.Names[0].Name,
+		Type: &FieldType{},
 	}
 
-	typeFollower := func(e ast.Expr, typeFollower func(ast.Expr)) {
-		switch etyp := e.(type) {
+	// TypeFollower 'follows' the type of the provided ast.Field, determining
+	// the name of this fields type and if it's a StarExpr, an ArrayType, or
+	// both.
+	var typeFollower func(ast.Expr)
+	typeFollower = func(e ast.Expr) {
+		switch ex := e.(type) {
 		case *ast.Ident:
-			rv.Type.Name = etyp.Name
+			rv.Type.Name = ex.Name
 		case *ast.StarExpr:
 			rv.Type.StarExpr = true
-			typeFollower(etyp.X)
+			typeFollower(ex.X)
 		case *ast.ArrayType:
 			rv.Type.ArrayType = true
-			typeFollower(etyp.Elt)
+			typeFollower(ex.Elt)
 		case *ast.MapType:
 			// TODO call NewMap here
 		}
 	}
-	typeFollower(f.Type, typeFollower)
+	typeFollower(f.Type)
 	return rv, nil
 }

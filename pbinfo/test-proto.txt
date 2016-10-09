@@ -146,3 +146,9 @@ message MapNestedMsg {
   map<int64, NestedMessageA> Beta = 2;
 }
 
+message RepeatedTypes {
+  repeated int64 AA = 1;
+  repeated string BB = 2;
+  repeated EnumType CC = 3;
+}
+
