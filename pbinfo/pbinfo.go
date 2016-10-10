@@ -18,7 +18,8 @@ type Catalog struct {
 	origin   *ast.File
 	Messages []*Message
 	Enums    []*Enum
-	Service  *Service
+	// Service contains the sole service for this Catalog
+	Service *Service
 }
 
 type Message struct {
@@ -33,9 +34,10 @@ type Enum struct {
 }
 
 type Map struct {
-	Name  string
-	Key   *FieldType
-	Value *FieldType
+	Name   string
+	Key    *FieldType
+	Value  *FieldType
+	origin *ast.Expr
 }
 
 type Service struct {
@@ -58,11 +60,20 @@ type Field struct {
 
 type FieldType struct {
 	// Name will contain the name of the type, for example "string" or "bool"
-	Name      string
-	Enum      *Enum
-	Message   *Message
-	Map       *Map
-	StarExpr  bool
+	Name string
+	// Enum contains a pointer to the Enum type this fieldtype represents, if
+	// this FieldType represents an Enum. If not, Enum is nil.
+	Enum *Enum
+	// Message contains a pointer to the Message type this FieldType
+	// represents, if this FieldType represents a Message. If not, Message is
+	// nil.
+	Message *Message
+	// Map contains a pointer to the Map type this FieldType represents, if
+	// this FieldType represents a Map. If not, Map is nil.
+	Map *Map
+	// StarExpr is True if this FieldType represents a pointer to a type.
+	StarExpr bool
+	// ArrayType is True if this FieldType represents a slice of a type.
 	ArrayType bool
 	// May be one of four types: *ast.MapType, *ast.Ident, *ast.StarExpr, or *ast.ArrayType
 	origin ast.Expr
@@ -168,11 +179,31 @@ func NewMessage(m *ast.TypeSpec) (*Message, error) {
 	return rv, nil
 }
 
-func NewMap(m *ast.TypeSpec) (*Map, error) {
-	return &Map{
-		Name: m.Name.Name,
-		//Origin: m,
-	}, nil
+func NewMap(m ast.Expr) (*Map, error) {
+	rv := &Map{
+		Key:   &FieldType{},
+		Value: &FieldType{},
+		//origin: m,
+	}
+	mp := m.(*ast.MapType)
+	// Key will always be an ast.Ident, Value may be an ast.Ident or an
+	// ast.StarExpr->ast.Ident
+	key := mp.Key.(*ast.Ident)
+	rv.Key.Name = key.Name
+	var keyFollower func(ast.Expr)
+	keyFollower = func(e ast.Expr) {
+		switch ex := e.(type) {
+		case *ast.Ident:
+			rv.Value.Name = ex.Name
+			rv.Value.origin = e
+		case *ast.StarExpr:
+			rv.Value.StarExpr = true
+			keyFollower(ex.X)
+		}
+	}
+	keyFollower(mp.Value)
+
+	return rv, nil
 }
 
 // NewService returns a new Service struct derived from an *ast.TypeSpec with a
@@ -264,8 +295,8 @@ func NewField(f *ast.Field) (*Field, error) {
 	// TypeFollower 'follows' the type of the provided ast.Field, determining
 	// the name of this fields type and if it's a StarExpr, an ArrayType, or
 	// both.
-	var typeFollower func(ast.Expr)
-	typeFollower = func(e ast.Expr) {
+	var typeFollower func(ast.Expr) error
+	typeFollower = func(e ast.Expr) error {
 		switch ex := e.(type) {
 		case *ast.Ident:
 			rv.Type.Name = ex.Name
@@ -276,9 +307,17 @@ func NewField(f *ast.Field) (*Field, error) {
 			rv.Type.ArrayType = true
 			typeFollower(ex.Elt)
 		case *ast.MapType:
-			// TODO call NewMap here
+			mp, err := NewMap(ex)
+			if err != nil {
+				return errors.Wrapf(err, "failed to create map for field %q", rv.Name)
+			}
+			rv.Type.Map = mp
 		}
+		return nil
 	}
-	typeFollower(f.Type)
+	err := typeFollower(f.Type)
+	if err != nil {
+		return nil, err
+	}
 	return rv, nil
 }
