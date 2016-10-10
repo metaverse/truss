@@ -392,19 +392,19 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"NAME-service/NAME-client/client_main.gotemplate": nameServiceNameClientClient_mainGotemplate,
-	"NAME-service/NAME-server/server_main.gotemplate": nameServiceNameServerServer_mainGotemplate,
-	"NAME-service/generated/client/grpc/client.gotemplate": nameServiceGeneratedClientGrpcClientGotemplate,
-	"NAME-service/generated/client/http/client.gotemplate": nameServiceGeneratedClientHttpClientGotemplate,
-	"NAME-service/generated/endpoints.gotemplate": nameServiceGeneratedEndpointsGotemplate,
-	"NAME-service/generated/service_middle.gotemplate": nameServiceGeneratedService_middleGotemplate,
-	"NAME-service/generated/transport_grpc.gotemplate": nameServiceGeneratedTransport_grpcGotemplate,
-	"NAME-service/generated/transport_http.gotemplate": nameServiceGeneratedTransport_httpGotemplate,
+	"NAME-service/NAME-client/client_main.gotemplate":        nameServiceNameClientClient_mainGotemplate,
+	"NAME-service/NAME-server/server_main.gotemplate":        nameServiceNameServerServer_mainGotemplate,
+	"NAME-service/generated/client/grpc/client.gotemplate":   nameServiceGeneratedClientGrpcClientGotemplate,
+	"NAME-service/generated/client/http/client.gotemplate":   nameServiceGeneratedClientHttpClientGotemplate,
+	"NAME-service/generated/endpoints.gotemplate":            nameServiceGeneratedEndpointsGotemplate,
+	"NAME-service/generated/service_middle.gotemplate":       nameServiceGeneratedService_middleGotemplate,
+	"NAME-service/generated/transport_grpc.gotemplate":       nameServiceGeneratedTransport_grpcGotemplate,
+	"NAME-service/generated/transport_http.gotemplate":       nameServiceGeneratedTransport_httpGotemplate,
 	"NAME-service/handlers/client/client_handler.gotemplate": nameServiceHandlersClientClient_handlerGotemplate,
 	"NAME-service/handlers/server/server_handler.gotemplate": nameServiceHandlersServerServer_handlerGotemplate,
-	"NAME-service/partial_template/client_handler.methods": nameServicePartial_templateClient_handlerMethods,
-	"NAME-service/partial_template/service.interface": nameServicePartial_templateServiceInterface,
-	"NAME-service/partial_template/service.methods": nameServicePartial_templateServiceMethods,
+	"NAME-service/partial_template/client_handler.methods":   nameServicePartial_templateClient_handlerMethods,
+	"NAME-service/partial_template/service.interface":        nameServicePartial_templateServiceInterface,
+	"NAME-service/partial_template/service.methods":          nameServicePartial_templateServiceMethods,
 }
 
 // AssetDir returns the file names below a certain
@@ -446,6 +446,7 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"NAME-service": &bintree{nil, map[string]*bintree{
 		"NAME-client": &bintree{nil, map[string]*bintree{
@@ -463,7 +464,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"client.gotemplate": &bintree{nameServiceGeneratedClientHttpClientGotemplate, map[string]*bintree{}},
 				}},
 			}},
-			"endpoints.gotemplate": &bintree{nameServiceGeneratedEndpointsGotemplate, map[string]*bintree{}},
+			"endpoints.gotemplate":      &bintree{nameServiceGeneratedEndpointsGotemplate, map[string]*bintree{}},
 			"service_middle.gotemplate": &bintree{nameServiceGeneratedService_middleGotemplate, map[string]*bintree{}},
 			"transport_grpc.gotemplate": &bintree{nameServiceGeneratedTransport_grpcGotemplate, map[string]*bintree{}},
 			"transport_http.gotemplate": &bintree{nameServiceGeneratedTransport_httpGotemplate, map[string]*bintree{}},
@@ -478,8 +479,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		}},
 		"partial_template": &bintree{nil, map[string]*bintree{
 			"client_handler.methods": &bintree{nameServicePartial_templateClient_handlerMethods, map[string]*bintree{}},
-			"service.interface": &bintree{nameServicePartial_templateServiceInterface, map[string]*bintree{}},
-			"service.methods": &bintree{nameServicePartial_templateServiceMethods, map[string]*bintree{}},
+			"service.interface":      &bintree{nameServicePartial_templateServiceInterface, map[string]*bintree{}},
+			"service.methods":        &bintree{nameServicePartial_templateServiceMethods, map[string]*bintree{}},
 		}},
 	}},
 }}
@@ -530,4 +531,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-

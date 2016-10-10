@@ -23,7 +23,7 @@ before_install:
   - go get -v github.com/jteeuwen/go-bindata/...
 
     # these were added because when truss runs its $ go get ... after generating a microservice
-    # truss failed, the output seemed git related. This should be dealt with. 
+    # truss failed, the output seemed git related. This should be dealt with.
   - go get -u -v google.golang.org/grpc
   - go get -u -v golang.org/x/net/context
   - go get -u -v github.com/go-kit/kit/...
@@ -32,7 +32,7 @@ install:
   # install our protoc plugin and truss
   - go get -t -v github.com/TuneLab/go-truss/...
 
-script: 
+script:
   - make test
 
 notifications:
