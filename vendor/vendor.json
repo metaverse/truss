@@ -1,0 +1,19 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "Lf3uUXTkKK5DJ37BxQvxO1Fq+K8=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "6d212800a42e8ab5c146b8ace3490ee17e5225f9",
+			"revisionTime": "2016-09-07T16:21:46Z"
+		},
+		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
+			"revisionTime": "2016-01-10T10:55:54Z"
+		}
+	],
+	"rootPath": "github.com/TuneLab/go-truss"
+}
