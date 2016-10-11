@@ -14,6 +14,10 @@ import (
 )
 
 type Catalog struct {
+	// PkgName will be the pacakge name of the go file(s) analyzed. So if a
+	// Go file contained "package authz", then PkgName will be "authz". If
+	// multiple Go files are analyzed, it will be the package name of the last
+	// go file analyzed.
 	PkgName  string
 	origin   *ast.File
 	Messages []*Message
@@ -34,10 +38,10 @@ type Enum struct {
 }
 
 type Map struct {
-	Name   string
-	Key    *FieldType
-	Value  *FieldType
-	origin *ast.Expr
+	Name      string
+	KeyType   *FieldType
+	ValueType *FieldType
+	origin    *ast.Expr
 }
 
 type Service struct {
@@ -49,7 +53,10 @@ type ServiceMethod struct {
 	Name         string
 	RequestType  *FieldType
 	ResponseType *FieldType
-	origin       *ast.TypeSpec
+	// Bindings contains information for mapping http paths and paramters onto
+	// the fields of this ServiceMethods RequestType.
+	Bindings []*HTTPBinding
+	origin   *ast.TypeSpec
 }
 
 type Field struct {
@@ -79,6 +86,25 @@ type FieldType struct {
 	origin ast.Expr
 }
 
+// HTTPBinding represents one of potentially several bindings from a gRPC
+// service method to a particuar HTTP path/verb.
+type HTTPBinding struct {
+	Verb string
+	Path string
+	// There is one HTTPParamter for each of the parent service methods Fields.
+	Params []*HTTPParameter
+}
+
+// HTTPParameter represents the location of one field for a given HTTPBinding.
+// Each HTTPParameter corresponds to one Field of the parent
+// ServiceMethod.RequestType.Fields
+type HTTPParameter struct {
+	// Field points to a Field on the Parent service methods "RequestType".
+	Field *Field
+	// Location will be either "body", "path", or "query"
+	Location string
+}
+
 func retrieveTypeSpecs(f *ast.File) ([]*ast.TypeSpec, error) {
 	var rv []*ast.TypeSpec
 	for _, dec := range f.Decls {
@@ -95,58 +121,63 @@ func retrieveTypeSpecs(f *ast.File) ([]*ast.TypeSpec, error) {
 	return rv, nil
 }
 
-func New(goFiles []io.Reader, protoFile io.Reader) (*Catalog, error) {
-	fset := token.NewFileSet()
-	fileAst, err := parser.ParseFile(fset, "", goFiles[0], parser.ParseComments)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't parse go file to create catalog")
-	}
+func New(goFiles []io.Reader, protoFile []io.Reader) (*Catalog, error) {
+	rv := Catalog{}
 
-	rv := Catalog{
-		PkgName: fileAst.Name.Name,
-	}
-	sp := spew.ConfigState{
-		Indent: "   ",
-	}
-	//for _, d := range fileAst.Decls {
-	//sp.Dump(d)
-	//}
+	for _, gofile := range goFiles {
+		fset := token.NewFileSet()
+		fileAst, err := parser.ParseFile(fset, "", gofile, parser.ParseComments)
+		if err != nil {
+			return nil, errors.Wrap(err, "couldn't parse go file to create catalog")
+		}
 
-	typespecs, _ := retrieveTypeSpecs(fileAst)
-	for _, t := range typespecs {
-		sp.Dump(t)
-		switch typdf := t.Type.(type) {
-		case *ast.Ident:
-			if typdf.Name == "int32" {
-				nenm, err := NewEnum(t)
-				if err != nil {
-					return nil, errors.Wrapf(err, "error parsing enum %q", t.Name.Name)
+		sp := spew.ConfigState{
+			Indent: "   ",
+		}
+		_ = sp
+
+		typespecs, _ := retrieveTypeSpecs(fileAst)
+		for _, t := range typespecs {
+			//sp.Dump(t)
+			switch typdf := t.Type.(type) {
+			case *ast.Ident:
+				if typdf.Name == "int32" {
+					nenm, err := NewEnum(t)
+					if err != nil {
+						return nil, errors.Wrapf(err, "error parsing enum %q", t.Name.Name)
+					}
+					rv.Enums = append(rv.Enums, nenm)
 				}
-				rv.Enums = append(rv.Enums, nenm)
+			case *ast.StructType:
+				nmsg, err := NewMessage(t)
+				if err != nil {
+					return nil, errors.Wrapf(err, "error parsing message %q", t.Name.Name)
+				}
+				rv.Messages = append(rv.Messages, nmsg)
+			case *ast.InterfaceType:
+				// Each service will have two interfaces ("{SVCNAME}Server" and
+				// "{SVCNAME}Client") each containing the same information that we
+				// care about, but structured a bit differently. For simplicity,
+				// skip the "Client" interface.
+				if strings.HasSuffix("Client", t.Name.Name) {
+					break
+				}
+				nsvc, err := NewService(t)
+				if err != nil {
+					return nil, errors.Wrapf(err, "error parsing service %q", t.Name.Name)
+				}
+				rv.Service = nsvc
 			}
-		case *ast.StructType:
-			nmsg, err := NewMessage(t)
-			if err != nil {
-				return nil, errors.Wrapf(err, "error parsing message %q", t.Name.Name)
-			}
-			rv.Messages = append(rv.Messages, nmsg)
-		case *ast.InterfaceType:
-			// Each service will have two interfaces ("{SVCNAME}Server" and
-			// "{SVCNAME}Client") each containing the same information that we
-			// care about, but structured a bit differently. For simplicity,
-			// skip the "Client" interface.
-			if strings.HasSuffix("Client", t.Name.Name) {
-				break
-			}
-			nsvc, err := NewService(t)
-			if err != nil {
-				return nil, errors.Wrapf(err, "error parsing service %q", t.Name.Name)
-			}
-			rv.Service = nsvc
 		}
 	}
 	resolveTypes(&rv)
-	sp.Dump(rv)
+	for _, protofile := range protoFiles {
+		err := ConsolidateHTTP(rv, protofile)
+		if err != nil {
+			return errors.Wrap(err, "failed to consolidate HTTP")
+		}
+	}
+	//sp.Dump(rv)
 
 	return &rv, nil
 }
@@ -181,23 +212,23 @@ func NewMessage(m *ast.TypeSpec) (*Message, error) {
 
 func NewMap(m ast.Expr) (*Map, error) {
 	rv := &Map{
-		Key:   &FieldType{},
-		Value: &FieldType{},
+		KeyType:   &FieldType{},
+		ValueType: &FieldType{},
 		//origin: m,
 	}
 	mp := m.(*ast.MapType)
-	// Key will always be an ast.Ident, Value may be an ast.Ident or an
+	// KeyType will always be an ast.Ident, ValueType may be an ast.Ident or an
 	// ast.StarExpr->ast.Ident
 	key := mp.Key.(*ast.Ident)
-	rv.Key.Name = key.Name
+	rv.KeyType.Name = key.Name
 	var keyFollower func(ast.Expr)
 	keyFollower = func(e ast.Expr) {
 		switch ex := e.(type) {
 		case *ast.Ident:
-			rv.Value.Name = ex.Name
-			rv.Value.origin = e
+			rv.ValueType.Name = ex.Name
+			rv.ValueType.origin = e
 		case *ast.StarExpr:
-			rv.Value.StarExpr = true
+			rv.ValueType.StarExpr = true
 			keyFollower(ex.X)
 		}
 	}
@@ -284,7 +315,7 @@ func NewServiceMethod(m *ast.Field) (*ServiceMethod, error) {
 //     | Message     | Array -> Star -> Ident | Star -> Ident |
 //     | BaseType    | Array -> Ident         | Ident         |
 //
-// Map types will always have a Key which is ident, and a value that is one of
+// Map types will always have a KeyType which is ident, and a value that is one of
 // the Type Genres specified in the table above.
 func NewField(f *ast.Field) (*Field, error) {
 	rv := &Field{

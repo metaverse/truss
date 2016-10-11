@@ -21,9 +21,11 @@ func resolveTypes(cat *Catalog) {
 			setType(f.Type, tmap)
 		}
 	}
-	for _, m := range cat.Service.Methods {
-		setType(m.RequestType, tmap)
-		setType(m.ResponseType, tmap)
+	if cat.Service != nil {
+		for _, m := range cat.Service.Methods {
+			setType(m.RequestType, tmap)
+			setType(m.ResponseType, tmap)
+		}
 	}
 }
 
