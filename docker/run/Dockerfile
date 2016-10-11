@@ -17,9 +17,10 @@ MAINTAINER lab@tune.com
 ENV TRUSS_REPO github.com/TuneLab/go-truss
 ENV TRUSS_PATH $GOPATH/src/$TRUSS_REPO
 
-COPY build/protoc* build/truss /bin/
-ADD build/shared-libs.tgz /
+COPY build/build-wrapper.sh /
+COPY run/run-truss.sh /
 
 WORKDIR /truss
 
-ENTRYPOINT ["/bin/truss"]
+ENTRYPOINT ["bash"]
+RUN ["-c", "/build-wrapper.sh $TRUSS_PATH /run-truss.sh"]
