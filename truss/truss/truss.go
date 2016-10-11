@@ -1,5 +1,6 @@
 // Package truss contains the relative file tree data structure that represents
 // the paths and contents of generated files
+
 package truss
 
 import (

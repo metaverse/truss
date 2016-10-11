@@ -101,14 +101,16 @@ func NewFromString(def string) (Deftree, error) {
 	}
 	defer os.RemoveAll(protoDir)
 
-	err = ioutil.WriteFile(filepath.Join(protoDir, defFileName), []byte(def), 0666)
+	defPath := filepath.Join(protoDir, defFileName)
+
+	err = ioutil.WriteFile(defPath, []byte(def), 0666)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not write proto definition to file")
 	}
 
-	req, err := protostuff.CodeGeneratorRequest([]string{defFileName}, protoDir)
+	req, err := protostuff.CodeGeneratorRequest([]string{defPath})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get CodeGeneratorRequest")
+		return nil, errors.Wrap(err, "unable to create a proto CodeGeneratorRequest")
 	}
 
 	deftree, err := New(req, strings.NewReader(def))

@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -20,91 +19,159 @@ import (
 	"github.com/TuneLab/go-truss/gengokit"
 )
 
-var pbOutFlag = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
+var (
+	pbPathFlag = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
+)
+
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
+	flag.Parse()
+
+	if len(flag.Args()) == 0 {
+		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", os.Args[0])
+		os.Exit(1)
+	}
+}
 
 func main() {
-	flag.Parse()
-	goPath := os.Getenv("GOPATH")
+	cfg, err := parseInput()
+	exitIfError(errors.Wrap(err, "could not parse input"))
 
-	var pbOut string
-	if *pbOutFlag != "" {
-		pbOut = filepath.Join(goPath, "src", *pbOutFlag)
-		if !fileExists(pbOut) {
-			exitIfError(errors.Errorf("Go package directory does not exist: %q", pbOut))
+	dt, err := parseServiceDefinition(cfg.DefPaths)
+	exitIfError(errors.Wrap(err, "unable to parse input definition proto files"))
+
+	err = updateConfigWithService(cfg, dt)
+	exitIfError(errors.Wrap(err, "unable to read system based on service definition"))
+
+	genFiles, err := generateCode(cfg, dt)
+	exitIfError(errors.Wrap(err, "unable to generate service"))
+
+	for _, f := range genFiles {
+		err := writeGenFile(f, cfg.ServicePath)
+		if err != nil {
+			exitIfError(errors.Wrap(err, "unable to write output"))
+		}
+	}
+}
+
+// parseInput constructs a *truss.Config with all values needed to parse
+// service definition files.
+func parseInput() (*truss.Config, error) {
+	var cfg truss.Config
+
+	// GOPATH
+	goPaths := filepath.SplitList(os.Getenv("GOPATH"))
+	if goPaths == nil {
+		return nil, errors.New("$GOPATH not set")
+	}
+	cfg.GOPATH = goPaths[0]
+
+	// DefPaths
+	var err error
+	rawDefinitionPaths := flag.Args()
+	cfg.DefPaths, err = cleanProtofilePath(rawDefinitionPaths)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse input arguments")
+	}
+
+	// PBGoPath
+	if *pbPathFlag != "" {
+		cfg.PBGoPath = filepath.Join(cfg.GOPATH, "src", *pbPathFlag)
+		if !fileExists(cfg.PBGoPath) {
+			return nil, errors.Errorf(".pb.go output package directory does not exist: %q", cfg.PBGoPath)
 		}
 	}
 
-	if len(flag.Args()) == 0 {
-		flag.Usage()
-		os.Exit(1)
+	return &cfg, nil
+}
+
+// parseServiceDefinition returns a deftree which contains all needed for all
+// generating a truss service and documentation
+func parseServiceDefinition(definitionPaths []string) (deftree.Deftree, error) {
+	protocOut, err := protostuff.CodeGeneratorRequest(definitionPaths)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to use parse input files with protoc")
 	}
 
-	rawDefinitionPaths := flag.Args()
-
-	protoDir, definitionFiles, err := cleanProtofilePath(rawDefinitionPaths)
-	exitIfError(err)
-
-	if !strings.HasPrefix(protoDir, goPath) {
-		exitIfError(errors.New("truss envoked on files outside of $GOPATH"))
+	svcFile, err := protostuff.ServiceFile(protocOut, filepath.Dir(definitionPaths[0]))
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to find service definition file")
 	}
 
-	dt, err := buildDeftree(definitionFiles, protoDir)
-	exitIfError(err)
+	dt, err := deftree.New(protocOut, svcFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to construct service defintion")
+	}
 
+	return dt, nil
+}
+
+// updateConfigWithService updates the config with all information needed to
+// generate a truss service using the parsedServiceDefinition deftree
+func updateConfigWithService(cfg *truss.Config, dt deftree.Deftree) error {
+	// Service Path
 	svcName := dt.GetName() + "-service"
-	svcDir := filepath.Join(protoDir, svcName)
+	cfg.ServicePath = filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcName)
 
-	prevGen, err := readPreviousGeneration(protoDir, svcDir)
-	exitIfError(err)
-
-	err = mkdir(svcDir)
-	exitIfError(err)
-
-	// If not output directory for the .pb.go files has been selected then put them in the svcDir
-	if pbOut == "" {
-		pbOut = svcDir
+	// PrevGen
+	var err error
+	cfg.PrevGen, err = readPreviousGeneration(cfg.ServicePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to read previously generated files")
 	}
 
-	err = protostuff.GeneratePBDotGo(definitionFiles, svcDir, protoDir, pbOut)
-	exitIfError(err)
+	// PBGoPath
+	if cfg.PBGoPath == "" {
+		cfg.PBGoPath = cfg.ServicePath
+	}
+	fmt.Println(cfg.PBGoPath)
 
-	//  gokit service
-	goSvcImportPath, goPBImportPath, err := trussGoImports(svcDir, pbOut, goPath)
+	return nil
+}
 
-	genGokitFiles, err := gengokit.GenerateGokit(dt, prevGen, goSvcImportPath, goPBImportPath)
-	exitIfError(err)
-
-	for _, f := range genGokitFiles {
-		err := writeFile(f, protoDir)
-		exitIfError(err)
+// generateCode returns a []truss.NamedReadWriter that represents a gokit
+// service with documentation
+func generateCode(cfg *truss.Config, dt deftree.Deftree) ([]truss.NamedReadWriter, error) {
+	if cfg.PrevGen == nil {
+		err := mkdir(cfg.ServicePath)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to create service directory")
+		}
 	}
 
-	// docs
+	err := protostuff.GeneratePBDotGo(cfg.DefPaths, cfg.ServicePath, cfg.PBGoPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to create .pb.go files")
+	}
+
+	genGokitFiles, err := gengokit.GenerateGokit(dt, cfg.PrevGen, cfg.GoSvcImportPath(), cfg.GoPBImportPath())
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to generate gokit service")
+	}
+
 	genDocFiles := gendoc.GenerateDocs(dt)
-	for _, f := range genDocFiles {
-		err := writeFile(f, protoDir)
-		exitIfError(err)
-	}
+
+	genFiles := append(genGokitFiles, genDocFiles...)
+
+	return genFiles, nil
 }
 
-func trussGoImports(svcDir, pbOutDir, goPath string) (string, string, error) {
-	goSvcImportPath, err := filepath.Rel(filepath.Join(goPath, "src"), svcDir)
-	if err != nil {
-		return "", "", err
-	}
+// writeGenFile writes a truss.NamedReadWriter to the filesystem
+// to be contained within serviceDir
+func writeGenFile(f truss.NamedReadWriter, serviceDir string) error {
+	// the serviceDir contains /NAME-service so we want to write to the
+	// directory above
+	outDir := filepath.Dir(serviceDir)
 
-	goPBImportPath, err := filepath.Rel(filepath.Join(goPath, "src"), pbOutDir)
-	if err != nil {
-		return "", "", err
-	}
-
-	return goSvcImportPath, goPBImportPath, nil
-}
-
-func writeFile(f truss.NamedReadWriter, protoDir string) error {
+	// i.e. NAME-service/generated/endpoint.go
 	name := f.Name()
 
-	fullPath := filepath.Join(protoDir, name)
+	fullPath := filepath.Join(outDir, name)
 	err := mkdir(fullPath)
 	if err != nil {
 		return err
@@ -119,72 +186,29 @@ func writeFile(f truss.NamedReadWriter, protoDir string) error {
 	if err != nil {
 		return errors.Wrapf(err, "could not write to %v", fullPath)
 	}
-
 	return nil
 }
 
-func buildDeftree(definitionFiles []string, protoDir string) (deftree.Deftree, error) {
-	protocOut, err := protostuff.CodeGeneratorRequest(definitionFiles, protoDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not use create a proto CodeGeneratorRequest")
-	}
-
-	svcFile, err := protostuff.ServiceFile(protocOut, protoDir)
-	if err != nil {
-		return nil, errors.Wrap(err, "coult not find service definition file")
-
-	}
-
-	// Make a deftree
-	dt, err := deftree.New(protocOut, svcFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not construct deftree")
-	}
-
-	return dt, nil
-}
-
-// cleanProtofilePath takes a slice of file paths and returns the
-// absolute directory that contains the file paths, an array of the basename
+// cleanProtofilePath returns the absolute filepath of a group of files
 // of the files, or an error if the files are not in the same directory
-func cleanProtofilePath(rawPaths []string) (wd string, definitionFiles []string, err error) {
-	execWd, err := os.Getwd()
-	if err != nil {
-		return "", nil, errors.Wrap(err, "could not get working directoru of truss")
-	}
-
-	var workingDirectory string
+func cleanProtofilePath(rawPaths []string) ([]string, error) {
+	var fullPaths []string
 
 	// Parsed passed file paths
 	for _, def := range rawPaths {
-		// If the definition file path is not absolute, then make it absolute using trusses working directory
-		if !path.IsAbs(def) {
-			def = path.Clean(def)
-			def = path.Join(execWd, def)
+		full, err := filepath.Abs(def)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not get working directoru of truss")
 		}
 
-		// The working direcotry for this definition file
-		dir := path.Dir(def)
-		// Add the base name of definition file to the slice
-		definitionFiles = append(definitionFiles, path.Base(def))
+		fullPaths = append(fullPaths, full)
 
-		// If the working directory has not beenset before set it
-		if workingDirectory == "" {
-			workingDirectory = dir
-		} else {
-			// If the working directory for this definition file is different than the previous
-			if workingDirectory != dir {
-				return "", nil,
-					errors.Errorf(
-						"all .proto files must reside in the same directory\n"+
-							"these two differ: \n%v\n%v",
-						wd,
-						workingDirectory)
-			}
+		if filepath.Dir(fullPaths[0]) != filepath.Dir(full) {
+			return nil, errors.Errorf("passed .proto files in different directories")
 		}
 	}
 
-	return workingDirectory, definitionFiles, nil
+	return fullPaths, nil
 }
 
 // mkdir acts like $ mkdir -p path
@@ -197,6 +221,8 @@ func mkdir(path string) error {
 	return err
 }
 
+// exitIfError will print the error message and exit 1 if the passed error is
+// non-nil
 func exitIfError(err error) {
 	if errors.Cause(err) != nil {
 		defer os.Exit(1)
@@ -204,32 +230,31 @@ func exitIfError(err error) {
 	}
 }
 
-// readPreviousGeneration accepts the path to the directory where the inputed .proto files are stored, protoDir,
-// it returns a []truss.NamedReadWriter for all files in the service/ dir in protoDir
-func readPreviousGeneration(protoDir, serviceDir string) ([]truss.NamedReadWriter, error) {
+// readPreviousGeneration returns a []truss.NamedReadWriter for all files serviceDir
+func readPreviousGeneration(serviceDir string) ([]truss.NamedReadWriter, error) {
 	if fileExists(serviceDir) != true {
 		return nil, nil
 	}
 
 	var files []truss.NamedReadWriter
 	sfs := simpleFileConstructor{
-		protoDir: protoDir,
-		files:    files,
+		dirPath: filepath.Dir(serviceDir),
+		files:   files,
 	}
 	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not fully walk directory %v", protoDir)
+		return nil, errors.Wrapf(err, "could not fully walk directory %v", sfs.dirPath)
 	}
 
 	return sfs.files, nil
 }
 
-// simpleFileConstructor has the function makeSimpleFile which is of type filepath.WalkFunc
+// simpleFileConstructor has function makeSimpleFile of type filepath.WalkFunc
 // This allows for filepath.Walk to be called with makeSimpleFile and build a truss.SimpleFile
 // for all files in a direcotry
 type simpleFileConstructor struct {
-	protoDir string
-	files    []truss.NamedReadWriter
+	dirPath string
+	files   []truss.NamedReadWriter
 }
 
 // makeSimpleFile is of type filepath.WalkFunc
@@ -246,7 +271,7 @@ func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, 
 	}
 
 	// trim the prefix of the path to the proto files from the full path to the file
-	name := strings.TrimPrefix(path, sfs.protoDir+"/")
+	name := strings.TrimPrefix(path, sfs.dirPath+"/")
 	var file truss.SimpleFile
 	file.Path = name
 	file.Write(byteContent)

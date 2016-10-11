@@ -1,3 +1,6 @@
+// Package protostuff provides an interface for interacting with protoc
+// requiring only paths to files on disk
+
 package protostuff
 
 import (
@@ -14,25 +17,22 @@ import (
 	assets "github.com/TuneLab/go-truss/truss/template"
 )
 
-// GeneratePBDotGo
-func GeneratePBDotGo(protoFiles []string, svcDir, protoDir, outDir string) error {
-	err := outputGoogleImport(svcDir)
+// GeneratePBDotGo creates .pb.go files from the passed protoPaths and writes
+// them to outDir. These files import Google api's which will be created at
+// importDir.
+func GeneratePBDotGo(protoPaths []string, importDir, outDir string) error {
+	err := outputGoogleImport(importDir)
 	if err != nil {
 		return err
 	}
 
-	importPath, err := filepath.Rel(filepath.Join(os.Getenv("GOPATH"), "src"), svcDir)
+	goImportPath, err := filepath.Rel(filepath.Join(os.Getenv("GOPATH"), "src"), importDir)
 	if err != nil {
 		return err
-	}
-
-	err = mkdir(outDir)
-	if err != nil {
-		return errors.Wrap(err, "could not make output directory")
 	}
 
 	genGoCode := "--go_out=Mgoogle/api/annotations.proto=" +
-		importPath + "/third_party/googleapis/google/api," +
+		goImportPath + "/third_party/googleapis/google/api," +
 		"plugins=grpc:" +
 		outDir
 
@@ -41,7 +41,7 @@ func GeneratePBDotGo(protoFiles []string, svcDir, protoDir, outDir string) error
 		return errors.Wrap(err, "protoc-gen-go not exist in $PATH")
 	}
 
-	err = protoc(protoFiles, protoDir, svcDir, genGoCode)
+	err = protoc(protoPaths, importDir, genGoCode)
 	if err != nil {
 		return errors.Wrap(err, "could not generate go code from .proto files")
 	}
@@ -49,25 +49,23 @@ func GeneratePBDotGo(protoFiles []string, svcDir, protoDir, outDir string) error
 	return nil
 }
 
-// CodeGeneatorRequest gets the parsed output from protoc, marshals that output to a
-// CodeGeneratorRequest.
-func CodeGeneratorRequest(protoFiles []string, protoDir string) (*plugin.CodeGeneratorRequest, error) {
-
-	protocOut, err := getProtocOutput(protoFiles, protoDir)
+// CodeGeneratorRequest returns a protoc CodeGeneratorRequest from running
+// protoc on protoPaths
+func CodeGeneratorRequest(protoPaths []string) (*plugin.CodeGeneratorRequest, error) {
+	protocOut, err := getProtocOutput(protoPaths)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get output from protoc")
+		return nil, errors.Wrap(err, "unable to get output from protoc")
 	}
 
 	req := new(plugin.CodeGeneratorRequest)
 	if err = proto.Unmarshal(protocOut, req); err != nil {
-		return nil, errors.Wrap(err, "could not marshal protoc ouput to code generator request")
+		return nil, errors.Wrap(err, "unable to marshal protoc ouput to code generator request")
 	}
 
 	return req, nil
 }
 
-// ServiceFile searches through the files in the request and returns the
-// file which contains a service declaration.
+// ServiceFile returns the file in req that contains a service declaration.
 func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.File, error) {
 	var svcFileName string
 	for _, file := range req.GetProtoFile() {
@@ -92,7 +90,7 @@ func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.Fil
 
 // getProtocOutput calls exec's $ protoc with the passed protofiles and the
 // protoc-gen-truss-protocast plugin and returns the output of protoc
-func getProtocOutput(protoFiles []string, protoFileDir string) ([]byte, error) {
+func getProtocOutput(protoPaths []string) ([]byte, error) {
 	_, err := exec.LookPath("protoc-gen-truss-protocast")
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc-gen-truss-protocast does not exist in $PATH")
@@ -111,7 +109,7 @@ func getProtocOutput(protoFiles []string, protoFileDir string) ([]byte, error) {
 
 	pluginCall := filepath.Join("--truss-protocast_out=", protocOutDir)
 
-	err = protoc(protoFiles, protoFileDir, protocOutDir, pluginCall)
+	err = protoc(protoPaths, protocOutDir, pluginCall)
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc failed")
 	}
@@ -135,22 +133,17 @@ func getProtocOutput(protoFiles []string, protoFileDir string) ([]byte, error) {
 	return nil, errors.Errorf("no protoc output file found in: %v", protocOutDir)
 }
 
-// protoc exec's $ protoc on protoFiles, on their full path which is created with protoDir
-func protoc(protoFiles []string, protoDir, importDir, plugin string) error {
+// protoc exec's $ protoc on protoPaths
+func protoc(protoPaths []string, importDir, plugin string) error {
 	const googleAPIImportPath = "/third_party/googleapis"
-
-	var fullPaths []string
-	for _, f := range protoFiles {
-		fullPaths = append(fullPaths, filepath.Join(protoDir, f))
-	}
 
 	cmdArgs := []string{
 		"-I" + filepath.Join(importDir, googleAPIImportPath),
-		"--proto_path=" + protoDir,
+		"--proto_path=" + filepath.Dir(protoPaths[0]),
 		plugin,
 	}
 	// Append each definition file path to the end of that command args
-	cmdArgs = append(cmdArgs, fullPaths...)
+	cmdArgs = append(cmdArgs, protoPaths...)
 
 	protocExec := exec.Command(
 		"protoc",
@@ -175,7 +168,8 @@ func mkdir(path string) error {
 	return err
 }
 
-// outputGoogleImport places imported and required google.api.http protobuf option files
+// outputGoogleImport places imported and required google.api.http protobuf
+// option files
 func outputGoogleImport(dir string) error {
 	// Output files that are stored in template package
 	for _, assetPath := range assets.AssetNames() {
