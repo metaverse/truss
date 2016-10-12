@@ -1,4 +1,4 @@
-package pbinfo
+package svcdef
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ConsolidateHTTP accepts a Catalog and the io.Readers for the proto files
-// comprising the definition. It modifies the Catalog so that HTTPBindings and
+// ConsolidateHTTP accepts a SvcDef and the io.Readers for the proto files
+// comprising the definition. It modifies the SvcDef so that HTTPBindings and
 // their associated HTTPParamters are added to each ServiceMethod. After this,
 // each `HTTPBinding` will have a populated list of all the http parameters
 // that that binding requires, where that parameter should be located, and the
 // type of each parameter.
-func ConsolidateHTTP(cat *Catalog, protoFiles []io.Reader) error {
+func ConsolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
 	for _, pfile := range protoFiles {
 		lex := svcparse.NewSvcLexer(pfile)
 		protosvc, err := svcparse.ParseService(lex)
@@ -30,7 +30,7 @@ func ConsolidateHTTP(cat *Catalog, protoFiles []io.Reader) error {
 				return errors.Wrap(err, "error while parsing http options for the service definition")
 			}
 		}
-		assembleHTTPParams(cat.Service, protosvc)
+		assembleHTTPParams(sd.Service, protosvc)
 	}
 	return nil
 }

@@ -1,6 +1,6 @@
-package pbinfo
+package svcdef
 
-// After the initial creation of Catalog, each FieldType will have it's name
+// After the initial creation of Svcdef, each FieldType will have it's name
 // set to the name of the type that it represents, but it won't have a pointer
 // to the full instance of the type with that name. Type resolution is the
 // process of taking the name of each FieldType, then searching for the
@@ -12,17 +12,17 @@ type typeBox struct {
 	Enum    *Enum
 }
 
-// resolveTypes accepts a pointer to a Catalog and modifies that Catalog, and
+// resolveTypes accepts a pointer to a Svcdef and modifies that Svcdef, and
 // it's child structs, in place.
-func resolveTypes(cat *Catalog) {
-	tmap := newTypeMap(cat)
-	for _, m := range cat.Messages {
+func resolveTypes(sd *Svcdef) {
+	tmap := newTypeMap(sd)
+	for _, m := range sd.Messages {
 		for _, f := range m.Fields {
 			setType(f.Type, tmap)
 		}
 	}
-	if cat.Service != nil {
-		for _, m := range cat.Service.Methods {
+	if sd.Service != nil {
+		for _, m := range sd.Service.Methods {
 			setType(m.RequestType, tmap)
 			setType(m.ResponseType, tmap)
 		}
@@ -49,12 +49,12 @@ func setType(f *FieldType, tmap map[string]typeBox) {
 }
 
 // newTypeMap returns a map from
-func newTypeMap(cat *Catalog) map[string]typeBox {
+func newTypeMap(sd *Svcdef) map[string]typeBox {
 	rv := make(map[string]typeBox)
-	for _, m := range cat.Messages {
+	for _, m := range sd.Messages {
 		rv[m.Name] = typeBox{Message: m}
 	}
-	for _, e := range cat.Enums {
+	for _, e := range sd.Enums {
 		rv[e.Name] = typeBox{Enum: e}
 	}
 	return rv

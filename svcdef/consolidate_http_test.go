@@ -1,4 +1,4 @@
-package pbinfo
+package svcdef
 
 import (
 	"io"
@@ -84,16 +84,15 @@ service Map {
   }
 }`
 	// From code, build our SvcDef
-	cat, err := New([]io.Reader{strings.NewReader(goCode)}, []io.Reader{strings.NewReader(protoCode)})
+	sd, err := New([]io.Reader{strings.NewReader(goCode)}, []io.Reader{strings.NewReader(protoCode)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_ = cat
 
-	tmap := newTypeMap(cat)
+	tmap := newTypeMap(sd)
 
-	rq := cat.Service.Methods[0].RequestType
-	bind := cat.Service.Methods[0].Bindings[0]
+	rq := sd.Service.Methods[0].RequestType
+	bind := sd.Service.Methods[0].Bindings[0]
 	if len(bind.Params) != len(tmap["Thing"].Message.Fields) {
 		t.Fatalf(
 			"Number of http parameters '%v' differs from number of fields on message '%v'",

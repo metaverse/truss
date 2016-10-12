@@ -1,4 +1,4 @@
-package pbinfo
+package svcdef
 
 import (
 	"io"
@@ -17,12 +17,12 @@ func TestNewCatalog(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cat, err := New([]io.Reader{gf}, []io.Reader{pf})
+	sd, err := New([]io.Reader{gf}, []io.Reader{pf})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cat == nil {
-		t.Fatal("returned catalog is nil!")
+	if sd == nil {
+		t.Fatal("returned SvcDef is nil!")
 	}
 
 	return
@@ -48,15 +48,11 @@ type NestedTypeRequest struct {
 	B []*NestedMessageB
 	C EnumType
 }`
-	cat, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
+	sd, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	//sp := spew.ConfigState{
-	//Indent: "   ",
-	//}
-	tmap := newTypeMap(cat)
-	//sp.Dump(cat)
+	tmap := newTypeMap(sd)
 
 	var cases = []struct {
 		name, fieldname, typename string
@@ -115,11 +111,11 @@ type MapNestedMsg struct {
 	Beta map[int64]*NestedMessageC
 }
 `
-	cat, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
+	sd, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmap := newTypeMap(cat)
+	tmap := newTypeMap(sd)
 
 	expected, ok := tmap["MapNestedMsg"]
 	if !ok {

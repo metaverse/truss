@@ -1,4 +1,4 @@
-package pbinfo
+package svcdef
 
 // consider renaming to census, pbregistry, or just to "essence"
 
@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Catalog struct {
+type Svcdef struct {
 	// PkgName will be the pacakge name of the go file(s) analyzed. So if a
 	// Go file contained "package authz", then PkgName will be "authz". If
 	// multiple Go files are analyzed, it will be the package name of the last
@@ -20,7 +20,7 @@ type Catalog struct {
 	PkgName  string
 	Messages []*Message
 	Enums    []*Enum
-	// Service contains the sole service for this Catalog
+	// Service contains the sole service for this Svcdef
 	Service *Service
 }
 
@@ -112,14 +112,14 @@ func retrieveTypeSpecs(f *ast.File) ([]*ast.TypeSpec, error) {
 	return rv, nil
 }
 
-func New(goFiles []io.Reader, protoFiles []io.Reader) (*Catalog, error) {
-	rv := Catalog{}
+func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
+	rv := Svcdef{}
 
 	for _, gofile := range goFiles {
 		fset := token.NewFileSet()
 		fileAst, err := parser.ParseFile(fset, "", gofile, parser.ParseComments)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't parse go file to create catalog")
+			return nil, errors.Wrap(err, "couldn't parse go file to create Svcdef")
 		}
 
 		typespecs, _ := retrieveTypeSpecs(fileAst)
