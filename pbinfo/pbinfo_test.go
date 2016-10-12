@@ -1,17 +1,13 @@
 package pbinfo
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 func TestNewCatalog(t *testing.T) {
-	fmt.Println("testing!")
 	gf, err := os.Open("./test-go.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -21,7 +17,7 @@ func TestNewCatalog(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cat, err := New([]io.Reader{gf}, pf)
+	cat, err := New([]io.Reader{gf}, []io.Reader{pf})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,11 +52,11 @@ type NestedTypeRequest struct {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sp := spew.ConfigState{
-		Indent: "   ",
-	}
+	//sp := spew.ConfigState{
+	//Indent: "   ",
+	//}
 	tmap := newTypeMap(cat)
-	sp.Dump(cat)
+	//sp.Dump(cat)
 
 	var cases = []struct {
 		name, fieldname, typename string
@@ -70,7 +66,6 @@ type NestedTypeRequest struct {
 		{"NestedTypeRequest", "A", "NestedMessageA"},
 		{"NestedTypeRequest", "B", "NestedMessageB"},
 		{"NestedTypeRequest", "C", "EnumType"},
-		{"NestedTypeRequest", "D", "EnumType"},
 	}
 	for _, c := range cases {
 		box, ok := tmap[c.name]
@@ -104,4 +99,37 @@ type NestedTypeRequest struct {
 			}
 		}
 	}
+}
+
+// Test that type resolution of map values functions correctly. So if a message
+// has a map field, and that map field has values that are some other message
+// type, then the type of the key will be correct.
+func TestMapTypeResolution(t *testing.T) {
+	caseCode := `
+package TEST
+
+type NestedMessageC struct {
+	A int64
+}
+type MapNestedMsg struct {
+	Beta map[int64]*NestedMessageC
+}
+`
+	cat, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmap := newTypeMap(cat)
+
+	expected, ok := tmap["MapNestedMsg"]
+	if !ok {
+		t.Fatal("Couldn't find message 'MapNestedMsg'")
+	}
+
+	beta := expected.Message.Fields[0].Type.Map
+
+	if beta.ValueType.Message != tmap["NestedMessageC"].Message {
+		t.Fatalf("Expected beta ValueType to be 'NestedMessageC', is %q", beta.ValueType.Message.Name)
+	}
+
 }

@@ -30,6 +30,12 @@ func resolveTypes(cat *Catalog) {
 }
 
 func setType(f *FieldType, tmap map[string]typeBox) {
+	// Special case maps with valuetypes pointing to messages
+	if f.Map != nil {
+		if f.Map.ValueType.StarExpr {
+			f = f.Map.ValueType
+		}
+	}
 	entry, ok := tmap[f.Name]
 	if !ok {
 		return

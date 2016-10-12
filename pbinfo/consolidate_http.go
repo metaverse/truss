@@ -11,6 +11,12 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ConsolidateHTTP accepts a Catalog and the io.Readers for the proto files
+// comprising the definition. It modifies the Catalog so that HTTPBindings and
+// their associated HTTPParamters are added to each ServiceMethod. After this,
+// each `HTTPBinding` will have a populated list of all the http parameters
+// that that binding requires, where that parameter should be located, and the
+// type of each parameter.
 func ConsolidateHTTP(cat *Catalog, protoFiles []io.Reader) error {
 	for _, pfile := range protoFiles {
 		lex := svcparse.NewSvcLexer(pfile)
@@ -52,6 +58,7 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 			params = append(params, new_param)
 		}
 		bind.Params = params
+		meth.Bindings = append(meth.Bindings, &bind)
 	}
 
 	for _, hm := range httpsvc.Methods {
