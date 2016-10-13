@@ -69,15 +69,12 @@ func TestNewTemplateExecutor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	const goImportPath = "github.com/TuneLab/go-truss/gengokit"
+	const goPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
+	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	if got, want := te.ImportPath, goImportPath+"/general-service"; got != want {
-		t.Fatalf("\n`%v` was ImportPath\n`%v` was wanted", got, want)
 	}
 
 	if got, want := te.PackageName, dt.GetName(); got != want {
@@ -165,14 +162,15 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		}
 	`
 
-	const goImportPath = "github.com/TuneLab/go-truss/gengokit"
+	const goPackage = "github.com/TuneLab/go-truss/gengokit"
+	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
 
 	dt, err := deftree.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,7 +193,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 }
 
 func TestTrimTemplateExecutorServiceFuncs(t *testing.T) {
-	const goImportPath = "github.com/TuneLab/go-truss/gengokit"
+	const goPackage = "github.com/TuneLab/go-truss/gengokit"
 
 	const def = `
 		syntax = "proto3";
@@ -247,7 +245,7 @@ func TestTrimTemplateExecutorServiceFuncs(t *testing.T) {
 		"ProtoMethodAgainAgain": true,
 	}
 
-	te, err := stringToTemplateExector(def, goImportPath)
+	te, err := stringToTemplateExector(def, goPackage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,7 +295,7 @@ func stringToTemplateExector(def, importPath string) (*templateExecutor, error) 
 		return nil, err
 	}
 
-	te, err := newTemplateExecutor(dt, importPath)
+	te, err := newTemplateExecutor(dt, importPath, importPath)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +303,7 @@ func stringToTemplateExector(def, importPath string) (*templateExecutor, error) 
 	return te, nil
 
 }
+
 func TestUpdateServerMethods(t *testing.T) {
 	const def = `
 		syntax = "proto3";
@@ -336,14 +335,15 @@ func TestUpdateServerMethods(t *testing.T) {
 		}
 	`
 
-	const goImportPath = "github.com/TuneLab/go-truss/gengokit"
+	const goPackage = "github.com/TuneLab/go-truss/gengokit"
+	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
 
 	dt, err := deftree.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,8 @@ func TestUpdateServerMethods(t *testing.T) {
 }
 
 func TestAllTemplates(t *testing.T) {
-	const goImportPath = "github.com/TuneLab/go-truss/gengokit"
+	const goPackage = "github.com/TuneLab/go-truss/gengokit"
+	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
 
 	const def = `
 		syntax = "proto3";
@@ -466,7 +467,7 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goImportPath)
+	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,7 +477,7 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te2, err := newTemplateExecutor(dt2, goImportPath)
+	te2, err := newTemplateExecutor(dt2, goPackage, goPBPackage)
 	if err != nil {
 		t.Fatal(err)
 	}

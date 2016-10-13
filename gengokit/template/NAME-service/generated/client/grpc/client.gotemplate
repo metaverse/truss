@@ -20,7 +20,7 @@ import (
 	// This Service
 	handler "{{$templateExecutor.ImportPath -}} /handlers/server"
 	svc "{{$templateExecutor.ImportPath -}} /generated"
-	pb "{{$templateExecutor.ImportPath -}}"
+	pb "{{$templateExecutor.PBImportPath -}}"
 )
 
 // New returns an AddService backed by a gRPC client connection. It is the

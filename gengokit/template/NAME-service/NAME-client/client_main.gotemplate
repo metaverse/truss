@@ -27,7 +27,7 @@ import (
 	clientHandler "{{$templateExecutor.ImportPath -}} /handlers/client"
 	grpcclient "{{$templateExecutor.ImportPath -}} /generated/client/grpc"
 	httpclient "{{$templateExecutor.ImportPath -}} /generated/client/http"
-	pb "{{$templateExecutor.ImportPath -}}"
+	pb "{{$templateExecutor.PBImportPath -}}"
 )
 
 var (

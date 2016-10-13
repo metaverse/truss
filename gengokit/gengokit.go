@@ -31,11 +31,13 @@ func init() {
 	})
 }
 
-// templateExecutor is passed to templates as the executing struct its fields
+// templateExecutor is passed to templates as the executing struct; its fields
 // and methods are used to modify the template
 type templateExecutor struct {
 	// import path for the directory containing the definition .proto files
 	ImportPath string
+	// import path for .pb.go files containing service structs
+	PBImportPath string
 	// PackageName is the name of the package containing the service definition
 	PackageName string
 	// GRPC/Protobuff service, with all parameters and return values accessible
@@ -46,15 +48,12 @@ type templateExecutor struct {
 	funcMap    template.FuncMap
 }
 
-// newTemplateExecutor accepts a deftree and a goImportPath to construct a
-// templateExecutor for templating a service
-func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExecutor, error) {
+func newTemplateExecutor(dt deftree.Deftree, goPackage, goPBPackage string) (*templateExecutor, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
 		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
 	}
 
-	importPath := goImportPath + "/" + dt.GetName() + "-service"
 	funcMap := template.FuncMap{
 		"ToLower":    strings.ToLower,
 		"Title":      strings.Title,
@@ -62,28 +61,29 @@ func newTemplateExecutor(dt deftree.Deftree, goImportPath string) (*templateExec
 		"TrimPrefix": strings.TrimPrefix,
 	}
 	return &templateExecutor{
-		ImportPath:  importPath,
-		PackageName: dt.GetName(),
-		Service:     service,
-		ClientArgs:  clientarggen.New(service),
-		HTTPHelper:  httptransport.NewHelper(service),
-		funcMap:     funcMap,
+		ImportPath:   goPackage,
+		PBImportPath: goPBPackage,
+		PackageName:  dt.GetName(),
+		Service:      service,
+		ClientArgs:   clientarggen.New(service),
+		HTTPHelper:   httptransport.NewHelper(service),
+		funcMap:      funcMap,
 	}, nil
 }
 
-// GenerateGokit accepts a deftree representing the ast of a group of .proto
-// files, a []truss.NamedReadWriter representing files generated previously
-// (which may be nil for no previously generated files), and a goImportPath for
-// templating go code imports. GenerateGokit returns the a
-// []truss.NamedReadWriter representing a generated gokit service file
-// structure
-func GenerateGokit(dt deftree.Deftree, previousFiles []truss.NamedReadWriter, goImportPath string) ([]truss.NamedReadWriter, error) {
-	te, err := newTemplateExecutor(dt, goImportPath)
+// GenerateGokit returns a gokit service generated from a service definition (deftree),
+// the package to the root of the generated service goPackage, the package
+// to the .pb.go service struct files (goPBPackage) and any prevously generated files.
+func GenerateGokit(dt deftree.Deftree, goPackage, goPBPackage string, previousFiles []truss.NamedReadWriter) ([]truss.NamedReadWriter, error) {
+	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template executor")
 	}
 
-	fpm := filesToFilepathMap(previousFiles)
+	fpm := make(map[string]io.Reader, len(previousFiles))
+	for _, f := range previousFiles {
+		fpm[f.Name()] = f
+	}
 
 	var codeGenFiles []truss.NamedReadWriter
 
@@ -192,22 +192,12 @@ func generateResponseFile(templFP string, te *templateExecutor, prevGenMap map[s
 // disk
 func templatePathToActual(templFilePath, packageName string) string {
 	// Switch "NAME" in path with packageName.
-	//i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
+	// i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
 	actual := strings.Replace(templFilePath, "NAME", packageName, -1)
 
 	actual = strings.TrimSuffix(actual, "template")
 
 	return actual
-}
-
-// filesTofilepathMap accepts a slice of truss.NamedReadWriters and returns a map of filepaths
-// as strings to files as io.Reader
-func filesToFilepathMap(previousFiles []truss.NamedReadWriter) map[string]io.Reader {
-	pathToFile := make(map[string]io.Reader, len(previousFiles))
-	for _, f := range previousFiles {
-		pathToFile[f.Name()] = f
-	}
-	return pathToFile
 }
 
 // updateServerMethods accepts NAME-service/handlers/server/server_handlers.go
@@ -320,8 +310,7 @@ func (te templateExecutor) trimServiceFuncs(funcsInFile map[string]bool) *templa
 	return &te
 }
 
-// applyTemplateFromPath accepts a path to a template and a templateExecutor and calls
-// applyTemplate with the template at that template path and returns the result
+// applyTemplateFromPath calls applyTemplate with the template at templFilePath
 func applyTemplateFromPath(templFilePath string, executor *templateExecutor) (io.Reader, error) {
 
 	templBytes, err := templateFileAssets.Asset(templFilePath)
@@ -332,9 +321,6 @@ func applyTemplateFromPath(templFilePath string, executor *templateExecutor) (io
 	return applyTemplate(templBytes, templFilePath, executor)
 }
 
-// applyTemplate accepts a []byte, and a string representing the content and
-// name of a template and a templateExecutor to execute on that template. Returns a
-// io.Reader containing the results of that execution
 func applyTemplate(templBytes []byte, templName string, executor *templateExecutor) (io.Reader, error) {
 	templateString := string(templBytes)
 

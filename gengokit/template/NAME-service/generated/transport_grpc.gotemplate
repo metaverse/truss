@@ -13,7 +13,7 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	pb "{{$templateExecutor.ImportPath -}}"
+	pb "{{$templateExecutor.PBImportPath -}}"
 )
 
 

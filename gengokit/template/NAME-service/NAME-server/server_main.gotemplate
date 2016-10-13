@@ -33,7 +33,7 @@ import (
 	// This Service
 	handler "{{$templateExecutor.ImportPath -}} /handlers/server"
 	svc "{{$templateExecutor.ImportPath -}} /generated"
-	pb "{{$templateExecutor.ImportPath -}}"
+	pb "{{$templateExecutor.PBImportPath -}}"
 
 )
 

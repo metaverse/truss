@@ -7,17 +7,20 @@ HTTPTEST_MSG=\n$(OK_COLOR)Starting http end to end test:$(END_COLOR_LINE)
 
 CLITEST_MSG=\n$(OK_COLOR)Start server and cliclient generate, build, and run test:$(END_COLOR_LINE)
 
+
 all: test
 
-test: clean httptest clitest
+test: clean test-http test-cli
 
-httptest:
-	@echo -e '$(HTTPTEST_MSG)'
+test-http:
+	@printf '$(HTTPTEST_MSG)'
 	$(MAKE) -C http
 
-clitest:
-	@echo -e '$(CLITEST_MSG)'
+test-cli:
+	@printf '$(CLITEST_MSG)'
 	go test -v ./cli
 
 clean:
 	go test ./cli -clean
+	$(MAKE) -C http clean
+

@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/deftree/svcparse"
-	"github.com/TuneLab/go-truss/truss/protostage"
+	"github.com/TuneLab/go-truss/truss/execprotoc"
 )
 
 var gengo *generator.Generator
@@ -101,24 +101,21 @@ func NewFromString(def string) (Deftree, error) {
 	}
 	defer os.RemoveAll(protoDir)
 
-	err = ioutil.WriteFile(filepath.Join(protoDir, defFileName), []byte(def), 0666)
+	defPath := filepath.Join(protoDir, defFileName)
+
+	err = ioutil.WriteFile(defPath, []byte(def), 0666)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not write proto definition to file")
 	}
 
-	err = protostage.Stage(protoDir)
+	req, err := execprotoc.CodeGeneratorRequest([]string{defPath})
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to prepare filesystem for generating deftree")
+		return nil, errors.Wrap(err, "unable to create a proto CodeGeneratorRequest")
 	}
 
-	req, svcFile, err := protostage.Compose([]string{defFileName}, protoDir)
+	deftree, err := New(req, strings.NewReader(def))
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get CodeGeneratorRequest for generating deftree")
-	}
-
-	deftree, err := New(req, svcFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "can not create new deftree")
+		return nil, errors.Wrap(err, "could not create new deftree from CodeGeneratorRequest and definition")
 	}
 
 	return deftree, nil
