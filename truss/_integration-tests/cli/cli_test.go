@@ -147,7 +147,7 @@ func buildTestService(serviceDir string) (err error) {
 
 	binDir := serviceDir + "/bin"
 
-	err = mkdir(binDir)
+	err = os.MkdirAll(binDir, 0777)
 	if err != nil {
 		return err
 	}
@@ -353,13 +353,5 @@ func removeTestFiles(defDir string) {
 	os.RemoveAll(filepath.Join(defDir, "TEST-service"))
 	os.RemoveAll(filepath.Join(defDir, "bin"))
 	os.RemoveAll(filepath.Join(defDir, "pbout"))
-	mkdir(filepath.Join(defDir, "pbout"))
-}
-
-// mkdir acts like $ mkdir -p path
-func mkdir(path string) error {
-	// 0775 is the file mode that $ mkdir uses when creating a directoru
-	err := os.MkdirAll(path, 0775)
-
-	return err
+	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)
 }

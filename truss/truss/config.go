@@ -9,10 +9,10 @@ type Config struct {
 	// The first path in $GOPATH
 	GOPATH string
 
-	// The path to where .pb.go files protoc-gen-go creates will be written
-	PBGoPath string
-	// The path to the NAME-service directory; third_party will be written
-	ServicePath string
+	// The go packge where .pb.go files protoc-gen-go creates will be written
+	PBPackage string
+	// The go package where the service code will be written
+	ServicePackage string
 
 	// The paths to each of the .proto files truss is being run against
 	DefPaths []string
@@ -20,22 +20,16 @@ type Config struct {
 	PrevGen []NamedReadWriter
 }
 
-// GoSvcImportPath returns a go package import string for the Config.ServicePath
-func (c *Config) GoSvcImportPath() string {
-	goSvcImportPath, err := filepath.Rel(filepath.Join(c.GOPATH, "src"), c.ServicePath)
-	if err != nil {
-		return ""
-	}
+// ServicePath returns the full path to Config.ServicePackage
+func (c *Config) ServicePath() string {
+	goSvcPath := filepath.Join(c.GOPATH, "src", c.ServicePackage)
 
-	return goSvcImportPath
+	return goSvcPath
 }
 
-// GoPBImportPath returns a go package import string for the Config.PBGoPath
-func (c *Config) GoPBImportPath() string {
-	goPBImportPath, err := filepath.Rel(filepath.Join(c.GOPATH, "src"), c.PBGoPath)
-	if err != nil {
-		return ""
-	}
+// PBPath returns the full paht to Config.PBPackage
+func (c *Config) PBPath() string {
+	pbPath := filepath.Join(c.GOPATH, "src", c.PBPackage)
 
-	return goPBImportPath
+	return pbPath
 }

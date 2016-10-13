@@ -3,8 +3,10 @@
 ## Dependencies
 
 1. Everything required to install `truss`
-2. go-bindata for compiling templates into binary `$ go get
-   github.com/jteeuwen/go-bindata/...`
+2. go-bindata for compiling templates into binary
+```
+$ go get github.com/jteeuwen/go-bindata/...
+```
 
 ## Building
 

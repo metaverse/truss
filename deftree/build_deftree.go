@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/deftree/svcparse"
-	"github.com/TuneLab/go-truss/truss/protostuff"
+	"github.com/TuneLab/go-truss/truss/execprotoc"
 )
 
 var gengo *generator.Generator
@@ -108,7 +108,7 @@ func NewFromString(def string) (Deftree, error) {
 		return nil, errors.Wrap(err, "could not write proto definition to file")
 	}
 
-	req, err := protostuff.CodeGeneratorRequest([]string{defPath})
+	req, err := execprotoc.CodeGeneratorRequest([]string{defPath})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create a proto CodeGeneratorRequest")
 	}

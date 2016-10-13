@@ -1,7 +1,6 @@
-// Package protostuff provides an interface for interacting with protoc
+// Package execprotoc provides an interface for interacting with protoc
 // requiring only paths to files on disk
-
-package protostuff
+package execprotoc
 
 import (
 	"io/ioutil"
@@ -38,12 +37,12 @@ func GeneratePBDotGo(protoPaths []string, importDir, outDir string) error {
 
 	_, err = exec.LookPath("protoc-gen-go")
 	if err != nil {
-		return errors.Wrap(err, "protoc-gen-go not exist in $PATH")
+		return errors.Wrap(err, "cannot find protoc-gen-go in PATH")
 	}
 
 	err = protoc(protoPaths, importDir, genGoCode)
 	if err != nil {
-		return errors.Wrap(err, "could not generate go code from .proto files")
+		return errors.Wrap(err, "cannot exec protoc with protoc-gen-go")
 	}
 
 	return nil
@@ -54,12 +53,12 @@ func GeneratePBDotGo(protoPaths []string, importDir, outDir string) error {
 func CodeGeneratorRequest(protoPaths []string) (*plugin.CodeGeneratorRequest, error) {
 	protocOut, err := getProtocOutput(protoPaths)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get output from protoc")
+		return nil, errors.Wrap(err, "cannot get output from protoc")
 	}
 
 	req := new(plugin.CodeGeneratorRequest)
 	if err = proto.Unmarshal(protocOut, req); err != nil {
-		return nil, errors.Wrap(err, "unable to marshal protoc ouput to code generator request")
+		return nil, errors.Wrap(err, "cannot marshal protoc ouput to code generator request")
 	}
 
 	return req, nil
@@ -81,14 +80,14 @@ func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.Fil
 	svc, err := os.Open(filepath.Join(protoFileDir, svcFileName))
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not open service file: %v\n in path: %v",
+		return nil, errors.Wrapf(err, "cannot open service file: %v\n in path: %v",
 			protoFileDir, svcFileName)
 	}
 
 	return svc, nil
 }
 
-// getProtocOutput calls exec's $ protoc with the passed protofiles and the
+// getProtocOutput executes protoc with the passed protofiles and the
 // protoc-gen-truss-protocast plugin and returns the output of protoc
 func getProtocOutput(protoPaths []string) ([]byte, error) {
 	_, err := exec.LookPath("protoc-gen-truss-protocast")
@@ -98,13 +97,13 @@ func getProtocOutput(protoPaths []string) ([]byte, error) {
 
 	protocOutDir, err := ioutil.TempDir("", "truss-")
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create temp directory")
+		return nil, errors.Wrap(err, "cannot create temp directory")
 	}
 	defer os.RemoveAll(protocOutDir)
 
 	err = outputGoogleImport(protocOutDir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not write protoc imports to dir: %s", protocOutDir)
+		return nil, errors.Wrapf(err, "cannot write protoc imports to dir: %s", protocOutDir)
 	}
 
 	pluginCall := filepath.Join("--truss-protocast_out=", protocOutDir)
@@ -116,24 +115,25 @@ func getProtocOutput(protoPaths []string) ([]byte, error) {
 
 	fileInfo, err := ioutil.ReadDir(protocOutDir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not read directory: %v", protocOutDir)
+		return nil, errors.Wrapf(err, "cannot read directory: %v", protocOutDir)
 	}
 
 	for _, f := range fileInfo {
-		if !f.IsDir() {
-			fPath := filepath.Join(protocOutDir, f.Name())
-			protocOut, err := ioutil.ReadFile(fPath)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot read file: %v", fPath)
-			}
-			return protocOut, nil
+		if f.IsDir() {
+			continue
 		}
+		fPath := filepath.Join(protocOutDir, f.Name())
+		protocOut, err := ioutil.ReadFile(fPath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot read file: %v", fPath)
+		}
+		return protocOut, nil
 	}
 
 	return nil, errors.Errorf("no protoc output file found in: %v", protocOutDir)
 }
 
-// protoc exec's $ protoc on protoPaths
+// protoc executes protoc on protoPaths
 func protoc(protoPaths []string, importDir, plugin string) error {
 	const googleAPIImportPath = "/third_party/googleapis"
 
@@ -160,14 +160,6 @@ func protoc(protoPaths []string, importDir, plugin string) error {
 	return nil
 }
 
-// mkdir acts like $ mkdir -p path
-func mkdir(path string) error {
-	// 0775 is the file mode that $ mkdir uses when creating a directory
-	err := os.MkdirAll(path, 0775)
-
-	return err
-}
-
 // outputGoogleImport places imported and required google.api.http protobuf
 // option files
 func outputGoogleImport(dir string) error {
@@ -181,9 +173,9 @@ func outputGoogleImport(dir string) error {
 			fullPath = strings.TrimSuffix(fullPath, "template")
 		}
 
-		err := mkdir(filepath.Dir(fullPath))
+		err := os.MkdirAll(filepath.Dir(fullPath), 0777)
 		if err != nil {
-			return errors.Wrapf(err, "unable to create directory for %v", filepath.Dir(fullPath))
+			return errors.Wrapf(err, "cannot create directory %v", filepath.Dir(fullPath))
 		}
 
 		err = ioutil.WriteFile(fullPath, fileBytes, 0666)

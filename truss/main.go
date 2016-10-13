@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/truss/protostuff"
+	"github.com/TuneLab/go-truss/truss/execprotoc"
 	"github.com/TuneLab/go-truss/truss/truss"
 
 	"github.com/TuneLab/go-truss/deftree"
@@ -20,41 +20,41 @@ import (
 )
 
 var (
-	pbPathFlag = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
+	pbPackageFlag = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
 )
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
 	}
 }
 
 func main() {
 	cfg, err := parseInput()
-	exitIfError(errors.Wrap(err, "could not parse input"))
+	exitIfError(errors.Wrap(err, "cannot parse input"))
 
 	dt, err := parseServiceDefinition(cfg.DefPaths)
-	exitIfError(errors.Wrap(err, "unable to parse input definition proto files"))
+	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
 	err = updateConfigWithService(cfg, dt)
-	exitIfError(errors.Wrap(err, "unable to read system based on service definition"))
+	exitIfError(err)
 
 	genFiles, err := generateCode(cfg, dt)
-	exitIfError(errors.Wrap(err, "unable to generate service"))
+	exitIfError(errors.Wrap(err, "cannot generate service"))
 
 	for _, f := range genFiles {
-		err := writeGenFile(f, cfg.ServicePath)
+		err := writeGenFile(f, cfg.ServicePath())
 		if err != nil {
-			exitIfError(errors.Wrap(err, "unable to write output"))
+			exitIfError(errors.Wrap(err, "cannot to write output"))
 		}
 	}
 }
@@ -67,7 +67,7 @@ func parseInput() (*truss.Config, error) {
 	// GOPATH
 	goPaths := filepath.SplitList(os.Getenv("GOPATH"))
 	if goPaths == nil {
-		return nil, errors.New("$GOPATH not set")
+		return nil, errors.New("GOPATH not set")
 	}
 	cfg.GOPATH = goPaths[0]
 
@@ -76,15 +76,18 @@ func parseInput() (*truss.Config, error) {
 	rawDefinitionPaths := flag.Args()
 	cfg.DefPaths, err = cleanProtofilePath(rawDefinitionPaths)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse input arguments")
+		return nil, errors.Wrap(err, "cannot parse input arguments")
 	}
 
-	// PBGoPath
-	if *pbPathFlag != "" {
-		cfg.PBGoPath = filepath.Join(cfg.GOPATH, "src", *pbPathFlag)
-		if !fileExists(cfg.PBGoPath) {
-			return nil, errors.Errorf(".pb.go output package directory does not exist: %q", cfg.PBGoPath)
-		}
+	// PBGoPackage
+	if *pbPackageFlag == "" {
+		return &cfg, nil
+	}
+
+	cfg.PBPackage = *pbPackageFlag
+	if !fileExists(
+		filepath.Join(cfg.GOPATH, "src", cfg.PBPackage)) {
+		return nil, errors.Errorf(".pb.go output package directory does not exist: %q", cfg.PBPackage)
 	}
 
 	return &cfg, nil
@@ -93,19 +96,19 @@ func parseInput() (*truss.Config, error) {
 // parseServiceDefinition returns a deftree which contains all needed for all
 // generating a truss service and documentation
 func parseServiceDefinition(definitionPaths []string) (deftree.Deftree, error) {
-	protocOut, err := protostuff.CodeGeneratorRequest(definitionPaths)
+	protocOut, err := execprotoc.CodeGeneratorRequest(definitionPaths)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to use parse input files with protoc")
+		return nil, errors.Wrap(err, "cannot use parse input files with protoc")
 	}
 
-	svcFile, err := protostuff.ServiceFile(protocOut, filepath.Dir(definitionPaths[0]))
+	svcFile, err := execprotoc.ServiceFile(protocOut, filepath.Dir(definitionPaths[0]))
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to find service definition file")
+		return nil, errors.Wrap(err, "cannot find service definition file")
 	}
 
 	dt, err := deftree.New(protocOut, svcFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to construct service defintion")
+		return nil, errors.Wrap(err, "cannot to construct service definition")
 	}
 
 	return dt, nil
@@ -114,22 +117,26 @@ func parseServiceDefinition(definitionPaths []string) (deftree.Deftree, error) {
 // updateConfigWithService updates the config with all information needed to
 // generate a truss service using the parsedServiceDefinition deftree
 func updateConfigWithService(cfg *truss.Config, dt deftree.Deftree) error {
+	var err error
+
 	// Service Path
 	svcName := dt.GetName() + "-service"
-	cfg.ServicePath = filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcName)
+	svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcName)
+	cfg.ServicePackage, err = filepath.Rel(filepath.Join(cfg.GOPATH, "src"), svcPath)
+	if err != nil {
+		return errors.Wrap(err, "service path is not in GOPATH")
+	}
 
 	// PrevGen
-	var err error
-	cfg.PrevGen, err = readPreviousGeneration(cfg.ServicePath)
+	cfg.PrevGen, err = readPreviousGeneration(cfg.ServicePath())
 	if err != nil {
-		return errors.Wrap(err, "unable to read previously generated files")
+		return errors.Wrap(err, "cannot read previously generated files")
 	}
 
 	// PBGoPath
-	if cfg.PBGoPath == "" {
-		cfg.PBGoPath = cfg.ServicePath
+	if cfg.PBPackage == "" {
+		cfg.PBPackage = cfg.ServicePackage
 	}
-	fmt.Println(cfg.PBGoPath)
 
 	return nil
 }
@@ -138,20 +145,20 @@ func updateConfigWithService(cfg *truss.Config, dt deftree.Deftree) error {
 // service with documentation
 func generateCode(cfg *truss.Config, dt deftree.Deftree) ([]truss.NamedReadWriter, error) {
 	if cfg.PrevGen == nil {
-		err := mkdir(cfg.ServicePath)
+		err := os.Mkdir(cfg.ServicePath(), 0777)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to create service directory")
+			return nil, errors.Wrap(err, "cannot create service directory")
 		}
 	}
 
-	err := protostuff.GeneratePBDotGo(cfg.DefPaths, cfg.ServicePath, cfg.PBGoPath)
+	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.ServicePath(), cfg.PBPath())
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create .pb.go files")
+		return nil, errors.Wrap(err, "cannot create .pb.go files")
 	}
 
-	genGokitFiles, err := gengokit.GenerateGokit(dt, cfg.PrevGen, cfg.GoSvcImportPath(), cfg.GoPBImportPath())
+	genGokitFiles, err := gengokit.GenerateGokit(dt, cfg.ServicePackage, cfg.PBPackage, cfg.PrevGen)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to generate gokit service")
+		return nil, errors.Wrap(err, "cannot generate gokit service")
 	}
 
 	genDocFiles := gendoc.GenerateDocs(dt)
@@ -172,19 +179,19 @@ func writeGenFile(f truss.NamedReadWriter, serviceDir string) error {
 	name := f.Name()
 
 	fullPath := filepath.Join(outDir, name)
-	err := mkdir(fullPath)
+	err := os.MkdirAll(filepath.Dir(fullPath), 0777)
 	if err != nil {
 		return err
 	}
 
 	file, err := os.Create(fullPath)
 	if err != nil {
-		return errors.Wrapf(err, "could create file %v", fullPath)
+		return errors.Wrapf(err, "cannot create file %v", fullPath)
 	}
 
 	_, err = io.Copy(file, f)
 	if err != nil {
-		return errors.Wrapf(err, "could not write to %v", fullPath)
+		return errors.Wrapf(err, "cannot write to %v", fullPath)
 	}
 	return nil
 }
@@ -198,7 +205,7 @@ func cleanProtofilePath(rawPaths []string) ([]string, error) {
 	for _, def := range rawPaths {
 		full, err := filepath.Abs(def)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not get working directoru of truss")
+			return nil, errors.Wrap(err, "cannot get working directory of truss")
 		}
 
 		fullPaths = append(fullPaths, full)
@@ -209,16 +216,6 @@ func cleanProtofilePath(rawPaths []string) ([]string, error) {
 	}
 
 	return fullPaths, nil
-}
-
-// mkdir acts like $ mkdir -p path
-func mkdir(path string) error {
-	dir := filepath.Dir(path)
-
-	// 0775 is the file mode that $ mkdir uses when creating a directoru
-	err := os.MkdirAll(dir, 0775)
-
-	return err
 }
 
 // exitIfError will print the error message and exit 1 if the passed error is
@@ -237,13 +234,14 @@ func readPreviousGeneration(serviceDir string) ([]truss.NamedReadWriter, error) 
 	}
 
 	var files []truss.NamedReadWriter
+	dir, _ := filepath.Split(serviceDir)
 	sfs := simpleFileConstructor{
-		dirPath: filepath.Dir(serviceDir),
-		files:   files,
+		dir:   dir,
+		files: files,
 	}
 	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "could not fully walk directory %v", sfs.dirPath)
+		return nil, errors.Wrapf(err, "cannot fully walk directory %v", sfs.dir)
 	}
 
 	return sfs.files, nil
@@ -253,8 +251,8 @@ func readPreviousGeneration(serviceDir string) ([]truss.NamedReadWriter, error) 
 // This allows for filepath.Walk to be called with makeSimpleFile and build a truss.SimpleFile
 // for all files in a direcotry
 type simpleFileConstructor struct {
-	dirPath string
-	files   []truss.NamedReadWriter
+	dir   string
+	files []truss.NamedReadWriter
 }
 
 // makeSimpleFile is of type filepath.WalkFunc
@@ -267,11 +265,11 @@ func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, 
 	byteContent, ioErr := ioutil.ReadFile(path)
 
 	if ioErr != nil {
-		return errors.Wrapf(ioErr, "could not read file: %v", path)
+		return errors.Wrapf(ioErr, "cannot read file: %v", path)
 	}
 
 	// trim the prefix of the path to the proto files from the full path to the file
-	name := strings.TrimPrefix(path, sfs.dirPath+"/")
+	name := strings.TrimPrefix(path, sfs.dir)
 	var file truss.SimpleFile
 	file.Path = name
 	file.Write(byteContent)
