@@ -1,19 +1,28 @@
 package svcdef
 
-// After the initial creation of Svcdef, each FieldType will have it's name
-// set to the name of the type that it represents, but it won't have a pointer
-// to the full instance of the type with that name. Type resolution is the
-// process of taking the name of each FieldType, then searching for the
-// enum/message with that name and setting the respective *Message/*Enum
-// property of our FieldType to point to that enum/message.
-
+// typeBox holds either a Message or an Enum; used only in resolveTypes() to
+// associate FieldTypes with their underlying data.
 type typeBox struct {
 	Message *Message
 	Enum    *Enum
 }
 
-// resolveTypes accepts a pointer to a Svcdef and modifies that Svcdef, and
-// it's child structs, in place.
+// newTypeMap returns a map of type (Message/Enum) Names to correlated
+// typeBoxes
+func newTypeMap(sd *Svcdef) map[string]typeBox {
+	rv := make(map[string]typeBox)
+	for _, m := range sd.Messages {
+		rv[m.Name] = typeBox{Message: m}
+	}
+	for _, e := range sd.Enums {
+		rv[e.Name] = typeBox{Enum: e}
+	}
+	return rv
+}
+
+// resolveTypes sets the underlying types for all of our service methods
+// Fields, RequestTypes, and ResponseTypes. Since Enums have no Fields which
+// may refer to other types, they are ignored by resolveTypes.
 func resolveTypes(sd *Svcdef) {
 	tmap := newTypeMap(sd)
 	for _, m := range sd.Messages {
@@ -29,6 +38,7 @@ func resolveTypes(sd *Svcdef) {
 	}
 }
 
+// setType unpacks typeBox value into corresponding FieldType
 func setType(f *FieldType, tmap map[string]typeBox) {
 	// Special case maps with valuetypes pointing to messages
 	if f.Map != nil {
@@ -46,16 +56,4 @@ func setType(f *FieldType, tmap map[string]typeBox) {
 	case entry.Message != nil:
 		f.Message = entry.Message
 	}
-}
-
-// newTypeMap returns a map from
-func newTypeMap(sd *Svcdef) map[string]typeBox {
-	rv := make(map[string]typeBox)
-	for _, m := range sd.Messages {
-		rv[m.Name] = typeBox{Message: m}
-	}
-	for _, e := range sd.Enums {
-		rv[e.Name] = typeBox{Enum: e}
-	}
-	return rv
 }

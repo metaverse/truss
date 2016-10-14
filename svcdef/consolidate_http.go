@@ -11,13 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ConsolidateHTTP accepts a SvcDef and the io.Readers for the proto files
+// consolidateHTTP accepts a SvcDef and the io.Readers for the proto files
 // comprising the definition. It modifies the SvcDef so that HTTPBindings and
 // their associated HTTPParamters are added to each ServiceMethod. After this,
 // each `HTTPBinding` will have a populated list of all the http parameters
 // that that binding requires, where that parameter should be located, and the
 // type of each parameter.
-func ConsolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
+func consolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
 	for _, pfile := range protoFiles {
 		lex := svcparse.NewSvcLexer(pfile)
 		protosvc, err := svcparse.ParseService(lex)
@@ -35,6 +35,9 @@ func ConsolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
 	return nil
 }
 
+// assembleHTTPParams will use the output of the service parser to create
+// HTTPParams for each service RequestType field indicating that parameters
+// location, and the field to which it refers.
 func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 	getMethNamed := func(name string) *ServiceMethod {
 		for _, m := range svc.Methods {
@@ -45,6 +48,8 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 		return nil
 	}
 
+	// This logic has been broken out of the for loop below to flatten
+	// this function and avoid difficult to read nesting
 	createParams := func(meth *ServiceMethod, parsedbind *svcparse.HTTPBinding) {
 		msg := meth.RequestType.Message
 		bind := HTTPBinding{}
@@ -61,6 +66,8 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 		meth.Bindings = append(meth.Bindings, &bind)
 	}
 
+	// Iterate through every HTTPBinding on every ServiceMethod, and create the
+	// HTTPParameters for that HTTPBinding.
 	for _, hm := range httpsvc.Methods {
 		m := getMethNamed(hm.Name)
 		if m == nil {

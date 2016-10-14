@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestNewCatalog(t *testing.T) {
+func TestSvcdef(t *testing.T) {
 	gf, err := os.Open("./test-go.txt")
 	if err != nil {
 		t.Fatal(err)
@@ -97,17 +97,17 @@ type NestedTypeRequest struct {
 	}
 }
 
-// Test that type resolution of map values functions correctly. So if a message
-// has a map field, and that map field has values that are some other message
-// type, then the type of the key will be correct.
-func TestMapTypeResolution(t *testing.T) {
+// Test that after calling New(), type resolution of map values functions
+// correctly. So if a message has a map field, and that map field has values
+// that are some other message type, then the type of the key will be correct.
+func TestNewMapTypeResolution(t *testing.T) {
 	caseCode := `
 package TEST
 
 type NestedMessageC struct {
 	A int64
 }
-type MapNestedMsg struct {
+type MsgWithMap struct {
 	Beta map[int64]*NestedMessageC
 }
 `
@@ -115,16 +115,28 @@ type MapNestedMsg struct {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmap := newTypeMap(sd)
-
-	expected, ok := tmap["MapNestedMsg"]
-	if !ok {
-		t.Fatal("Couldn't find message 'MapNestedMsg'")
+	// findMsg defined here for brevity
+	findMsg := func(name string) *Message {
+		for _, m := range sd.Messages {
+			if m.Name == name {
+				return m
+			}
+		}
+		return nil
 	}
 
-	beta := expected.Message.Fields[0].Type.Map
+	msg := findMsg("MsgWithMap")
+	if msg == nil {
+		t.Fatal("Couldn't find message 'MsgWithMap'")
+	}
+	expected := findMsg("NestedMessageC")
+	if expected == nil {
+		t.Fatal("Couldn't find message 'NestedMessageC'")
+	}
 
-	if beta.ValueType.Message != tmap["NestedMessageC"].Message {
+	beta := msg.Fields[0].Type.Map
+
+	if beta.ValueType.Message != expected {
 		t.Fatalf("Expected beta ValueType to be 'NestedMessageC', is %q", beta.ValueType.Message.Name)
 	}
 
