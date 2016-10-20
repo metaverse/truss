@@ -455,22 +455,22 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"third_party/googleapis/google/api/annotations.pb.gotemplate": third_partyGoogleapisGoogleApiAnnotationsPbGotemplate,
-	"third_party/googleapis/google/api/annotations.proto": third_partyGoogleapisGoogleApiAnnotationsProto,
-	"third_party/googleapis/google/api/http.pb.gotemplate": third_partyGoogleapisGoogleApiHttpPbGotemplate,
-	"third_party/googleapis/google/api/http.proto": third_partyGoogleapisGoogleApiHttpProto,
-	"third_party/googleapis/google/protobuf/any.proto": third_partyGoogleapisGoogleProtobufAnyProto,
-	"third_party/googleapis/google/protobuf/api.proto": third_partyGoogleapisGoogleProtobufApiProto,
+	"third_party/googleapis/google/api/annotations.pb.gotemplate":  third_partyGoogleapisGoogleApiAnnotationsPbGotemplate,
+	"third_party/googleapis/google/api/annotations.proto":          third_partyGoogleapisGoogleApiAnnotationsProto,
+	"third_party/googleapis/google/api/http.pb.gotemplate":         third_partyGoogleapisGoogleApiHttpPbGotemplate,
+	"third_party/googleapis/google/api/http.proto":                 third_partyGoogleapisGoogleApiHttpProto,
+	"third_party/googleapis/google/protobuf/any.proto":             third_partyGoogleapisGoogleProtobufAnyProto,
+	"third_party/googleapis/google/protobuf/api.proto":             third_partyGoogleapisGoogleProtobufApiProto,
 	"third_party/googleapis/google/protobuf/compiler/plugin.proto": third_partyGoogleapisGoogleProtobufCompilerPluginProto,
-	"third_party/googleapis/google/protobuf/descriptor.proto": third_partyGoogleapisGoogleProtobufDescriptorProto,
-	"third_party/googleapis/google/protobuf/duration.proto": third_partyGoogleapisGoogleProtobufDurationProto,
-	"third_party/googleapis/google/protobuf/empty.proto": third_partyGoogleapisGoogleProtobufEmptyProto,
-	"third_party/googleapis/google/protobuf/field_mask.proto": third_partyGoogleapisGoogleProtobufField_maskProto,
-	"third_party/googleapis/google/protobuf/source_context.proto": third_partyGoogleapisGoogleProtobufSource_contextProto,
-	"third_party/googleapis/google/protobuf/struct.proto": third_partyGoogleapisGoogleProtobufStructProto,
-	"third_party/googleapis/google/protobuf/timestamp.proto": third_partyGoogleapisGoogleProtobufTimestampProto,
-	"third_party/googleapis/google/protobuf/type.proto": third_partyGoogleapisGoogleProtobufTypeProto,
-	"third_party/googleapis/google/protobuf/wrappers.proto": third_partyGoogleapisGoogleProtobufWrappersProto,
+	"third_party/googleapis/google/protobuf/descriptor.proto":      third_partyGoogleapisGoogleProtobufDescriptorProto,
+	"third_party/googleapis/google/protobuf/duration.proto":        third_partyGoogleapisGoogleProtobufDurationProto,
+	"third_party/googleapis/google/protobuf/empty.proto":           third_partyGoogleapisGoogleProtobufEmptyProto,
+	"third_party/googleapis/google/protobuf/field_mask.proto":      third_partyGoogleapisGoogleProtobufField_maskProto,
+	"third_party/googleapis/google/protobuf/source_context.proto":  third_partyGoogleapisGoogleProtobufSource_contextProto,
+	"third_party/googleapis/google/protobuf/struct.proto":          third_partyGoogleapisGoogleProtobufStructProto,
+	"third_party/googleapis/google/protobuf/timestamp.proto":       third_partyGoogleapisGoogleProtobufTimestampProto,
+	"third_party/googleapis/google/protobuf/type.proto":            third_partyGoogleapisGoogleProtobufTypeProto,
+	"third_party/googleapis/google/protobuf/wrappers.proto":        third_partyGoogleapisGoogleProtobufWrappersProto,
 }
 
 // AssetDir returns the file names below a certain
@@ -512,15 +512,16 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"third_party": &bintree{nil, map[string]*bintree{
 		"googleapis": &bintree{nil, map[string]*bintree{
 			"google": &bintree{nil, map[string]*bintree{
 				"api": &bintree{nil, map[string]*bintree{
 					"annotations.pb.gotemplate": &bintree{third_partyGoogleapisGoogleApiAnnotationsPbGotemplate, map[string]*bintree{}},
-					"annotations.proto": &bintree{third_partyGoogleapisGoogleApiAnnotationsProto, map[string]*bintree{}},
-					"http.pb.gotemplate": &bintree{third_partyGoogleapisGoogleApiHttpPbGotemplate, map[string]*bintree{}},
-					"http.proto": &bintree{third_partyGoogleapisGoogleApiHttpProto, map[string]*bintree{}},
+					"annotations.proto":         &bintree{third_partyGoogleapisGoogleApiAnnotationsProto, map[string]*bintree{}},
+					"http.pb.gotemplate":        &bintree{third_partyGoogleapisGoogleApiHttpPbGotemplate, map[string]*bintree{}},
+					"http.proto":                &bintree{third_partyGoogleapisGoogleApiHttpProto, map[string]*bintree{}},
 				}},
 				"protobuf": &bintree{nil, map[string]*bintree{
 					"any.proto": &bintree{third_partyGoogleapisGoogleProtobufAnyProto, map[string]*bintree{}},
@@ -528,15 +529,15 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"compiler": &bintree{nil, map[string]*bintree{
 						"plugin.proto": &bintree{third_partyGoogleapisGoogleProtobufCompilerPluginProto, map[string]*bintree{}},
 					}},
-					"descriptor.proto": &bintree{third_partyGoogleapisGoogleProtobufDescriptorProto, map[string]*bintree{}},
-					"duration.proto": &bintree{third_partyGoogleapisGoogleProtobufDurationProto, map[string]*bintree{}},
-					"empty.proto": &bintree{third_partyGoogleapisGoogleProtobufEmptyProto, map[string]*bintree{}},
-					"field_mask.proto": &bintree{third_partyGoogleapisGoogleProtobufField_maskProto, map[string]*bintree{}},
+					"descriptor.proto":     &bintree{third_partyGoogleapisGoogleProtobufDescriptorProto, map[string]*bintree{}},
+					"duration.proto":       &bintree{third_partyGoogleapisGoogleProtobufDurationProto, map[string]*bintree{}},
+					"empty.proto":          &bintree{third_partyGoogleapisGoogleProtobufEmptyProto, map[string]*bintree{}},
+					"field_mask.proto":     &bintree{third_partyGoogleapisGoogleProtobufField_maskProto, map[string]*bintree{}},
 					"source_context.proto": &bintree{third_partyGoogleapisGoogleProtobufSource_contextProto, map[string]*bintree{}},
-					"struct.proto": &bintree{third_partyGoogleapisGoogleProtobufStructProto, map[string]*bintree{}},
-					"timestamp.proto": &bintree{third_partyGoogleapisGoogleProtobufTimestampProto, map[string]*bintree{}},
-					"type.proto": &bintree{third_partyGoogleapisGoogleProtobufTypeProto, map[string]*bintree{}},
-					"wrappers.proto": &bintree{third_partyGoogleapisGoogleProtobufWrappersProto, map[string]*bintree{}},
+					"struct.proto":         &bintree{third_partyGoogleapisGoogleProtobufStructProto, map[string]*bintree{}},
+					"timestamp.proto":      &bintree{third_partyGoogleapisGoogleProtobufTimestampProto, map[string]*bintree{}},
+					"type.proto":           &bintree{third_partyGoogleapisGoogleProtobufTypeProto, map[string]*bintree{}},
+					"wrappers.proto":       &bintree{third_partyGoogleapisGoogleProtobufWrappersProto, map[string]*bintree{}},
 				}},
 			}},
 		}},
@@ -589,4 +590,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
