@@ -68,12 +68,6 @@ func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, req
 	_ = tmp
 {{- range $field := $binding.Fields }}
 {{- if eq $field.Location "query"}}
-{{/*
-	{{- if eq $field.ProtobufLabel "LABEL_REPEATED"}}
-		for _, v := range req.{{$field.CamelName}} {
-			values.Add("{{$field.Name}}", fmt.Sprint(v))
-		}
-*/}}
 	{{if or (not $field.IsBaseType) $field.Repeated}}
 		tmp, err = json.Marshal(req.{{$field.CamelName}})
 		if err != nil {
