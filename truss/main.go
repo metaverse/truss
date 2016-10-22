@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/truss/execprotoc"
+	"github.com/TuneLab/go-truss/truss/parsepkgname"
 	"github.com/TuneLab/go-truss/truss/truss"
 
 	"github.com/TuneLab/go-truss/deftree"
@@ -45,9 +46,6 @@ func main() {
 	dt, err := parseServiceDefinition(cfg.DefPaths)
 	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
-	err = updateConfigWithService(cfg, dt)
-	exitIfError(err)
-
 	genFiles, err := generateCode(cfg, dt)
 	exitIfError(errors.Wrap(err, "cannot generate service"))
 
@@ -79,15 +77,37 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrap(err, "cannot parse input arguments")
 	}
 
-	// PBGoPackage
-	if *pbPackageFlag == "" {
-		return &cfg, nil
+	// Service Path
+	defFile, err := os.Open(cfg.DefPaths[0])
+	if err != nil {
+		return nil, errors.Wrapf(err, "Could not open package file %q", cfg.DefPaths[0])
+	}
+	svcName, err := parsepkgname.PackageNameFromFile(defFile)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot parse package name from file %q", cfg.DefPaths[0])
+	}
+	svcFolderName := svcName + "-service"
+	svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcFolderName)
+	cfg.ServicePackage, err = filepath.Rel(filepath.Join(cfg.GOPATH, "src"), svcPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "service path is not in GOPATH")
 	}
 
-	cfg.PBPackage = *pbPackageFlag
-	if !fileExists(
-		filepath.Join(cfg.GOPATH, "src", cfg.PBPackage)) {
-		return nil, errors.Errorf(".pb.go output package directory does not exist: %q", cfg.PBPackage)
+	// PrevGen
+	cfg.PrevGen, err = readPreviousGeneration(cfg.ServicePath())
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot read previously generated files")
+	}
+
+	// PBGoPackage
+	if *pbPackageFlag == "" {
+		cfg.PBPackage = cfg.ServicePackage
+	} else {
+		cfg.PBPackage = *pbPackageFlag
+		if !fileExists(
+			filepath.Join(cfg.GOPATH, "src", cfg.PBPackage)) {
+			return nil, errors.Errorf(".pb.go output package directory does not exist: %q", cfg.PBPackage)
+		}
 	}
 
 	return &cfg, nil
@@ -112,33 +132,6 @@ func parseServiceDefinition(definitionPaths []string) (deftree.Deftree, error) {
 	}
 
 	return dt, nil
-}
-
-// updateConfigWithService updates the config with all information needed to
-// generate a truss service using the parsedServiceDefinition deftree
-func updateConfigWithService(cfg *truss.Config, dt deftree.Deftree) error {
-	var err error
-
-	// Service Path
-	svcName := dt.GetName() + "-service"
-	svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcName)
-	cfg.ServicePackage, err = filepath.Rel(filepath.Join(cfg.GOPATH, "src"), svcPath)
-	if err != nil {
-		return errors.Wrap(err, "service path is not in GOPATH")
-	}
-
-	// PrevGen
-	cfg.PrevGen, err = readPreviousGeneration(cfg.ServicePath())
-	if err != nil {
-		return errors.Wrap(err, "cannot read previously generated files")
-	}
-
-	// PBGoPath
-	if cfg.PBPackage == "" {
-		cfg.PBPackage = cfg.ServicePackage
-	}
-
-	return nil
 }
 
 // generateCode returns a []truss.NamedReadWriter that represents a gokit
