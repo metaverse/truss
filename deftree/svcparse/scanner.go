@@ -301,6 +301,9 @@ func (self *SvcScanner) FastForward() error {
 	return nil
 }
 
+// ReadUnit returns the next "group" of runes found in the input stream. If the
+// end of the stream is reached, io.EOF will be returned as error. No other
+// errors will be returned.
 func (self *SvcScanner) ReadUnit() ([]rune, error) {
 	var rv []rune
 	var err error = nil
