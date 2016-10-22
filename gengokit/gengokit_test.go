@@ -541,12 +541,12 @@ func testGenerateResponseFile(templFP string, te *templateExecutor, prevGenMap m
 	}
 
 	// format the code
-	codeBytes, err = testFormat(codeBytes)
+	formatted, err := testFormat(codeBytes)
 	if err != nil {
-		return nil, err
+		return codeBytes, err
 	}
 
-	return codeBytes, nil
+	return formatted, nil
 }
 
 // testFormat takes a string representing golang code and attempts to return a
@@ -555,7 +555,7 @@ func testFormat(code []byte) ([]byte, error) {
 	formatted, err := format.Source(code)
 
 	if err != nil {
-		return nil, err
+		return code, err
 	}
 
 	return formatted, nil

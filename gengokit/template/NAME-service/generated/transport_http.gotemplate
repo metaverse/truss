@@ -1,4 +1,3 @@
-{{ with $templateExecutor := .}}
 package svc
 
 // This file provides server-side bindings for the HTTP transport.
@@ -15,17 +14,14 @@ import (
 	"strings"
 	"io"
 
-	//stdopentracing "github.com/opentracing/opentracing-go"
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/log"
 	"github.com/pkg/errors"
-	//"github.com/go-kit/kit/endpoint"
-	//"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	// This service
-	pb "{{$templateExecutor.PBImportPath -}}"
+	pb "{{.PBImportPath -}}"
 )
 
 var (
@@ -34,27 +30,27 @@ var (
 	_ = strconv.Atoi
 	_ = httptransport.NewServer
 	_ = ioutil.NopCloser
-	_ = pb.Register{{$templateExecutor.Service.GetName}}Server
+	_ = pb.Register{{.Service.GetName}}Server
 	_ = io.Copy
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
 func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger) http.Handler {
-//func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, /*tracer stdopentracing.Tracer,*/ logger log.Logger) http.Handler {
 	/*options := []httptransport.ServerOption{
 		httptransport.ServerErrorEncoder(errorEncoder),
 		httptransport.ServerErrorLogger(logger),
 	}*/
 	m := http.NewServeMux()
 
-{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $method := .HTTPHelper.Methods}}
 {{range $binding := $method.Bindings}}
 	m.Handle("{{ToLower $binding.BasePath}}", httptransport.NewServer(
 		ctx,
 		endpoints.{{$method.Name}}Endpoint,
 		HttpDecodeLogger(DecodeHTTP{{$binding.Label}}Request, logger),
 		EncodeHTTPGenericResponse,
+		//options...,
 	))
 {{- end}}
 {{- end}}
@@ -76,20 +72,6 @@ func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 	code := http.StatusInternalServerError
 	msg := err.Error()
 
-	/*if e, ok := err.(httptransport.Error); ok {
-		msg = e.Err.Error()
-		switch e.Domain {
-		case httptransport.DomainDecode:
-			code = http.StatusBadRequest
-
-		case httptransport.DomainDo:
-			switch e.Err {
-			case ErrTwoZeroes, ErrMaxSizeExceeded, ErrIntOverflow:
-				code = http.StatusBadRequest
-			}
-		}
-	}*/
-
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(errorWrapper{Error: msg})
 }
@@ -107,7 +89,7 @@ type errorWrapper struct {
 }
 
 // Server Decode
-{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $method := .HTTPHelper.Methods}}
 {{range $binding := $method.Bindings}}
 
 {{$binding.GenServerDecode}}
@@ -116,7 +98,7 @@ type errorWrapper struct {
 {{end}}
 
 // Client Decode
-{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $method := .HTTPHelper.Methods}}
 // DecodeHTTP{{$method.Name}} is a transport/http.DecodeResponseFunc that decodes
 // a JSON-encoded {{GoName $method.ResponseType}} response from the HTTP response body.
 // If the response has a non-200 status code, we will interpret that as an
@@ -133,7 +115,7 @@ func DecodeHTTP{{$method.Name}}Response(_ context.Context, r *http.Response) (in
 {{end}}
 
 // Client Encode
-{{range $method := $templateExecutor.HTTPHelper.Methods}}
+{{range $method := .HTTPHelper.Methods}}
 {{range $binding := $method.Bindings}}
 
 {{$binding.GenClientEncode}}
@@ -147,7 +129,6 @@ func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, respons
 	return json.NewEncoder(w).Encode(response)
 }
 
-{{$templateExecutor.HTTPHelper.PathParamsBuilder}}
+// Helper functions 
 
-
-{{- end}}
+{{.HTTPHelper.PathParamsBuilder}}
