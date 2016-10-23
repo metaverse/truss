@@ -20,13 +20,13 @@ import (
 	"github.com/TuneLab/go-truss/deftree/svcparse"
 )
 
-type Token int
+type token int
 
 const (
-	IDENT Token = iota
-	WHITESPACE
-	COMMENT
-	OTHER
+	ident token = iota
+	whitespaceToken
+	comment
+	other
 )
 
 type Scanner interface {
@@ -42,68 +42,70 @@ type Scanner interface {
 	ReadUnit() ([]rune, error)
 }
 
-func categorize(unit []rune) Token {
-	rv := OTHER
+func categorize(unit []rune) token {
+	rv := other
 	r := unit[0]
 	switch {
 	case unicode.IsLetter(r):
-		rv = IDENT
+		rv = ident
 	case unicode.IsDigit(r):
-		rv = IDENT
+		rv = ident
 	case r == '_':
-		rv = IDENT
+		rv = ident
 	case unicode.IsSpace(r):
-		rv = WHITESPACE
+		rv = whitespaceToken
 	case r == '/' && len(unit) > 1:
-		rv = COMMENT
+		rv = comment
 	}
 	return rv
 }
 
-// PackageNameFromFile accepts an io.Reader, the contents of which should be a
-// valid proto3 file, and returns the name of the protobuf package for that
-// file.
-func PackageNameFromFile(protofile io.Reader) (string, error) {
+// FromReader accepts an io.Reader, the contents of which should be a
+// valid proto3 file, and returns the name of the protobuf package which that
+// file belongs to.
+func FromReader(protofile io.Reader) (string, error) {
 	scanner := svcparse.NewSvcScanner(protofile)
-	return GetPackageName(scanner)
+	return FromScanner(scanner)
 }
 
-// GetPackageName accepts a Scanner for a protobuf file and returns the name of
-// the protobuf package that the file lives within.
-func GetPackageName(scanner Scanner) (string, error) {
+// FromScanner accepts a Scanner for a protobuf file and returns the name of
+// the protobuf package that the file belongs to.
+func FromScanner(scanner Scanner) (string, error) {
 	foundpackage := false
 
 	// A nice way to ignore comments. Recursively calls itself until it
 	// recieves a unit from the scanner which is not a comment.
-	var readIgnoreComment func(Scanner) (Token, []rune, error)
-	readIgnoreComment = func(scn Scanner) (Token, []rune, error) {
-		unit, err := scanner.ReadUnit()
+	var readIgnoreComment func(Scanner) (token, []rune, error)
+	readIgnoreComment = func(scn Scanner) (token, []rune, error) {
+		unit, err := scn.ReadUnit()
 		if err != nil {
-			return OTHER, nil, err
+			return other, nil, err
 		}
 		tkn := categorize(unit)
-		if tkn == COMMENT {
+		if tkn == comment {
 			return readIgnoreComment(scn)
 		}
 		return tkn, unit, err
 	}
 
+	// A tiny state machine to find two sequential idents: the ident "package"
+	// and the ident immediately following. That second ident will be the name
+	// of the package.
 	for {
 		tkn, unit, err := readIgnoreComment(scanner)
-		// Err may only be io.EOF
 		if err != nil {
 			return "", err
 		}
 		if foundpackage {
-			if tkn == IDENT {
+			if tkn == ident {
 				return string(unit), nil
-			} else if tkn == WHITESPACE {
+			} else if tkn == whitespaceToken {
 				continue
 			} else {
 				foundpackage = false
 			}
 		} else {
-			if tkn == IDENT && string(unit) == "package" {
+			if tkn == ident && string(unit) == "package" {
 				foundpackage = true
 			}
 		}

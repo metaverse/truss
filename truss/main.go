@@ -18,6 +18,7 @@ import (
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
 	"github.com/TuneLab/go-truss/gengokit"
+	"github.com/TuneLab/go-truss/svcdef"
 )
 
 var (
@@ -43,7 +44,8 @@ func main() {
 	cfg, err := parseInput()
 	exitIfError(errors.Wrap(err, "cannot parse input"))
 
-	dt, err := parseServiceDefinition(cfg.DefPaths)
+	//dt, sd, err := parseServiceDefinition(cfg)
+	dt, _, err := parseServiceDefinition(cfg)
 	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
 	genFiles, err := generateCode(cfg, dt)
@@ -82,7 +84,7 @@ func parseInput() (*truss.Config, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Could not open package file %q", cfg.DefPaths[0])
 	}
-	svcName, err := parsepkgname.PackageNameFromFile(defFile)
+	svcName, err := parsepkgname.FromReader(defFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse package name from file %q", cfg.DefPaths[0])
 	}
@@ -113,41 +115,82 @@ func parseInput() (*truss.Config, error) {
 	return &cfg, nil
 }
 
-// parseServiceDefinition returns a deftree which contains all needed for all
-// generating a truss service and documentation
-func parseServiceDefinition(definitionPaths []string) (deftree.Deftree, error) {
-	protocOut, err := execprotoc.CodeGeneratorRequest(definitionPaths)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot use parse input files with protoc")
+// parseServiceDefinition returns a deftree which contains all necessary
+// information for generating a truss service and its documentation.
+func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef, error) {
+	svcPath := cfg.ServicePath()
+	protoDefPaths := cfg.DefPaths
+	// Create the ServicePath so the .pb.go files may be place within it
+	if cfg.PrevGen == nil {
+		err := os.Mkdir(svcPath, 0777)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "cannot create service directory")
+		}
 	}
 
-	svcFile, err := execprotoc.ServiceFile(protocOut, filepath.Dir(definitionPaths[0]))
+	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, svcPath, cfg.PBPath())
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot find service definition file")
+		return nil, nil, errors.Wrap(err, "cannot create .pb.go files")
+	}
+
+	// Open all .pb.go files and store in slice to be passed to svcdef.New()
+	//var openFiles func([]string) ([]io.Reader, error)
+	openFiles := func(paths []string) ([]io.Reader, error) {
+		rv := []io.Reader{}
+		for _, p := range paths {
+			reader, err := os.Open(p)
+			if err != nil {
+				return nil, errors.Wrapf(err, "couldn't open file %q", p)
+			}
+			rv = append(rv, reader)
+		}
+		return rv, nil
+	}
+	// Get path names of .pb.go files
+	pbgoPaths := []string{}
+	for _, p := range protoDefPaths {
+		base := filepath.Base(p)
+		barename := strings.TrimSuffix(base, filepath.Ext(p))
+		pbgp := filepath.Join(cfg.PBPath(), barename+".pb.go")
+		pbgoPaths = append(pbgoPaths, pbgp)
+	}
+	pbgoFiles, err := openFiles(pbgoPaths)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to open a .pb.go file")
+	}
+	pbFiles, err := openFiles(protoDefPaths)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to open a .proto file")
+	}
+
+	// Create the svcdef
+	sd, err := svcdef.New(pbgoFiles, pbFiles)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "Failed to create svcdef")
+	}
+
+	// Create the Deftree
+	protocOut, err := execprotoc.CodeGeneratorRequest(protoDefPaths)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "cannot parse input files with protoc")
+	}
+
+	svcFile, err := execprotoc.ServiceFile(protocOut, filepath.Dir(protoDefPaths[0]))
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "cannot find service definition file")
 	}
 
 	dt, err := deftree.New(protocOut, svcFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot to construct service definition")
+		return nil, nil, errors.Wrap(err, "cannot to construct service definition")
 	}
 
-	return dt, nil
+	return dt, sd, nil
 }
 
 // generateCode returns a []truss.NamedReadWriter that represents a gokit
 // service with documentation
 func generateCode(cfg *truss.Config, dt deftree.Deftree) ([]truss.NamedReadWriter, error) {
-	if cfg.PrevGen == nil {
-		err := os.Mkdir(cfg.ServicePath(), 0777)
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot create service directory")
-		}
-	}
-
-	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.ServicePath(), cfg.PBPath())
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot create .pb.go files")
-	}
 
 	genGokitFiles, err := gengokit.GenerateGokit(dt, cfg.ServicePackage, cfg.PBPackage, cfg.PrevGen)
 	if err != nil {

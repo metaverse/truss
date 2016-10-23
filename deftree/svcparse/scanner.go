@@ -19,7 +19,7 @@ type RuneReader struct {
 
 func (self *RuneReader) ReadRune() (rune, error) {
 	var toret rune = 0
-	var err error = nil
+	var err error
 
 	if self.RunePos < self.ContentLen {
 		toret = self.Contents[self.RunePos]
@@ -306,7 +306,7 @@ func (self *SvcScanner) FastForward() error {
 // errors will be returned.
 func (self *SvcScanner) ReadUnit() ([]rune, error) {
 	var rv []rune
-	var err error = nil
+	var err error
 	if self.UnitPos < len(self.Buf) {
 		unit := self.Buf[self.UnitPos]
 

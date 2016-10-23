@@ -16,9 +16,8 @@ func (t *testScanner) ReadUnit() ([]rune, error) {
 		rv := t.contents[t.position]
 		t.position += 1
 		return rv, nil
-	} else {
-		return nil, io.EOF
 	}
+	return nil, io.EOF
 }
 
 func NewTestScanner(units []string) *testScanner {
@@ -29,7 +28,7 @@ func NewTestScanner(units []string) *testScanner {
 	return &rv
 }
 
-func TestGetPackageName_simple(t *testing.T) {
+func TestFromScanner_simple(t *testing.T) {
 	basicContents := []string{
 		"\n",
 		"package",
@@ -40,7 +39,7 @@ func TestGetPackageName_simple(t *testing.T) {
 	}
 	scn := NewTestScanner(basicContents)
 	want := "examplename"
-	got, err := GetPackageName(scn)
+	got, err := FromScanner(scn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +48,7 @@ func TestGetPackageName_simple(t *testing.T) {
 	}
 }
 
-func TestGetPackageName_mid_comment(t *testing.T) {
+func TestFromScanner_mid_comment(t *testing.T) {
 	contents := []string{
 		"\n",
 		"package",
@@ -61,7 +60,7 @@ func TestGetPackageName_mid_comment(t *testing.T) {
 	}
 	scn := NewTestScanner(contents)
 	want := "examplename"
-	got, err := GetPackageName(scn)
+	got, err := FromScanner(scn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,14 +69,14 @@ func TestGetPackageName_mid_comment(t *testing.T) {
 	}
 }
 
-func TestPackageNameFromFile(t *testing.T) {
+func TestFromReader(t *testing.T) {
 	code := `
 // A comment about this proto file
 package /* some mid-definition comment */ examplepackage;
 
 // and the rest of the file goes here
 `
-	name, err := PackageNameFromFile(strings.NewReader(code))
+	name, err := FromReader(strings.NewReader(code))
 	if err != nil {
 		t.Fatal(err)
 	}
