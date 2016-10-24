@@ -24,6 +24,8 @@ import (
 type Helper struct {
 	Methods           []*Method
 	PathParamsBuilder string
+	ServerTemplate    func(interface{}) (string, error)
+	ClientTemplate    func(interface{}) (string, error)
 }
 
 // NewHelper builds a helper struct from a service declaration. The other
@@ -35,6 +37,8 @@ func NewHelper(svc *deftree.ProtoService) *Helper {
 	pp := FormatCode(HTTPAssistFuncs)
 	rv := Helper{
 		PathParamsBuilder: pp,
+		ServerTemplate:    GenServerTemplate,
+		ClientTemplate:    GenClientTemplate,
 	}
 	for _, meth := range svc.Methods {
 		if len(meth.HttpBindings) > 0 {
@@ -146,6 +150,24 @@ func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
 		}
 	}
 	return &nBinding
+}
+
+func GenServerTemplate(exec interface{}) (string, error) {
+	code, err := ApplyTemplate("ServerTemplate", serverTemplate, exec, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
+}
+
+func GenClientTemplate(exec interface{}) (string, error) {
+	code, err := ApplyTemplate("ClientTemplate", clientTemplate, exec, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
 }
 
 // GenServerDecode returns the generated code for the server-side decoding of
