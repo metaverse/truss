@@ -28,5 +28,12 @@ test-nv:
 		./protoc-gen-truss-protocast/... ./truss/...
 
 # Removes generated code from tests
-testclean: 
+testclean:
 	$(MAKE) -C truss testclean
+
+# Build Truss and package it in a Docker container, according to the rules
+# in docker/Makefile.
+docker:
+	$(MAKE) -C docker
+
+.PHONY: docker
