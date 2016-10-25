@@ -1,6 +1,7 @@
 package httptransport
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
@@ -97,7 +98,7 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 }
 
 `
-	if got, want := str, desired; got != want {
+	if got, want := strings.TrimSpace(str), strings.TrimSpace(desired); got != want {
 		t.Errorf("Generated code differs from result.\ngot = %s\nwant = %s", got, want)
 		t.Log(gentesthelper.DiffStrings(got, want))
 	}
@@ -202,7 +203,7 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 }
 
 `
-	if got, want := str, desired; got != want {
+	if got, want := strings.TrimSpace(str), strings.TrimSpace(desired); got != want {
 		t.Errorf("Generated code differs from result.\ngot = %s\nwant = %s", got, want)
 		t.Log(gentesthelper.DiffStrings(got, want))
 	}
