@@ -320,8 +320,8 @@ func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, respons
 {{.HTTPHelper.PathParamsBuilder}}
 
 func headersToContext(ctx context.Context, r *http.Request) context.Context {
-	for k, v := range r.Header {
-		ctx = context.WithValue(ctx, k, v)
+	for k, _ := range r.Header {
+		ctx = context.WithValue(ctx, k, r.Header.Get(k))
 	}
 
 	return ctx
@@ -420,7 +420,7 @@ type ClientOption func(*clientConfig) error
 // the context and add them to the http request as headers.  Note that keys
 // will have net/http.CanonicalHeaderKey called on them before being send over
 // the wire and that is the form they will be available in the server context.
-func CtxValuesToSend(keys []string) ClientOption {
+func CtxValuesToSend(keys ...string) ClientOption {
 	return func(o *clientConfig) error {
 		o.headers = keys
 		return nil

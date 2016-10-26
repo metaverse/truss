@@ -154,7 +154,7 @@ func nameServiceGeneratedClientHttpClientGotemplate() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "NAME-service/generated/client/http/client.gotemplate", size: 105, mode: os.FileMode(436), modTime: time.Unix(1477431874, 0)}
+	info := bindataFileInfo{name: "NAME-service/generated/client/http/client.gotemplate", size: 105, mode: os.FileMode(436), modTime: time.Unix(1477435906, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -214,7 +214,7 @@ func nameServiceGeneratedTransport_httpGotemplate() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "NAME-service/generated/transport_http.gotemplate", size: 105, mode: os.FileMode(436), modTime: time.Unix(1477431714, 0)}
+	info := bindataFileInfo{name: "NAME-service/generated/transport_http.gotemplate", size: 105, mode: os.FileMode(436), modTime: time.Unix(1477435906, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

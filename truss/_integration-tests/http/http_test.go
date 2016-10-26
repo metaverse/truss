@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	// 3d Party
 	"golang.org/x/net/context"
@@ -43,11 +44,13 @@ func init() {
 	getWithQueryE := svc.MakeGetWithQueryEndpoint(service)
 	getWithRepeatedQueryE := svc.MakeGetWithRepeatedQueryEndpoint(service)
 	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
+	ctxToCtxViaHTTPHeaderE := svc.MakeCtxToCtxViaHTTPHeaderEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
 		GetWithRepeatedQueryEndpoint:      getWithRepeatedQueryE,
 		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
+		CtxToCtxViaHTTPHeaderEndpoint:     ctxToCtxViaHTTPHeaderE,
 	}
 
 	ctx := context.Background()
@@ -91,6 +94,9 @@ func TestGetWithQueryRequest(t *testing.T) {
 			route:  fmt.Sprintf(routeFormat, routeFields...),
 			body:   bodyBytes,
 		}.Test(t)
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
 
 		err = json.Unmarshal(respBytes, &resp)
 		if err != nil {
@@ -138,6 +144,9 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 			route:  fmt.Sprintf(routeFormat, routeFields...),
 			body:   bodyBytes,
 		}.Test(t)
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
 
 		err = json.Unmarshal(respBytes, &resp)
 		if err != nil {
@@ -194,6 +203,9 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 			route:  fmt.Sprintf(routeFormat, routeFields...),
 			body:   bodyBytes,
 		}.Test(t)
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
 
 		err = json.Unmarshal(respBytes, &resp)
 		if err != nil {
@@ -209,6 +221,64 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 
 	testHTTP([]byte(jsonStr), "POST", "postwithnestedmessagebody")
 }
+
+func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
+	var req pb.HeaderRequest
+	var key, value = "Truss-Auth-Header", "SECRET"
+	req.HeaderKey = key
+
+	// Create a new client telling it to send "Truss-Auth-Header" as a header
+	svchttp, err := httpclient.New(httpserver.URL,
+		httpclient.CtxValuesToSend(key))
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	// Create a context with the header key and value
+	ctx := context.WithValue(context.Background(), key, value)
+
+	// send the context
+	resp, err := svchttp.CtxToCtxViaHTTPHeader(ctx, &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	if resp.V != value {
+		t.Fatalf("Expect: %q, got %q", value, resp.V)
+	}
+}
+
+func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
+	var resp pb.HeaderResponse
+	var key, value = "Truss-Auth-Header", "SECRET"
+
+	jsonStr := fmt.Sprintf(`{ "HeaderKey": %q }`, key)
+	fmt.Println(jsonStr)
+
+	req, err := http.NewRequest("POST", httpserver.URL+"/"+"ctxtoctx", strings.NewReader(jsonStr))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	req.Header.Set(key, value)
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+	}
+
+	if resp.V != value {
+		t.Fatalf("Expect: %q, got %q", value, resp.V)
+	}
+
+}
+
+// Helpers
 
 type httpRequestBuilder struct {
 	method string
