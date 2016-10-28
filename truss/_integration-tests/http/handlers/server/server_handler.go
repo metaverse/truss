@@ -24,7 +24,6 @@ type httptestService struct{}
 
 // GetWithQuery implements Service.
 func (s httptestService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
-
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
@@ -49,16 +48,31 @@ func (s httptestService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWit
 
 // PostWithNestedMessageBody implements Service.
 func (s httptestService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
-	_ = ctx
-	_ = in
 	response := pb.PostWithNestedMessageBodyResponse{
 		V: in.NM.A + in.NM.B,
 	}
 	return &response, nil
 }
 
+// CtxtToCtxtViaHTTPHeader implements Service.
+func (s httptestService) CtxToCtxViaHTTPHeader(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error) {
+	var resp pb.HeaderResponse
+	val := ctx.Value(in.HeaderKey)
+
+	if v, ok := val.(string); ok {
+		resp.V = v
+	} else if val == nil {
+		resp.V = "CONTEXT VALUE FOR KEY IS NILL"
+	} else {
+		resp.V = "CONTEXT VALUE FOR KEY IS NON STRING"
+	}
+
+	return &resp, nil
+}
+
 type Service interface {
 	GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error)
 	GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error)
 	PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error)
+	CtxToCtxViaHTTPHeader(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error)
 }

@@ -16,8 +16,8 @@ import (
 // New returns an service backed by a gRPC client connection. It is the
 // responsibility of the caller to dial, and later close, the connection.
 func New(conn *grpc.ClientConn) handler.Service {
-	//options := []grpctransport.ServerOption{
-		//grpctransport.ServerBefore(),
+	//options := []grpctransport.ClientOptions{
+		//grpctransport.ClientBefore(),
 	//}
 
 	{{- with $tE := .}}

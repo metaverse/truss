@@ -325,7 +325,6 @@ func applyTemplate(templBytes []byte, templName string, executor *templateExecut
 	templateString := string(templBytes)
 
 	codeTemplate, err := template.New(templName).Funcs(executor.funcMap).Parse(templateString)
-
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template")
 	}

@@ -21,6 +21,12 @@ service HTTPPermutations {
       body: "*"
     };
   }
+  rpc CtxToCtxViaHTTPHeader (HeaderRequest) returns (HeaderResponse){
+    option (google.api.http) = {
+      post: "/ctxtoctx"
+      body: "*"
+    };
+  }
 }
 
 message GetWithQueryRequest {
@@ -53,3 +59,10 @@ message PostWithNestedMessageBodyResponse {
   int64 V = 1;
 }
 
+message HeaderRequest{
+  string HeaderKey = 1;
+}
+
+message HeaderResponse {
+  string V = 1;
+}
