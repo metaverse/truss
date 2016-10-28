@@ -5,6 +5,7 @@ package svc
 
 import (
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/metadata"
 
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
@@ -15,9 +16,9 @@ import (
 
 // MakeGRPCServer makes a set of endpoints available as a gRPC {{GoName .Service.GetName}}Server.
 func MakeGRPCServer(ctx context.Context, endpoints Endpoints) pb.{{GoName .Service.GetName}}Server {
-	//options := []grpctransport.ServerOption{
-		// grpctransport.ServiceBefore()
-	//}
+	serverOptions := []grpctransport.ServerOption{
+		 grpctransport.ServerBefore(metadataToContext),
+	}
 	return &grpcServer{
 	// {{ ToLower .Service.GetName }}
 	{{range $i := .Service.Methods}}
@@ -26,7 +27,7 @@ func MakeGRPCServer(ctx context.Context, endpoints Endpoints) pb.{{GoName .Servi
 			endpoints.{{$i.GetName}}Endpoint,
 			DecodeGRPC{{$i.GetName}}Request,
 			EncodeGRPC{{$i.GetName}}Response,
-			//options...,
+			serverOptions...,
 		),
 	{{- end}}
 	}
@@ -92,3 +93,14 @@ func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (in
 }
 {{end}}
 
+// Helpers
+
+func metadataToContext(ctx context.Context, md *metadata.MD) context.Context {
+	for k, v := range *md {
+		if v != nil {
+			ctx = context.WithValue(ctx, k, v[0])
+		}
+	}
+
+	return ctx
+}
