@@ -27,7 +27,7 @@ func (c *Config) ServicePath() string {
 	return goSvcPath
 }
 
-// PBPath returns the full paht to Config.PBPackage
+// PBPath returns the full path to Config.PBPackage
 func (c *Config) PBPath() string {
 	pbPath := filepath.Join(c.GOPATH, "src", c.PBPackage)
 

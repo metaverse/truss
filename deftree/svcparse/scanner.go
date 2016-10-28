@@ -19,7 +19,7 @@ type RuneReader struct {
 
 func (self *RuneReader) ReadRune() (rune, error) {
 	var toret rune = 0
-	var err error = nil
+	var err error
 
 	if self.RunePos < self.ContentLen {
 		toret = self.Contents[self.RunePos]
@@ -301,9 +301,12 @@ func (self *SvcScanner) FastForward() error {
 	return nil
 }
 
+// ReadUnit returns the next "group" of runes found in the input stream. If the
+// end of the stream is reached, io.EOF will be returned as error. No other
+// errors will be returned.
 func (self *SvcScanner) ReadUnit() ([]rune, error) {
 	var rv []rune
-	var err error = nil
+	var err error
 	if self.UnitPos < len(self.Buf) {
 		unit := self.Buf[self.UnitPos]
 
