@@ -21,7 +21,7 @@ service TransportPermutations {
       body: "*"
     };
   }
-  rpc CtxToCtxViaHTTPHeader (HeaderRequest) returns (HeaderResponse){
+  rpc CtxToCtx (MetaRequest) returns (MetaResponse){
     option (google.api.http) = {
       post: "/ctxtoctx"
       body: "*"
@@ -59,10 +59,10 @@ message PostWithNestedMessageBodyResponse {
   int64 V = 1;
 }
 
-message HeaderRequest{
-  string HeaderKey = 1;
+message MetaRequest{
+  string Key = 1;
 }
 
-message HeaderResponse {
+message MetaResponse {
   string V = 1;
 }

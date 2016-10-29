@@ -4,13 +4,7 @@ package handler
 // implementation. It also includes service middlewares.
 
 import (
-	_ "errors"
-	_ "time"
-
 	"golang.org/x/net/context"
-
-	_ "github.com/go-kit/kit/log"
-	_ "github.com/go-kit/kit/metrics"
 
 	pb "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service"
 )
@@ -54,10 +48,10 @@ func (s transportService) PostWithNestedMessageBody(ctx context.Context, in *pb.
 	return &response, nil
 }
 
-// CtxtToCtxtViaHTTPHeader implements Service.
-func (s transportService) CtxToCtxViaHTTPHeader(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error) {
-	var resp pb.HeaderResponse
-	val := ctx.Value(in.HeaderKey)
+// CtxToCtx implements Service.
+func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb.MetaResponse, error) {
+	var resp pb.MetaResponse
+	val := ctx.Value(in.Key)
 
 	if v, ok := val.(string); ok {
 		resp.V = v
@@ -74,5 +68,5 @@ type Service interface {
 	GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error)
 	GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error)
 	PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error)
-	CtxToCtxViaHTTPHeader(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error)
+	CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb.MetaResponse, error)
 }
