@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package httptest;
+package transport;
 
 import "google/api/annotations.proto";
 
-service HTTPPermutations {
+service TransportPermutations {
   rpc GetWithQuery (GetWithQueryRequest) returns (GetWithQueryResponse) {
     option (google.api.http) = {
       get: "/getwithquery"
@@ -21,7 +21,7 @@ service HTTPPermutations {
       body: "*"
     };
   }
-  rpc CtxToCtxViaHTTPHeader (HeaderRequest) returns (HeaderResponse){
+  rpc CtxToCtx (MetaRequest) returns (MetaResponse){
     option (google.api.http) = {
       post: "/ctxtoctx"
       body: "*"
@@ -59,10 +59,10 @@ message PostWithNestedMessageBodyResponse {
   int64 V = 1;
 }
 
-message HeaderRequest{
-  string HeaderKey = 1;
+message MetaRequest{
+  string Key = 1;
 }
 
-message HeaderResponse {
+message MetaResponse {
   string V = 1;
 }

@@ -6,58 +6,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 
 	// 3d Party
 	"golang.org/x/net/context"
 
-	// Go Kit
-	"github.com/go-kit/kit/log"
-
 	// This Service
-	pb "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service"
-	svc "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service/generated"
-	httpclient "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service/generated/client/http"
-	handler "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service/handlers/server"
+	pb "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service"
+	httpclient "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service/generated/client/http"
 
 	"github.com/pkg/errors"
 )
 
-var httpserver *httptest.Server
+// httpTestServer
 
-var _ = io.Copy
-
-func init() {
-	var logger log.Logger
-	logger = log.NewNopLogger()
-
-	var service handler.Service
-	{
-		service = handler.NewService()
-	}
-
-	// Endpoint domain.
-	getWithQueryE := svc.MakeGetWithQueryEndpoint(service)
-	getWithRepeatedQueryE := svc.MakeGetWithRepeatedQueryEndpoint(service)
-	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
-	ctxToCtxViaHTTPHeaderE := svc.MakeCtxToCtxViaHTTPHeaderEndpoint(service)
-
-	endpoints := svc.Endpoints{
-		GetWithQueryEndpoint:              getWithQueryE,
-		GetWithRepeatedQueryEndpoint:      getWithRepeatedQueryE,
-		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
-		CtxToCtxViaHTTPHeaderEndpoint:     ctxToCtxViaHTTPHeaderE,
-	}
-
-	ctx := context.Background()
-
-	h := svc.MakeHTTPHandler(ctx, endpoints, logger)
-	httpserver = httptest.NewServer(h)
-}
+var httpAddr string
 
 func TestGetWithQueryClient(t *testing.T) {
 	var req pb.GetWithQueryRequest
@@ -65,7 +30,7 @@ func TestGetWithQueryClient(t *testing.T) {
 	req.B = 45360
 	want := req.A + req.B
 
-	svchttp, err := httpclient.New(httpserver.URL)
+	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -116,7 +81,7 @@ func TestGetWithRepeatedQueryClient(t *testing.T) {
 	req.A = []int64{12, 45360}
 	want := req.A[0] + req.A[1]
 
-	svchttp, err := httpclient.New(httpserver.URL)
+	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -174,7 +139,7 @@ func TestPostWithNestedMessageBodyClient(t *testing.T) {
 	req.NM = &reqNM
 	want := req.NM.A + req.NM.B
 
-	svchttp, err := httpclient.New(httpserver.URL)
+	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -223,12 +188,12 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 }
 
 func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
-	var req pb.HeaderRequest
+	var req pb.MetaRequest
 	var key, value = "Truss-Auth-Header", "SECRET"
-	req.HeaderKey = key
+	req.Key = key
 
 	// Create a new client telling it to send "Truss-Auth-Header" as a header
-	svchttp, err := httpclient.New(httpserver.URL,
+	svchttp, err := httpclient.New(httpAddr,
 		httpclient.CtxValuesToSend(key))
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
@@ -238,7 +203,7 @@ func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
 	ctx := context.WithValue(context.Background(), key, value)
 
 	// send the context
-	resp, err := svchttp.CtxToCtxViaHTTPHeader(ctx, &req)
+	resp, err := svchttp.CtxToCtx(ctx, &req)
 	if err != nil {
 		t.Fatalf("httpclient returned error: %q", err)
 	}
@@ -249,13 +214,13 @@ func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
 }
 
 func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
-	var resp pb.HeaderResponse
+	var resp pb.MetaResponse
 	var key, value = "Truss-Auth-Header", "SECRET"
 
-	jsonStr := fmt.Sprintf(`{ "HeaderKey": %q }`, key)
+	jsonStr := fmt.Sprintf(`{ "Key": %q }`, key)
 	fmt.Println(jsonStr)
 
-	req, err := http.NewRequest("POST", httpserver.URL+"/"+"ctxtoctx", strings.NewReader(jsonStr))
+	req, err := http.NewRequest("POST", httpAddr+"/"+"ctxtoctx", strings.NewReader(jsonStr))
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -288,7 +253,7 @@ type httpRequestBuilder struct {
 
 func (h httpRequestBuilder) Test(t *testing.T) ([]byte, error) {
 	t.Logf("Method: %q | Route: %q", h.method, h.route)
-	httpReq, err := http.NewRequest(h.method, httpserver.URL+"/"+h.route, bytes.NewReader(h.body))
+	httpReq, err := http.NewRequest(h.method, httpAddr+"/"+h.route, bytes.NewReader(h.body))
 	if err != nil {
 		return nil, err
 	}

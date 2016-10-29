@@ -62,7 +62,7 @@ func main() {
 			os.Exit(1)
 		}
 		defer conn.Close()
-		service = grpcclient.New(conn)
+		service, err = grpcclient.New(conn)
 	} else {
 		fmt.Fprintf(os.Stderr, "error: no remote address specified\n")
 		os.Exit(1)

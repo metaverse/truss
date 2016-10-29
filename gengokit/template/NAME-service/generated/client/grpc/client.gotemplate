@@ -2,7 +2,10 @@
 package grpc
 
 import (
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"github.com/pkg/errors"
 
 	"github.com/go-kit/kit/endpoint"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
@@ -14,11 +17,21 @@ import (
 )
 
 // New returns an service backed by a gRPC client connection. It is the
-// responsibility of the caller to dial, and later close, the connection.
-func New(conn *grpc.ClientConn) handler.Service {
-	//options := []grpctransport.ClientOptions{
-		//grpctransport.ClientBefore(),
-	//}
+// responsibility of the caller to dial, and later close, the connection.  
+func New(conn *grpc.ClientConn, options ...ClientOption) (handler.Service, error) {
+	var cc clientConfig
+
+	for _, f := range options {
+		err := f(&cc)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot apply option")
+		}
+	}
+
+	clientOptions := []grpctransport.ClientOption{
+		grpctransport.ClientBefore(
+			contextValuesToGRPCMetadata(cc.headers)),
+	}
 
 	{{- with $tE := .}}
 		{{- range $i := $tE.Service.Methods}}
@@ -31,7 +44,7 @@ func New(conn *grpc.ClientConn) handler.Service {
 					svc.EncodeGRPC{{$i.GetName}}Request,
 					svc.DecodeGRPC{{$i.GetName}}Response,
 					pb.{{GoName $i.ResponseType.GetName}}{},
-					//options...,
+					clientOptions...,
 				).Endpoint()
 			}
 		{{end}}
@@ -41,5 +54,36 @@ func New(conn *grpc.ClientConn) handler.Service {
 	{{range $i := .Service.Methods -}}
 		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
 	{{end}}
+	}, nil
+}
+
+type clientConfig struct {
+	headers []string
+}
+
+// ClientOption is a function that modifies the client config
+type ClientOption func(*clientConfig) error
+
+func CtxValuesToSend(keys ...string) ClientOption {
+	return func(o *clientConfig) error {
+		o.headers = keys
+		return nil
+	}
+}
+
+func contextValuesToGRPCMetadata(keys []string) grpctransport.RequestFunc {
+	return func(ctx context.Context, md *metadata.MD) context.Context {
+		var pairs []string
+		for _, k := range keys {
+			if v, ok := ctx.Value(k).(string); ok {
+				pairs = append(pairs, k, v)
+			}
+		}
+
+		if pairs != nil {
+			*md = metadata.Join(*md, metadata.Pairs(pairs...))
+		}
+
+		return ctx
 	}
 }
