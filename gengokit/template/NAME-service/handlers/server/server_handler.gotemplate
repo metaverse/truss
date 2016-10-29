@@ -1,50 +1,29 @@
 package handler
 
-// This file contains the Service definition, and a basic service
-// implementation. It also includes service middlewares.
-
 import (
-	_ "errors"
-	_ "time"
-
 	"golang.org/x/net/context"
-
-	_ "github.com/go-kit/kit/log"
-	_ "github.com/go-kit/kit/metrics"
 
 	pb "{{.PBImportPath -}}"
 )
 
-
-
 // NewService returns a naïve, stateless implementation of Service.
-func NewService() Service {
+func NewService() pb.{{GoName .Service.Name}}Server {
 	return {{.PackageName}}Service{}
 }
 
 type {{.PackageName}}Service struct{}
 
-{{with $Executor := .}}
-{{with $PackageName := $Executor.PackageName}}
-
-{{range $i := $Executor.Service.Methods}}
-// {{$i.Name}} implements Service.
-func (s {{$PackageName}}Service) {{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error){
-	_ = ctx
-	_ = in
-	response := pb.{{GoName $i.ResponseType.Name}}{
-		{{range $j := $i.ResponseType.Message.Fields -}}
-		// {{GoName $j.Name }}: 
-		{{end -}}
-	}
-	return &response, nil
-}
-{{end}}
+{{with $PackageName := .PackageName }}
+	{{range $i := .Service.Methods}}
+		// {{$i.Name}} implements Service.
+		func (s {{$PackageName}}Service) {{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error){
+			var resp pb.{{GoName $i.ResponseType.Name}}
+			resp = pb.{{GoName $i.ResponseType.Name}}{
+				{{range $j := $i.ResponseType.Fields -}}
+					// {{GoName $j.Name }}: 
+				{{end -}}
+			}
+			return &resp, nil
+		}
+	{{end}}
 {{- end}}
-{{- end}}
-
-type Service interface {
-{{range $i := .Service.Methods}}
-	{{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error)
-{{- end}}
-}

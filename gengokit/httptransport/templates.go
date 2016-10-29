@@ -348,8 +348,8 @@ import (
 	"golang.org/x/net/context"
 
 	// This Service
-	handler "{{.ImportPath -}} /handlers/server"
 	svc "{{.ImportPath -}} /generated"
+	pb "{{.PBImportPath -}}"
 )
 
 var (
@@ -360,7 +360,7 @@ var (
 // New returns a service backed by an HTTP server living at the remote
 // instance. We expect instance to come from a service discovery system, so
 // likely of the form "host:port".
-func New(instance string, options ...ClientOption) (handler.Service, error) {
+func New(instance string, options ...ClientOption) (pb.{{GoName .Service.GetName}}Server, error) {
 	var cc clientConfig
 
 	for _, f := range options {
