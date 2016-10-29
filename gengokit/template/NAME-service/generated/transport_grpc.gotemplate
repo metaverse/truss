@@ -4,6 +4,8 @@ package svc
 // It utilizes the transport/grpc.Server.
 
 import (
+	"net/http"
+
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 
@@ -98,7 +100,11 @@ func EncodeGRPC{{$i.GetName}}Request(_ context.Context, request interface{}) (in
 func metadataToContext(ctx context.Context, md *metadata.MD) context.Context {
 	for k, v := range *md {
 		if v != nil {
+			// The key is added both in metadata format (k) which is all lower
+			// and the http.CanonicalHeaderKey of the key so that it can be
+			// accessed in either format
 			ctx = context.WithValue(ctx, k, v[0])
+			ctx = context.WithValue(ctx, http.CanonicalHeaderKey(k), v[0])
 		}
 	}
 

@@ -22,13 +22,15 @@ import (
 
 // httpTestServer
 
+var httpAddr string
+
 func TestGetWithQueryClient(t *testing.T) {
 	var req pb.GetWithQueryRequest
 	req.A = 12
 	req.B = 45360
 	want := req.A + req.B
 
-	svchttp, err := httpclient.New(httpTestServer.URL)
+	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -79,7 +81,7 @@ func TestGetWithRepeatedQueryClient(t *testing.T) {
 	req.A = []int64{12, 45360}
 	want := req.A[0] + req.A[1]
 
-	svchttp, err := httpclient.New(httpTestServer.URL)
+	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -137,7 +139,7 @@ func TestPostWithNestedMessageBodyClient(t *testing.T) {
 	req.NM = &reqNM
 	want := req.NM.A + req.NM.B
 
-	svchttp, err := httpclient.New(httpTestServer.URL)
+	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -191,7 +193,7 @@ func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
 	req.Key = key
 
 	// Create a new client telling it to send "Truss-Auth-Header" as a header
-	svchttp, err := httpclient.New(httpTestServer.URL,
+	svchttp, err := httpclient.New(httpAddr,
 		httpclient.CtxValuesToSend(key))
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
@@ -218,7 +220,7 @@ func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
 	jsonStr := fmt.Sprintf(`{ "Key": %q }`, key)
 	fmt.Println(jsonStr)
 
-	req, err := http.NewRequest("POST", httpTestServer.URL+"/"+"ctxtoctx", strings.NewReader(jsonStr))
+	req, err := http.NewRequest("POST", httpAddr+"/"+"ctxtoctx", strings.NewReader(jsonStr))
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -251,7 +253,7 @@ type httpRequestBuilder struct {
 
 func (h httpRequestBuilder) Test(t *testing.T) ([]byte, error) {
 	t.Logf("Method: %q | Route: %q", h.method, h.route)
-	httpReq, err := http.NewRequest(h.method, httpTestServer.URL+"/"+h.route, bytes.NewReader(h.body))
+	httpReq, err := http.NewRequest(h.method, httpAddr+"/"+h.route, bytes.NewReader(h.body))
 	if err != nil {
 		return nil, err
 	}
