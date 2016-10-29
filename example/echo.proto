@@ -1,0 +1,46 @@
+// In general, while you can use proto2 (the current default protocol buffers
+// version), we recommend that you use proto3 with gRPC as it lets you use the
+// full range of gRPC-supported languages, as well as avoiding compatibility
+// issues with proto2 clients talking to proto3 servers and vice versa.
+syntax = "proto3";
+
+// The package name determines the name of the directories that truss creates
+// for `package echo;` truss will create the directory "echo-service".
+package echo;
+
+import "google/api/annotations.proto";
+
+service Echo {
+  // Echo "echos" the incoming string
+  rpc Echo (EchoRequest) returns (EchoResponse) {
+    option (google.api.http) = {
+        // All fields (In) are query parameters of the http request unless otherwise specified
+        get: "/echo"
+      };
+  }
+
+  // Louder "echos" the incoming string with `Loudness` additional exclamation marks
+  rpc Louder (LouderRequest) returns (EchoResponse) {
+    option (google.api.http) = {
+        // Loudness is accepted in the http path
+        post: "/louder/{Loudness}"
+        // All other fields (In) are located in the body of the http/json request
+        body: "*"
+      };
+  }
+}
+
+message EchoRequest {
+  string In = 1;
+}
+
+message LouderRequest {
+  // In is the string to echo back
+  string In = 1;
+  // Loudness is the number of exclamations marks to add to the echoed string
+  int32 Loudness = 2;
+}
+
+message EchoResponse {
+  string Out = 1;
+}
