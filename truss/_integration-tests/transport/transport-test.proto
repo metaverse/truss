@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package httptest;
+package transport;
 
 import "google/api/annotations.proto";
 
-service HTTPPermutations {
+service TransportPermutations {
   rpc GetWithQuery (GetWithQueryRequest) returns (GetWithQueryResponse) {
     option (google.api.http) = {
       get: "/getwithquery"

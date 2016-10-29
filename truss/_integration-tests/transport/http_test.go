@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -19,17 +18,15 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	pb "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service"
-	svc "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service/generated"
-	httpclient "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service/generated/client/http"
-	handler "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service/handlers/server"
+	pb "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service"
+	svc "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service/generated"
+	httpclient "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service/generated/client/http"
+	handler "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service/handlers/server"
 
 	"github.com/pkg/errors"
 )
 
 var httpserver *httptest.Server
-
-var _ = io.Copy
 
 func init() {
 	var logger log.Logger

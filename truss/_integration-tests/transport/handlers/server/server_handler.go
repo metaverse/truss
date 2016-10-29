@@ -12,18 +12,18 @@ import (
 	_ "github.com/go-kit/kit/log"
 	_ "github.com/go-kit/kit/metrics"
 
-	pb "github.com/TuneLab/go-truss/truss/_integration-tests/http/httptest-service"
+	pb "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service"
 )
 
 // NewService returns a naïve, stateless implementation of Service.
 func NewService() Service {
-	return httptestService{}
+	return transportService{}
 }
 
-type httptestService struct{}
+type transportService struct{}
 
 // GetWithQuery implements Service.
-func (s httptestService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+func (s transportService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
@@ -32,7 +32,7 @@ func (s httptestService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRe
 }
 
 // GetWithRepeatedQuery implements Service.
-func (s httptestService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error) {
+func (s transportService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error) {
 	var out int64
 
 	for _, v := range in.A {
@@ -47,7 +47,7 @@ func (s httptestService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWit
 }
 
 // PostWithNestedMessageBody implements Service.
-func (s httptestService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
+func (s transportService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
 	response := pb.PostWithNestedMessageBodyResponse{
 		V: in.NM.A + in.NM.B,
 	}
@@ -55,7 +55,7 @@ func (s httptestService) PostWithNestedMessageBody(ctx context.Context, in *pb.P
 }
 
 // CtxtToCtxtViaHTTPHeader implements Service.
-func (s httptestService) CtxToCtxViaHTTPHeader(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error) {
+func (s transportService) CtxToCtxViaHTTPHeader(ctx context.Context, in *pb.HeaderRequest) (*pb.HeaderResponse, error) {
 	var resp pb.HeaderResponse
 	val := ctx.Value(in.HeaderKey)
 
