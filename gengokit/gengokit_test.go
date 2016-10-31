@@ -9,7 +9,9 @@ import (
 	"testing"
 
 	"github.com/TuneLab/go-truss/deftree"
+	"github.com/TuneLab/go-truss/svcdef"
 
+	"github.com/TuneLab/go-truss/gengokit/config"
 	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
 	log "github.com/Sirupsen/logrus"
@@ -45,34 +47,40 @@ func TestNewTemplateExecutor(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query
-			option (google.api.http) = {
-			  get: "/route"
-			};
-		  }
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
 		}
 	`
+	sd, err := svcdef.NewFromString(def)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dt, err := deftree.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	const goPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
-	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
+	conf := config.Config{
+		GoPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
 
-	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
+	te, err := newTemplateExecutor(dt, sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,23 +101,23 @@ func TestGetProtoService(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query
-			option (google.api.http) = {
-			  get: "/route"
-			};
-		  }
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
 		}
 	`
 	dt, err := deftree.NewFromString(def)
@@ -142,35 +150,40 @@ func TestApplyTemplateFromPath(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query 
-			option (google.api.http) = { 
-				get: "/route"
-			};
-		  }
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
 		}
 	`
-
-	const goPackage = "github.com/TuneLab/go-truss/gengokit"
-	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
-
+	sd, err := svcdef.NewFromString(def)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dt, err := deftree.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
+	conf := config.Config{
+		GoPackage: "github.com/TuneLab/go-truss",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
+
+	te, err := newTemplateExecutor(dt, sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,37 +218,37 @@ func TestTrimTemplateExecutorServiceFuncs(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
 			// No {} in path and no body, everything is in the query
-			option (google.api.http) = {
-				get: "/route"
-			};
-		  }
-		  // ProtoMethodAgain is simple. Like a gopher again.
-		  rpc ProtoMethodAgain (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query
-			option (google.api.http) = {
-				get: "/route2"
-			};
-		  }
-		  // ProtoMethodAgain is simple. Like a gopher again.
-		  rpc ProtoMethodAgainAgain (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query
-			option (google.api.http) = {
-				get: "/route3"
-			};
-		  }
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
+			// ProtoMethodAgain is simple. Like a gopher again.
+			rpc ProtoMethodAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route2"
+				};
+			}
+			// ProtoMethodAgain is simple. Like a gopher again.
+			rpc ProtoMethodAgainAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route3"
+				};
+			}
 		}
 	`
 
@@ -294,8 +307,17 @@ func stringToTemplateExector(def, importPath string) (*templateExecutor, error) 
 	if err != nil {
 		return nil, err
 	}
+	sd, err := svcdef.NewFromString(def)
+	if err != nil {
+		return nil, err
+	}
 
-	te, err := newTemplateExecutor(dt, importPath, importPath)
+	conf := config.Config{
+		GoPackage: importPath,
+		PBPackage: importPath,
+	}
+
+	te, err := newTemplateExecutor(dt, sd, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -315,35 +337,41 @@ func TestUpdateServerMethods(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query 
-			option (google.api.http) = { 
-				get: "/route"
-			};
-		  }
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
 		}
 	`
 
-	const goPackage = "github.com/TuneLab/go-truss/gengokit"
-	const goPBPackage = "github.com/TuneLab/go-truss/gengokit/general-service"
-
+	sd, err := svcdef.NewFromString(def)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dt, err := deftree.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
+	conf := config.Config{
+		GoPackage: "github.com/TuneLab/go-truss/gengokit",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
+
+	te, err := newTemplateExecutor(dt, sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,23 +433,23 @@ func TestAllTemplates(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query 
-			option (google.api.http) = { 
-				get: "/route"
-			};
-		  }
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
 		}
 	`
 
@@ -435,39 +463,48 @@ func TestAllTemplates(t *testing.T) {
 
 		// RequestMessage is so foo
 		message RequestMessage {
-		  string input = 1;
+			string input = 1;
 		}
 
 		// ResponseMessage is so bar
 		message ResponseMessage {
-		  string output = 1;
+			string output = 1;
 		}
 
 		// ProtoService is a service
 		service ProtoService {
-		  // ProtoMethod is simple. Like a gopher.
-		  rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query 
-			option (google.api.http) = { 
-				get: "/route"
-			};
-		  }
-		  // ProtoMethodAgain is simple. Like a gopher again.
-		  rpc ProtoMethodAgain (RequestMessage) returns (ResponseMessage) {
-			// No {} in path and no body, everything is in the query 
-			option (google.api.http) = { 
-				get: "/route2"
-			};
-		  }
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
+			// ProtoMethodAgain is simple. Like a gopher again.
+			rpc ProtoMethodAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route2"
+				};
+			}
 		}
 	`
 
+	sd, err := svcdef.NewFromString(def)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dt, err := deftree.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
+	conf := config.Config{
+		GoPackage: "github.com/TuneLab/go-truss/gengokit",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
+
+	te, err := newTemplateExecutor(dt, sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -476,8 +513,12 @@ func TestAllTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	sd2, err := svcdef.NewFromString(def)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	te2, err := newTemplateExecutor(dt2, goPackage, goPBPackage)
+	te2, err := newTemplateExecutor(dt2, sd2, conf)
 	if err != nil {
 		t.Fatal(err)
 	}

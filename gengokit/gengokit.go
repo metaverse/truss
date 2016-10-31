@@ -16,10 +16,12 @@ import (
 
 	"github.com/TuneLab/go-truss/gengokit/astmodifier"
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
+	"github.com/TuneLab/go-truss/gengokit/config"
 	"github.com/TuneLab/go-truss/gengokit/httptransport"
 	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
 	"github.com/TuneLab/go-truss/deftree"
+	"github.com/TuneLab/go-truss/svcdef"
 	"github.com/TuneLab/go-truss/truss/truss"
 )
 
@@ -48,7 +50,7 @@ type templateExecutor struct {
 	funcMap    template.FuncMap
 }
 
-func newTemplateExecutor(dt deftree.Deftree, goPackage, goPBPackage string) (*templateExecutor, error) {
+func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) (*templateExecutor, error) {
 	service, err := getProtoService(dt)
 	if err != nil {
 		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
@@ -61,9 +63,9 @@ func newTemplateExecutor(dt deftree.Deftree, goPackage, goPBPackage string) (*te
 		"TrimPrefix": strings.TrimPrefix,
 	}
 	return &templateExecutor{
-		ImportPath:   goPackage,
-		PBImportPath: goPBPackage,
-		PackageName:  dt.GetName(),
+		ImportPath:   conf.GoPackage,
+		PBImportPath: conf.PBPackage,
+		PackageName:  sd.PkgName,
 		Service:      service,
 		ClientArgs:   clientarggen.New(service),
 		HTTPHelper:   httptransport.NewHelper(service),
@@ -74,14 +76,16 @@ func newTemplateExecutor(dt deftree.Deftree, goPackage, goPBPackage string) (*te
 // GenerateGokit returns a gokit service generated from a service definition (deftree),
 // the package to the root of the generated service goPackage, the package
 // to the .pb.go service struct files (goPBPackage) and any prevously generated files.
-func GenerateGokit(dt deftree.Deftree, goPackage, goPBPackage string, previousFiles []truss.NamedReadWriter) ([]truss.NamedReadWriter, error) {
-	te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
+//func GenerateGokit(dt deftree.Deftree, goPackage, goPBPackage string, previousFiles []truss.NamedReadWriter) ([]truss.NamedReadWriter, error) {
+func GenerateGokit(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) ([]truss.NamedReadWriter, error) {
+	//te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
+	te, err := newTemplateExecutor(dt, sd, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template executor")
 	}
 
-	fpm := make(map[string]io.Reader, len(previousFiles))
-	for _, f := range previousFiles {
+	fpm := make(map[string]io.Reader, len(conf.PreviousFiles))
+	for _, f := range conf.PreviousFiles {
 		fpm[f.Name()] = f
 	}
 

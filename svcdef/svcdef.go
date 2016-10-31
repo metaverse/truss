@@ -144,8 +144,12 @@ func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't parse go file to create Svcdef")
 		}
+		rv.PkgName = fileAst.Name.Name
 
-		typespecs, _ := retrieveTypeSpecs(fileAst)
+		typespecs, err := retrieveTypeSpecs(fileAst)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not retrive type specs")
+		}
 		for _, t := range typespecs {
 			switch typdf := t.Type.(type) {
 			case *ast.Ident:
