@@ -155,6 +155,41 @@ func TestLexSingleLineComments(t *testing.T) {
 			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, cleanStr(str), cleanStr(good_str))
 		}
 
+		if tk == EOF {
+			break
+		}
+	}
+}
+
+func TestLexMultiLineComments(t *testing.T) {
+	r := strings.NewReader("service testing\n /* comment1 */ /* thing */\n/*comment2 */\n\n/*comment 3 */\n what")
+	lex := NewSvcLexer(r)
+	for i, good_str := range []string{
+		"service",
+		" ",
+		"testing",
+		"\n ",
+		"/* comment1 */ /* thing */",
+		"\n",
+		"/*comment2 */",
+		"\n\n",
+		"/*comment 3 */",
+		"\n ",
+		"what",
+		"",
+	} {
+		tk, str := lex.GetToken()
+		if tk == ILLEGAL {
+			t.Fatalf("Recieved ILLEGAL token on '%v' call to GetToken\n", i)
+		}
+
+		if str != good_str {
+			for _, grp := range lex.Buf {
+				t.Logf("  '%v'\n", cleanStr(grp.value))
+			}
+			t.Fatalf("%v returned token '%v' differs from expected token '%v'\n", i, cleanStr(str), cleanStr(good_str))
+		}
+
 		if tk == EOF || tk == ILLEGAL {
 			break
 		}

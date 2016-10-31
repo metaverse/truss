@@ -527,3 +527,49 @@ service FlowCombination {
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 }
+
+func TestOddComments(t *testing.T) {
+	r := strings.NewReader(`
+service FlowCombination {
+	/* lots */
+	/* of */
+	/* comments */
+	rpc RpcEmptyStream(EmptyProto) returns (stream EmptyProto) {
+	/* lots */
+	/* of */
+	/* comments */
+		option (google.api.http) = {
+			post: "/rpc/empty/stream"
+		};
+	}
+	/* lots */ /* of */ /* comments */
+	rpc StreamEmptyRpc(stream EmptyProto) returns (EmptyProto) {
+	/* lots */ /* of */ /* comments */
+		option (google.api.http) = {
+	/* lots */ /* of */ /* comments */
+			post: "/stream/empty/rpc"
+	/* lots */ /* of */ /* comments */
+		};
+	/* lots */ /* of */ /* comments */
+	}
+	rpc StreamEmptyStream(stream EmptyProto) returns (stream EmptyProto) {
+		option (google.api.http) = {
+			post: "/stream/empty/stream"
+	/* lots */ /* of */ /* comments */
+		};
+	/* lots */ /* of */ /* comments */
+	}
+	/* lots */ /* of */ /* comments */
+}
+	`)
+
+	lex := NewSvcLexer(r)
+	svc, err := ParseService(lex)
+
+	if err != nil {
+		t.Error(err)
+	}
+	if svc == nil {
+		t.Fatalf("Returned service is nil\n")
+	}
+}

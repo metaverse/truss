@@ -153,6 +153,9 @@ func BuildScanUnit(rr *RuneReader) (*ScanUnit, error) {
 						buf = append(buf, ch)
 						return setReturn(), nil
 					}
+				} else {
+					// Add the body of the comment to the buffer
+					buf = append(buf, ch)
 				}
 			}
 		} else {

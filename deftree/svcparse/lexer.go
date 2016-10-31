@@ -68,7 +68,9 @@ func NewTokenGroup(scn *SvcScanner) *TokenGroup {
 					}
 					twostr := string(two)
 					if len(two) > 1 && two[0] == '/' {
-						str += twostr
+						// Ensure that whitespace between multiline comments on
+						// a single line are preserved.
+						str += onestr + twostr
 					} else {
 						scn.UnReadToPosition(one_pos)
 						break
