@@ -80,25 +80,25 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 	for _, param := range binding.Params {
 		// The 'Field' attr of each HTTPParameter always point to it's bound
 		// Methods RequestType
-		rq := param.Field
+		field := param.Field
 		newField := Field{
-			Name:         rq.Name,
-			CamelName:    gogen.CamelCase(rq.Name),
-			LowCamelName: LowCamelName(rq.Name),
+			Name:         field.Name,
+			CamelName:    gogen.CamelCase(field.Name),
+			LowCamelName: LowCamelName(field.Name),
 			Location:     param.Location,
-			Repeated:     rq.Type.ArrayType,
-			GoType:       rq.Type.Name,
-			LocalName:    fmt.Sprintf("%s%s", gogen.CamelCase(rq.Name), gogen.CamelCase(meth.Name)),
+			Repeated:     field.Type.ArrayType,
+			GoType:       field.Type.Name,
+			LocalName:    fmt.Sprintf("%s%s", gogen.CamelCase(field.Name), gogen.CamelCase(meth.Name)),
 		}
 
-		if rq.Type.Message == nil && rq.Type.Enum == nil && rq.Type.Map == nil {
+		if field.Type.Message == nil && field.Type.Enum == nil && field.Type.Map == nil {
 			newField.IsBaseType = true
 		}
 
 		// Modify GoType to reflect pointer or repeated status
-		if rq.Type.StarExpr && rq.Type.ArrayType {
+		if field.Type.StarExpr && field.Type.ArrayType {
 			newField.GoType = "[]*" + newField.GoType
-		} else if rq.Type.ArrayType {
+		} else if field.Type.ArrayType {
 			newField.GoType = "[]" + newField.GoType
 		}
 

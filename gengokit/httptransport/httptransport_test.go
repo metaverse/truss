@@ -92,7 +92,6 @@ func TestNewMethod(t *testing.T) {
 	if got, want := newMeth, meth; !reflect.DeepEqual(got, want) {
 		diff := gentesthelper.DiffStrings(spew.Sdump(got), spew.Sdump(want))
 		t.Errorf("got != want; methods differ: %v\n", diff)
-		//t.Errorf("methods differ;\ngot  = %+v\nwant = %+v\n", got, want)
 	}
 }
 

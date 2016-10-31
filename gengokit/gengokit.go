@@ -67,7 +67,7 @@ func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Conf
 		PBImportPath: conf.PBPackage,
 		PackageName:  sd.PkgName,
 		Service:      service,
-		ClientArgs:   clientarggen.New(service),
+		ClientArgs:   clientarggen.New(sd.Service),
 		HTTPHelper:   httptransport.NewHelper(sd.Service),
 		funcMap:      funcMap,
 	}, nil
