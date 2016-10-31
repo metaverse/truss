@@ -49,16 +49,9 @@ type Field struct {
 	LocalName string
 	// The location within the the http request that this field is to be found.
 	Location string
-	// The protobuf type that this field is of.
-	// Deprecated by Svcdef.
-	ProtobufType string
 	// The type within the Go language that's used to represent the original
 	// field that this field refers to.
 	GoType string
-	// The protobuf label for the original field that this field refers to. Is
-	// probably "OPTIONAL", though may be "REPEATED".
-	// Deprecated by Svcdef.
-	ProtobufLabel string
 	// The string form of the function to be used to convert the incoming
 	// string msg from a string into it's intended type.
 	ConvertFunc string

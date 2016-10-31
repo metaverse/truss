@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/svcdef"
 
 	"github.com/TuneLab/go-truss/gengokit/config"
@@ -70,72 +69,19 @@ func TestNewTemplateExecutor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dt, err := deftree.NewFromString(def)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	conf := config.Config{
 		GoPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := newTemplateExecutor(dt, sd, conf)
+	te, err := newTemplateExecutor(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := te.PackageName, dt.GetName(); got != want {
+	if got, want := te.PackageName, sd.PkgName; got != want {
 		t.Fatalf("\n`%v` was PackageName\n`%v` was wanted", got, want)
-	}
-}
-
-func TestGetProtoService(t *testing.T) {
-	const def = `
-		syntax = "proto3";
-
-		// General package
-		package general;
-
-		import "google/api/annotations.proto";
-
-		// RequestMessage is so foo
-		message RequestMessage {
-			string input = 1;
-		}
-
-		// ResponseMessage is so bar
-		message ResponseMessage {
-			string output = 1;
-		}
-
-		// ProtoService is a service
-		service ProtoService {
-			// ProtoMethod is simple. Like a gopher.
-			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
-				// No {} in path and no body, everything is in the query
-				option (google.api.http) = {
-					get: "/route"
-				};
-			}
-		}
-	`
-	dt, err := deftree.NewFromString(def)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	svc, err := getProtoService(dt)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := svc.Name, "ProtoService"; got != want {
-		t.Fatalf("\n`%v` was service name\n`%v` was wanted", got, want)
-	}
-
-	if got, want := svc.Methods[0].Name, "ProtoMethod"; got != want {
-		t.Fatalf("\n`%v` was rpc in service\n`%v` was wanted", got, want)
 	}
 }
 
@@ -173,17 +119,13 @@ func TestApplyTemplateFromPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dt, err := deftree.NewFromString(def)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	conf := config.Config{
 		GoPackage: "github.com/TuneLab/go-truss",
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := newTemplateExecutor(dt, sd, conf)
+	te, err := newTemplateExecutor(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,10 +245,6 @@ func svcMethodsNames(methods []*svcdef.ServiceMethod) []string {
 }
 
 func stringToTemplateExector(def, importPath string) (*templateExecutor, error) {
-	dt, err := deftree.NewFromString(def)
-	if err != nil {
-		return nil, err
-	}
 	sd, err := svcdef.NewFromString(def)
 	if err != nil {
 		return nil, err
@@ -317,7 +255,7 @@ func stringToTemplateExector(def, importPath string) (*templateExecutor, error) 
 		PBPackage: importPath,
 	}
 
-	te, err := newTemplateExecutor(dt, sd, conf)
+	te, err := newTemplateExecutor(sd, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -361,17 +299,13 @@ func TestUpdateServerMethods(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dt, err := deftree.NewFromString(def)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	conf := config.Config{
 		GoPackage: "github.com/TuneLab/go-truss/gengokit",
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := newTemplateExecutor(dt, sd, conf)
+	te, err := newTemplateExecutor(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -494,31 +428,23 @@ func TestAllTemplates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dt, err := deftree.NewFromString(def)
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	conf := config.Config{
 		GoPackage: "github.com/TuneLab/go-truss/gengokit",
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := newTemplateExecutor(dt, sd, conf)
+	te, err := newTemplateExecutor(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	dt2, err := deftree.NewFromString(def2)
-	if err != nil {
-		t.Fatal(err)
-	}
 	sd2, err := svcdef.NewFromString(def)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	te2, err := newTemplateExecutor(dt2, sd2, conf)
+	te2, err := newTemplateExecutor(sd2, conf)
 	if err != nil {
 		t.Fatal(err)
 	}

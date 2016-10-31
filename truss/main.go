@@ -197,7 +197,7 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) ([]t
 		PreviousFiles: cfg.PrevGen,
 	}
 
-	genGokitFiles, err := gengokit.GenerateGokit(dt, sd, conf)
+	genGokitFiles, err := gengokit.GenerateGokit(sd, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot generate gokit service")
 	}

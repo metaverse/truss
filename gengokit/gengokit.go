@@ -20,7 +20,6 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/httptransport"
 	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
-	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/svcdef"
 	"github.com/TuneLab/go-truss/truss/truss"
 )
@@ -43,7 +42,6 @@ type templateExecutor struct {
 	// PackageName is the name of the package containing the service definition
 	PackageName string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	//Service    *deftree.ProtoService
 	Service    *svcdef.Service
 	ClientArgs *clientarggen.ClientServiceArgs
 	// A helper struct for generating http transport functionality.
@@ -51,11 +49,7 @@ type templateExecutor struct {
 	funcMap    template.FuncMap
 }
 
-func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) (*templateExecutor, error) {
-	//service, err := getProtoService(dt)
-	//if err != nil {
-	//return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
-	//}
+func newTemplateExecutor(sd *svcdef.Svcdef, conf config.Config) (*templateExecutor, error) {
 
 	funcMap := template.FuncMap{
 		"ToLower":    strings.ToLower,
@@ -74,12 +68,11 @@ func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Conf
 	}, nil
 }
 
-// GenerateGokit returns a gokit service generated from a service definition (deftree),
+// GenerateGokit returns a gokit service generated from a service definition (svcdef),
 // the package to the root of the generated service goPackage, the package
 // to the .pb.go service struct files (goPBPackage) and any prevously generated files.
-func GenerateGokit(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) ([]truss.NamedReadWriter, error) {
-	//te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
-	te, err := newTemplateExecutor(dt, sd, conf)
+func GenerateGokit(sd *svcdef.Svcdef, conf config.Config) ([]truss.NamedReadWriter, error) {
+	te, err := newTemplateExecutor(sd, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create template executor")
 	}
@@ -104,24 +97,6 @@ func GenerateGokit(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) ([
 	}
 
 	return codeGenFiles, nil
-}
-
-// getProtoService finds returns the service within a deftree.Deftree
-func getProtoService(dt deftree.Deftree) (*deftree.ProtoService, error) {
-	md := dt.(*deftree.MicroserviceDefinition)
-	files := md.Files
-	var service *deftree.ProtoService
-
-	for _, file := range files {
-		if len(file.Services) > 0 {
-			service = file.Services[0]
-		}
-	}
-
-	if service == nil {
-		return nil, errors.New("no service found")
-	}
-	return service, nil
 }
 
 // generateResponseFile contains logic to choose how to render a template file
@@ -278,7 +253,6 @@ func updateClientMethods(clientHandler io.Reader, te *templateExecutor) (outCode
 // serviceFunctionNames returns a slice of function names which are in the
 // definition files plus the function "NewService". Used for inserting and
 // removing functions from previously generated handler files
-//func serviceFunctionsNames(methods []*deftree.ServiceMethod) []string {
 func serviceFunctionsNames(methods []*svcdef.ServiceMethod) []string {
 	var svcFuncs []string
 	for _, m := range methods {
@@ -292,7 +266,6 @@ func serviceFunctionsNames(methods []*svcdef.ServiceMethod) []string {
 // trimServiceFuncs removes functions in funcsInFile from the
 // templateExecutor and returns a pointer to a new templateExecutor
 func (te templateExecutor) trimServiceFuncs(funcsInFile map[string]bool) *templateExecutor {
-	//var methodsToTemplate []*deftree.ServiceMethod
 	var methodsToTemplate []*svcdef.ServiceMethod
 
 	for _, m := range te.Service.Methods {

@@ -54,13 +54,6 @@ type ClientArg struct {
 	// from FlagArg or the invocation of a json unmarshal function.
 	GoConvertInvoc string
 
-	// ProtobufType contains the raw value of the type of the original protobuf
-	// field corresponding to this arg, as provided by the protocol buffer
-	// compiler. For a list of these basic types and their corresponding Go
-	// types, see the ProtoToGoTypeMap map in this file.
-	// Deprecated by Svcdef.
-	ProtbufType string
-
 	// IsBaseType is true if this arg corresponds to a protobuf field which is
 	// any of the basic types, or a basic type but repeated. If this the field
 	// was a nested message or a map, IsBaseType is false.

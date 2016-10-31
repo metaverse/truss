@@ -185,7 +185,7 @@ func QueryParams(vals url.Values) (map[string]string, error) {
 
 // HTTPAssistFuncs is a source code literal of all the helper functions used
 // for encoding and decoding http request to and from generated protobuf
-// structs, and is used within the generated code of each microservice.
+// structs, and is used within the generated code of each service.
 var HTTPAssistFuncs = PathParamsTemplate + BuildParamMapTemplate + RemoveBracesTemplate + QueryParamsTemplate
 
 var serverTemplate = `

@@ -1,5 +1,5 @@
 // Package httptransport provides functions and template helpers for templating
-// the http-transport of a go-kit based microservice.
+// the http-transport of a go-kit based service.
 package httptransport
 
 import (
@@ -19,7 +19,7 @@ import (
 
 // Helper is the base struct for the data structure containing all the
 // information necessary to correctly template the HTTP transport functionality
-// of a microservice. Helper must be built from a Svcdef.
+// of a service. Helper must be built from a Svcdef.
 type Helper struct {
 	Methods           []*Method
 	PathParamsBuilder string

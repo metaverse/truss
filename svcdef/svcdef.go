@@ -387,7 +387,6 @@ func NewField(f *ast.Field) (*Field, error) {
 // isExported returns true if the provided name of a declaration begins with a
 // capital letter.
 func isExported(name string) bool {
-	// Abuse DecodeRuneInString to get the first rune in the string
 	r, _ := utf8.DecodeRuneInString(name)
 	if unicode.IsUpper(r) {
 		return true

@@ -22,6 +22,24 @@ import (
 	"strconv"
 )
 
+type optionParseErr struct {
+	err error
+}
+
+func (o optionParseErr) Optional() bool {
+	return true
+}
+
+func (o optionParseErr) Error() string {
+	return o.err.Error()
+}
+
+func optionalParseErr(expected string, line int, val string) error {
+	return optionParseErr{
+		err: fmt.Errorf("parser expected %v in line '%v', instead found '%v'", expected, line, val),
+	}
+}
+
 func parseErr(expected string, line int, val string) error {
 	err := fmt.Errorf("parser expected %v in line '%v', instead found '%v'", expected, line, val)
 	return err
@@ -302,7 +320,9 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 		return append(rv, new_opt), nil
 	}
 
-	return nil, parseErr("'option' or 'additional_bindings' while parsing options", lex.GetLineNumber(), val)
+	opt := optionalParseErr("'option' or 'additional_bindings' while parsing options", lex.GetLineNumber(), val)
+
+	return nil, opt
 }
 
 func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {

@@ -14,6 +14,15 @@ import (
 	"github.com/TuneLab/go-truss/deftree/svcparse"
 )
 
+type optional interface {
+	Optional() bool
+}
+
+func isOptionalError(err error) bool {
+	opt, ok := errors.Cause(err).(optional)
+	return ok && opt.Optional()
+}
+
 // consolidateHTTP accepts a SvcDef and the io.Readers for the proto files
 // comprising the definition. It modifies the SvcDef so that HTTPBindings and
 // their associated HTTPParamters are added to each ServiceMethod. After this,
@@ -25,7 +34,7 @@ func consolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
 		lex := svcparse.NewSvcLexer(pfile)
 		protosvc, err := svcparse.ParseService(lex)
 		if err != nil {
-			if strings.Contains(err.Error(), "'option' or 'additional_bindings'") {
+			if isOptionalError(err) {
 				log.Warnf("Parser found rpc method which lacks HTTP " +
 					"annotations; this is allowed, but will result in HTTP " +
 					"transport not being generated.")
