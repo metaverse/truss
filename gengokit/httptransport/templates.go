@@ -221,7 +221,7 @@ var (
 	_ = strconv.Atoi
 	_ = httptransport.NewServer
 	_ = ioutil.NopCloser
-	_ = pb.Register{{.Service.GetName}}Server
+	_ = pb.Register{{.Service.Name}}Server
 	_ = io.Copy
 )
 
@@ -334,7 +334,7 @@ func headersToContext(ctx context.Context, r *http.Request) context.Context {
 `
 
 var clientTemplate = `
-// Package http provides an HTTP client for the {{.Service.GetName}} service.
+// Package http provides an HTTP client for the {{.Service.Name}} service.
 package http
 
 import (

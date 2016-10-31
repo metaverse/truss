@@ -43,7 +43,8 @@ type templateExecutor struct {
 	// PackageName is the name of the package containing the service definition
 	PackageName string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	Service    *deftree.ProtoService
+	//Service    *deftree.ProtoService
+	Service    *svcdef.Service
 	ClientArgs *clientarggen.ClientServiceArgs
 	// A helper struct for generating http transport functionality.
 	HTTPHelper *httptransport.Helper
@@ -51,10 +52,10 @@ type templateExecutor struct {
 }
 
 func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) (*templateExecutor, error) {
-	service, err := getProtoService(dt)
-	if err != nil {
-		return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
-	}
+	//service, err := getProtoService(dt)
+	//if err != nil {
+	//return nil, errors.Wrap(err, "no service found; aborting generating gokit service")
+	//}
 
 	funcMap := template.FuncMap{
 		"ToLower":    strings.ToLower,
@@ -66,7 +67,7 @@ func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Conf
 		ImportPath:   conf.GoPackage,
 		PBImportPath: conf.PBPackage,
 		PackageName:  sd.PkgName,
-		Service:      service,
+		Service:      sd.Service,
 		ClientArgs:   clientarggen.New(sd.Service),
 		HTTPHelper:   httptransport.NewHelper(sd.Service),
 		funcMap:      funcMap,
@@ -76,7 +77,6 @@ func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Conf
 // GenerateGokit returns a gokit service generated from a service definition (deftree),
 // the package to the root of the generated service goPackage, the package
 // to the .pb.go service struct files (goPBPackage) and any prevously generated files.
-//func GenerateGokit(dt deftree.Deftree, goPackage, goPBPackage string, previousFiles []truss.NamedReadWriter) ([]truss.NamedReadWriter, error) {
 func GenerateGokit(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Config) ([]truss.NamedReadWriter, error) {
 	//te, err := newTemplateExecutor(dt, goPackage, goPBPackage)
 	te, err := newTemplateExecutor(dt, sd, conf)
@@ -278,10 +278,11 @@ func updateClientMethods(clientHandler io.Reader, te *templateExecutor) (outCode
 // serviceFunctionNames returns a slice of function names which are in the
 // definition files plus the function "NewService". Used for inserting and
 // removing functions from previously generated handler files
-func serviceFunctionsNames(methods []*deftree.ServiceMethod) []string {
+//func serviceFunctionsNames(methods []*deftree.ServiceMethod) []string {
+func serviceFunctionsNames(methods []*svcdef.ServiceMethod) []string {
 	var svcFuncs []string
 	for _, m := range methods {
-		svcFuncs = append(svcFuncs, m.GetName())
+		svcFuncs = append(svcFuncs, m.Name)
 	}
 	svcFuncs = append(svcFuncs, "NewService")
 
@@ -291,10 +292,11 @@ func serviceFunctionsNames(methods []*deftree.ServiceMethod) []string {
 // trimServiceFuncs removes functions in funcsInFile from the
 // templateExecutor and returns a pointer to a new templateExecutor
 func (te templateExecutor) trimServiceFuncs(funcsInFile map[string]bool) *templateExecutor {
-	var methodsToTemplate []*deftree.ServiceMethod
+	//var methodsToTemplate []*deftree.ServiceMethod
+	var methodsToTemplate []*svcdef.ServiceMethod
 
 	for _, m := range te.Service.Methods {
-		mName := m.GetName()
+		mName := m.Name
 
 		if funcsInFile[mName] {
 			log.WithField("Method", mName).Info("Handler method already exists")

@@ -1,4 +1,4 @@
-// Package grpc provides a gRPC client for the {{.Service.GetName}} service.
+// Package grpc provides a gRPC client for the {{.Service.Name}} service.
 package grpc
 
 import (
@@ -17,7 +17,7 @@ import (
 )
 
 // New returns an service backed by a gRPC client connection. It is the
-// responsibility of the caller to dial, and later close, the connection.  
+// responsibility of the caller to dial, and later close, the connection.
 func New(conn *grpc.ClientConn, options ...ClientOption) (handler.Service, error) {
 	var cc clientConfig
 
@@ -34,25 +34,27 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (handler.Service, error
 	}
 
 	{{- with $tE := .}}
-		{{- range $i := $tE.Service.Methods}}
-			var {{ToLower $i.GetName}}Endpoint endpoint.Endpoint
-			{
-				{{ToLower $i.GetName}}Endpoint = grpctransport.NewClient(
-					conn,
-					"{{TrimPrefix $tE.Service.FullyQualifiedName "."}}",
-					"{{$i.GetName}}",
-					svc.EncodeGRPC{{$i.GetName}}Request,
-					svc.DecodeGRPC{{$i.GetName}}Response,
-					pb.{{GoName $i.ResponseType.GetName}}{},
-					clientOptions...,
-				).Endpoint()
-			}
+		{{- with $pkgName := $tE.PackageName}}
+			{{- range $i := $tE.Service.Methods}}
+				var {{ToLower $i.Name}}Endpoint endpoint.Endpoint
+				{
+					{{ToLower $i.Name}}Endpoint = grpctransport.NewClient(
+						conn,
+						"{{$pkgName}}.{{$tE.Service.Name}}",
+						"{{$i.Name}}",
+						svc.EncodeGRPC{{$i.Name}}Request,
+						svc.DecodeGRPC{{$i.Name}}Response,
+						pb.{{GoName $i.ResponseType.Name}}{},
+						clientOptions...,
+					).Endpoint()
+				}
+			{{end}}
 		{{end}}
 	{{end}}
 
 	return svc.Endpoints{
 	{{range $i := .Service.Methods -}}
-		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
+		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
 	{{end}}
 	}, nil
 }

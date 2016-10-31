@@ -1,17 +1,17 @@
 {{ with $templateExecutor := .}}
 
 {{range $i := $templateExecutor.Service.Methods}}
-// {{$i.GetName}} implements Service.
-func {{$i.GetName}}({{with index $templateExecutor.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.GetName}}, error){
-{{- with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
+// {{$i.Name}} implements Service.
+func {{$i.Name}}({{with index $templateExecutor.ClientArgs.MethArgs $i.Name}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.Name}}, error){
+{{- with $meth := index $templateExecutor.ClientArgs.MethArgs $i.Name -}}
 	{{- range $param := $meth.Args -}}
 		{{- if not $param.IsBaseType -}}
 		// Add custom business logic for interpreting {{$param.FlagArg}},
 		{{- end -}}
 	{{- end -}}
 {{- end -}}
-	request := pb.{{GoName $i.RequestType.GetName}}{
-{{- with $meth := index $templateExecutor.ClientArgs.MethArgs $i.GetName -}}
+	request := pb.{{GoName $i.RequestType.Name}}{
+{{- with $meth := index $templateExecutor.ClientArgs.MethArgs $i.Name -}}
 	{{range $param := $meth.Args -}}
 		{{- if $param.IsBaseType}}
 		{{GoName $param.Name}} : {{GoName $param.FlagArg}},

@@ -130,11 +130,11 @@ func TestGetProtoService(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := svc.GetName(), "ProtoService"; got != want {
+	if got, want := svc.Name, "ProtoService"; got != want {
 		t.Fatalf("\n`%v` was service name\n`%v` was wanted", got, want)
 	}
 
-	if got, want := svc.Methods[0].GetName(), "ProtoMethod"; got != want {
+	if got, want := svc.Methods[0].Name, "ProtoMethod"; got != want {
 		t.Fatalf("\n`%v` was rpc in service\n`%v` was wanted", got, want)
 	}
 }
@@ -293,10 +293,10 @@ func TestTrimTemplateExecutorServiceFuncs(t *testing.T) {
 
 }
 
-func svcMethodsNames(methods []*deftree.ServiceMethod) []string {
+func svcMethodsNames(methods []*svcdef.ServiceMethod) []string {
 	var mNames []string
 	for _, m := range methods {
-		mNames = append(mNames, m.GetName())
+		mNames = append(mNames, m.Name)
 	}
 
 	return mNames

@@ -262,10 +262,10 @@ func NewMap(m ast.Expr) (*Map, error) {
 }
 
 // NewService returns a new Service struct derived from an *ast.TypeSpec with a
-// Type of *ast.InterfaceType representing an "{SVCNAME}Client" interface.
+// Type of *ast.InterfaceType representing an "{SVCNAME}Server" interface.
 func NewService(s *ast.TypeSpec) (*Service, error) {
 	rv := &Service{
-		Name: s.Name.Name,
+		Name: strings.TrimSuffix(s.Name.Name, "Server"),
 	}
 	asvc := s.Type.(*ast.InterfaceType)
 	for _, m := range asvc.Methods.List {
