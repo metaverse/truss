@@ -12,15 +12,14 @@ import (
 	"unicode"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/TuneLab/go-truss/deftree"
-	"github.com/TuneLab/go-truss/gengokit/clientarggen"
+	"github.com/TuneLab/go-truss/svcdef"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 )
 
 // Helper is the base struct for the data structure containing all the
 // information necessary to correctly template the HTTP transport functionality
-// of a microservice. Helper must be built from a deftree.
+// of a microservice. Helper must be built from a Svcdef.
 type Helper struct {
 	Methods           []*Method
 	PathParamsBuilder string
@@ -31,7 +30,7 @@ type Helper struct {
 // NewHelper builds a helper struct from a service declaration. The other
 // "New*" functions in this file are there to make this function smaller and
 // more testable.
-func NewHelper(svc *deftree.ProtoService) *Helper {
+func NewHelper(svc *svcdef.Service) *Helper {
 	// The HTTPAssistFuncs global is a group of function literals defined
 	// within templates.go
 	pp := FormatCode(HTTPAssistFuncs)
@@ -41,7 +40,7 @@ func NewHelper(svc *deftree.ProtoService) *Helper {
 		ClientTemplate:    GenClientTemplate,
 	}
 	for _, meth := range svc.Methods {
-		if len(meth.HttpBindings) > 0 {
+		if len(meth.Bindings) > 0 {
 			nMeth := NewMethod(meth)
 			rv.Methods = append(rv.Methods, nMeth)
 		}
@@ -49,14 +48,15 @@ func NewHelper(svc *deftree.ProtoService) *Helper {
 	return &rv
 }
 
-// NewMethod builds a Method struct from a deftree.ServiceMethod.
-func NewMethod(meth *deftree.ServiceMethod) *Method {
+// NewMethod builds a Method struct from a svcdef.ServiceMethod.
+func NewMethod(meth *svcdef.ServiceMethod) *Method {
 	nMeth := Method{
-		Name:         meth.GetName(),
-		RequestType:  meth.RequestType.GetName(),
-		ResponseType: meth.ResponseType.GetName(),
+		Name:         meth.Name,
+		RequestType:  meth.RequestType.Name,
+		ResponseType: meth.ResponseType.Name,
 	}
-	for i := range meth.HttpBindings {
+	//for i := range meth.HttpBindings {
+	for i := range meth.Bindings {
 		nBinding := NewBinding(i, meth)
 		nBinding.Parent = &nMeth
 		nMeth.Bindings = append(nMeth.Bindings, nBinding)
@@ -64,89 +64,65 @@ func NewMethod(meth *deftree.ServiceMethod) *Method {
 	return &nMeth
 }
 
-// NewBinding creates a Binding struct based on a deftree.HttpBinding. Because
+// NewBinding creates a Binding struct based on a svcdef.HTTPBinding. Because
 // NewBinding requires access to some of it's parent method's fields, instead
-// of passing a deftree.HttpBinding directly, you instead pass a
-// deftree.ServiceMethod and the index of the HttpBinding within that methods
-// "HttpBindings" slice.
-func NewBinding(i int, meth *deftree.ServiceMethod) *Binding {
-	binding := meth.HttpBindings[i]
+// of passing a svcdef.HttpBinding directly, you instead pass a
+// svcdef.ServiceMethod and the index of the HTTPBinding within that methods
+// "HTTPBinding" slice.
+func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
+	binding := meth.Bindings[i]
 	nBinding := Binding{
-		Label:        meth.GetName() + EnglishNumber(i),
+		Label:        meth.Name + EnglishNumber(i),
 		PathTemplate: binding.Path,
 		BasePath:     basePath(binding.Path),
 		Verb:         binding.Verb,
 	}
-	for _, field := range meth.RequestType.Fields {
-		// Skip map fields, as they're currently incorrectly implemented by
-		// deftree
-		// TODO implement correct map support in http transport
-		if field.IsMap {
-			continue
-		}
-		// Param is specifically an http parameter, while field is a
-		// field in a protobuf msg. nField is a distillation of the
-		// relevant information to translate the http parameter into a
-		// field on a protobuf msg.
-		param := getParam(field.GetName(), binding.Params)
-		// TODO add handling for non-found params here
-		nField := Field{
-			Name:          field.GetName(),
-			Location:      param.Location,
-			ProtobufType:  param.Type,
-			ProtobufLabel: field.Label,
-			LocalName:     fmt.Sprintf("%s%s", gogen.CamelCase(field.GetName()), gogen.CamelCase(meth.GetName())),
+	for _, param := range binding.Params {
+		// The 'Field' attr of each HTTPParameter always point to it's bound
+		// Methods RequestType
+		rq := param.Field
+		newField := Field{
+			Name:         rq.Name,
+			CamelName:    gogen.CamelCase(rq.Name),
+			LowCamelName: LowCamelName(rq.Name),
+			Location:     param.Location,
+			Repeated:     rq.Type.ArrayType,
+			GoType:       rq.Type.Name,
+			LocalName:    fmt.Sprintf("%s%s", gogen.CamelCase(rq.Name), gogen.CamelCase(meth.Name)),
 		}
 
-		if field.Label == "LABEL_REPEATED" {
-			nField.Repeated = true
-		}
-		var gt string
-		var ok bool
-		tmap := clientarggen.ProtoToGoTypeMap
-		if gt, ok = tmap[nField.ProtobufType]; !ok {
-			nField.IsBaseType = false
-			tn := field.Type.GetName()
-			sections := strings.Split(tn, ".")
-			tn = sections[len(sections)-1]
-			gt = "pb." + tn
-		} else {
-			nField.IsBaseType = true
+		if rq.Type.Message == nil && rq.Type.Enum == nil && rq.Type.Map == nil {
+			newField.IsBaseType = true
 		}
 
-		nField.GoType = gt
-		if nField.Repeated {
-			if nField.IsBaseType {
-				nField.GoType = "[]" + nField.GoType
-			} else {
-				nField.GoType = "[]*" + nField.GoType
-			}
+		// Modify GoType to reflect pointer or repeated status
+		if rq.Type.StarExpr && rq.Type.ArrayType {
+			newField.GoType = "[]*" + newField.GoType
+		} else if rq.Type.ArrayType {
+			newField.GoType = "[]" + newField.GoType
 		}
 
-		nField.ConvertFunc = createDecodeConvertFunc(nField)
-		nField.TypeConversion = createDecodeTypeConversion(nField)
+		newField.ConvertFunc = createDecodeConvertFunc(newField)
+		newField.TypeConversion = createDecodeTypeConversion(newField)
 
-		nField.CamelName = gogen.CamelCase(nField.Name)
-		nField.LowCamelName = LowCamelName(nField.Name)
-
-		nBinding.Fields = append(nBinding.Fields, &nField)
+		nBinding.Fields = append(nBinding.Fields, &newField)
 
 		// Emit warnings for certain cases
-		if !nField.IsBaseType && nField.Location != "body" {
+		if !newField.IsBaseType && newField.Location != "body" {
 			log.Warnf(
 				"%s.%s is a non-base type specified to be located outside of "+
 					"the body. Non-base types outside the body may result in "+
 					"generated code which fails to compile.",
-				meth.GetName(),
-				nField.Name)
+				meth.Name,
+				newField.Name)
 		}
-		if nField.Repeated && nField.Location == "path" {
+		if newField.Repeated && newField.Location == "path" {
 			log.Warnf(
 				"%s.%s is a repeated field specified to be in the path. "+
 					"Repeated fields are not supported in the path and may"+
 					"result in generated code which fails to compile.",
-				meth.GetName(),
-				nField.Name)
+				meth.Name,
+				newField.Name)
 		}
 	}
 	return &nBinding
@@ -328,17 +304,6 @@ func createDecodeTypeConversion(f Field) string {
 func basePath(path string) string {
 	parts := strings.Split(path, "{")
 	return parts[0]
-}
-
-// getParam searches the slice of params for one named `name`, returning the
-// first it finds. If no params have the given name, returns nil.
-func getParam(name string, params []*deftree.HttpParameter) *deftree.HttpParameter {
-	for _, p := range params {
-		if p.GetName() == name {
-			return p
-		}
-	}
-	return nil
 }
 
 // DigitEnglish is a map of runes of digits zero to nine to their lowercase

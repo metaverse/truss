@@ -22,6 +22,8 @@ import (
 	"go/token"
 	"io"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 )
@@ -161,6 +163,10 @@ func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
 					rv.Enums = append(rv.Enums, nenm)
 				}
 			case *ast.StructType:
+				// Non-exported structs do not represent types
+				if !isExported(t.Name.Name) {
+					break
+				}
 				nmsg, err := NewMessage(t)
 				if err != nil {
 					return nil, errors.Wrapf(err, "error parsing message %q", t.Name.Name)
@@ -376,4 +382,15 @@ func NewField(f *ast.Field) (*Field, error) {
 		return nil, err
 	}
 	return rv, nil
+}
+
+// isExported returns true if the provided name of a declaration begins with a
+// capital letter.
+func isExported(name string) bool {
+	// Abuse DecodeRuneInString to get the first rune in the string
+	r, _ := utf8.DecodeRuneInString(name)
+	if unicode.IsUpper(r) {
+		return true
+	}
+	return false
 }

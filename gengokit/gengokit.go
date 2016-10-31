@@ -68,7 +68,7 @@ func newTemplateExecutor(dt deftree.Deftree, sd *svcdef.Svcdef, conf config.Conf
 		PackageName:  sd.PkgName,
 		Service:      service,
 		ClientArgs:   clientarggen.New(service),
-		HTTPHelper:   httptransport.NewHelper(service),
+		HTTPHelper:   httptransport.NewHelper(sd.Service),
 		funcMap:      funcMap,
 	}, nil
 }

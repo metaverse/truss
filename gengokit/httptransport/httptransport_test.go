@@ -4,7 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/TuneLab/go-truss/deftree"
+	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
+	"github.com/TuneLab/go-truss/svcdef"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -13,76 +14,35 @@ var (
 )
 
 func TestNewMethod(t *testing.T) {
-	dmeth := deftree.ServiceMethod{
-		Name: "Sum",
-		RequestType: &deftree.ProtoMessage{
-			Name: "SumRequest",
-			//Description: "The sum request contains two parameters.",
-			Fields: []*deftree.MessageField{
-				&deftree.MessageField{
-					Name:   "a",
-					Number: 1,
-					Label:  "LABEL_OPTIONAL",
-					Type: deftree.FieldType{
-						Name: "TYPE_INT64",
-					},
-				},
-				&deftree.MessageField{
-					Name:   "b",
-					Number: 2,
-					Label:  "LABEL_OPTIONAL",
-					Type: deftree.FieldType{
-						Name: "TYPE_INT64",
-					},
-				},
-			},
-		},
-		ResponseType: &deftree.ProtoMessage{
-			Name: "SumReply",
-			Fields: []*deftree.MessageField{
-				&deftree.MessageField{
-					Name:   "v",
-					Number: 1,
-					Label:  "LABEL_OPTIONAL",
-					Type: deftree.FieldType{
-						Name: "TYPE_INT64",
-					},
-				},
-				&deftree.MessageField{
-					Name:   "err",
-					Number: 2,
-					Label:  "LABEL_OPTIONAL",
-					Type: deftree.FieldType{
-						Name: "TYPE_STRING",
-					},
-				},
-			},
-		},
-		HttpBindings: []*deftree.MethodHttpBinding{
-			&deftree.MethodHttpBinding{
-				Verb: "get",
-				Path: "/sum/{a}",
-				Fields: []*deftree.BindingField{
-					&deftree.BindingField{
-						Name:  "get",
-						Kind:  "get",
-						Value: "/sum/{a}",
-					},
-				},
-				Params: []*deftree.HttpParameter{
-					&deftree.HttpParameter{
-						Name:     "a",
-						Location: "path",
-						Type:     "TYPE_INT64",
-					},
-					&deftree.HttpParameter{
-						Name:     "b",
-						Location: "query",
-						Type:     "TYPE_INT64",
-					},
-				},
-			},
-		},
+	defStr := `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "google/api/annotations.proto";
+
+		message SumRequest {
+			int64 a = 1;
+			int64 b = 2;
+		}
+
+		message SumReply {
+			int64 v = 1;
+			string err = 2;
+		}
+
+		service SumSvc {
+			rpc Sum(SumRequest) returns (SumReply) {
+				option (google.api.http) = {
+					get: "/sum/{a}"
+				};
+			}
+		}
+	`
+	sd, err := svcdef.NewFromString(defStr)
+	if err != nil {
+		t.Fatal(err, "Failed to create a service from the definition string")
 	}
 	binding := &Binding{
 		Label:        "SumZero",
@@ -91,27 +51,27 @@ func TestNewMethod(t *testing.T) {
 		Verb:         "get",
 		Fields: []*Field{
 			&Field{
-				Name:           "a",
+				Name:           "A",
 				CamelName:      "A",
 				LowCamelName:   "a",
 				LocalName:      "ASum",
 				Location:       "path",
-				ProtobufType:   "TYPE_INT64",
+				ProtobufType:   "",
 				GoType:         "int64",
-				ProtobufLabel:  "LABEL_OPTIONAL",
+				ProtobufLabel:  "",
 				ConvertFunc:    "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
 				TypeConversion: "ASum",
 				IsBaseType:     true,
 			},
 			&Field{
-				Name:           "b",
+				Name:           "B",
 				CamelName:      "B",
 				LowCamelName:   "b",
 				LocalName:      "BSum",
 				Location:       "query",
-				ProtobufType:   "TYPE_INT64",
+				ProtobufType:   "",
 				GoType:         "int64",
-				ProtobufLabel:  "LABEL_OPTIONAL",
+				ProtobufLabel:  "",
 				ConvertFunc:    "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
 				TypeConversion: "BSum",
 				IsBaseType:     true,
@@ -128,9 +88,11 @@ func TestNewMethod(t *testing.T) {
 	}
 	binding.Parent = meth
 
-	newMeth := NewMethod(&dmeth)
+	newMeth := NewMethod(sd.Service.Methods[0])
 	if got, want := newMeth, meth; !reflect.DeepEqual(got, want) {
-		t.Errorf("methods differ;\ngot  = %+v\nwant = %+v\n", got, want)
+		diff := gentesthelper.DiffStrings(spew.Sdump(got), spew.Sdump(want))
+		t.Errorf("got != want; methods differ: %v\n", diff)
+		//t.Errorf("methods differ;\ngot  = %+v\nwant = %+v\n", got, want)
 	}
 }
 
