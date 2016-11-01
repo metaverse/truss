@@ -11,14 +11,12 @@ import (
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 
 	// This Service
-	handler "{{.ImportPath -}} /handlers/server"
 	svc "{{.ImportPath -}} /generated"
 	pb "{{.PBImportPath -}}"
 )
 
 // New returns an service backed by a gRPC client connection. It is the
-// responsibility of the caller to dial, and later close, the connection.
-func New(conn *grpc.ClientConn, options ...ClientOption) (handler.Service, error) {
+func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{GoName .Service.Name}}Server, error) {
 	var cc clientConfig
 
 	for _, f := range options {
@@ -32,15 +30,14 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (handler.Service, error
 		grpctransport.ClientBefore(
 			contextValuesToGRPCMetadata(cc.headers)),
 	}
-
-	{{- with $tE := .}}
-		{{- with $pkgName := $tE.PackageName}}
-			{{- range $i := $tE.Service.Methods}}
+	{{- with $te := .}}
+		{{- with $pkgName := $te.PackageName}}
+			{{- range $i := $te.Service.Methods}}
 				var {{ToLower $i.Name}}Endpoint endpoint.Endpoint
 				{
 					{{ToLower $i.Name}}Endpoint = grpctransport.NewClient(
 						conn,
-						"{{$pkgName}}.{{$tE.Service.Name}}",
+						"{{$pkgName}}.{{$te.Service.Name}}",
 						"{{$i.Name}}",
 						svc.EncodeGRPC{{$i.Name}}Request,
 						svc.DecodeGRPC{{$i.Name}}Response,

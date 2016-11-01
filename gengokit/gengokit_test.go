@@ -264,7 +264,7 @@ func stringToTemplateExector(def, importPath string) (*templateExecutor, error) 
 
 }
 
-func TestUpdateServerMethods(t *testing.T) {
+func TestUpdateMethods(t *testing.T) {
 	const def = `
 		syntax = "proto3";
 
@@ -329,7 +329,7 @@ func TestUpdateServerMethods(t *testing.T) {
 	}
 
 	// updateServerMethods with the same templateExecutor
-	same, err := updateServerMethods(bytes.NewReader(shCode), te)
+	same, err := updateMethods(bytes.NewReader(shCode), []byte(serverMethods), te)
 	if err != nil {
 		t.Fatal(err)
 	}
