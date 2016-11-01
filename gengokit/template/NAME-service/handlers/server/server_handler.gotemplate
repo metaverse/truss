@@ -13,14 +13,14 @@ func NewService() pb.{{GoName .Service.Name}}Server {
 
 type {{.PackageName}}Service struct{}
 
-{{with $PackageName := .PackageName }}
-	{{range $i := .Service.Methods}}
+{{with $te := . }}
+	{{range $i := $te.Service.Methods}}
 		// {{$i.Name}} implements Service.
-		func (s {{$PackageName}}Service) {{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error){
+		func (s {{$te.PackageName}}Service) {{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error){
 			var resp pb.{{GoName $i.ResponseType.Name}}
 			resp = pb.{{GoName $i.ResponseType.Name}}{
-				{{range $j := $i.ResponseType.Fields -}}
-					// {{GoName $j.Name }}: 
+				{{range $j := $i.ResponseType.Message.Fields -}}
+					// {{GoName $j.Name}}: 
 				{{end -}}
 			}
 			return &resp, nil

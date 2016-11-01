@@ -49,7 +49,7 @@ func main() {
 
 
 	var (
-		service pb.{{GoName .Service.GetName}}Server
+		service pb.{{GoName .Service.Name}}Server
 		err     error
 	)
 	if *httpAddr != "" {
@@ -72,14 +72,14 @@ func main() {
 	}
 
 	switch *method {
-{{ with $tE := .}}
-	{{range $i := $tE.Service.Methods}}
+{{ with $te := .}}
+	{{range $i := $te.Service.Methods}}
 		case "{{ToLower $i.Name}}":
-			{{- with index $tE.ClientArgs.MethArgs $i.Name -}}
+			{{- with index $te.ClientArgs.MethArgs $i.Name -}}
 				var err error
 				{{.MarshalFlags}}
 			{{- end}}
-			request, err := clientHandler.{{$i.Name}}({{with index $tE.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
+			request, err := clientHandler.{{$i.Name}}({{with index $te.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$i.Name}}: %v\n", err)
 				os.Exit(1)
@@ -91,7 +91,7 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Println("Client Requested with:")
-			fmt.Println({{with index $tE.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
+			fmt.Println({{with index $te.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
 			fmt.Println("Server Responded with:")
 			fmt.Println(v)
 	{{- end}}

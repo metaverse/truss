@@ -1,5 +1,0 @@
-type Service interface {
-{{range $i := .Service.Methods}}
-	{{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error)
-{{- end}}
-}

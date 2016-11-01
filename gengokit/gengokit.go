@@ -49,7 +49,6 @@ type templateExecutor struct {
 }
 
 func newTemplateExecutor(sd *svcdef.Svcdef, conf config.Config) (*templateExecutor, error) {
-
 	funcMap := template.FuncMap{
 		"ToLower":    strings.ToLower,
 		"Title":      strings.Title,
@@ -279,11 +278,11 @@ func formatCode(code []byte) []byte {
 }
 
 var clientMethods string = `
-{{ with $tE := .}}
-	{{range $i := $tE.Service.Methods}}
+{{ with $te := .}}
+	{{range $i := $te.Service.Methods}}
 		// {{$i.GetName}} implements Service.
-		func {{$i.GetName}}({{with index $tE.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.GetName}}, error){
-			{{- with $meth := index $tE.ClientArgs.MethArgs $i.GetName -}}
+		func {{$i.GetName}}({{with index $te.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.GetName}}, error){
+			{{- with $meth := index $te.ClientArgs.MethArgs $i.GetName -}}
 				{{- range $param := $meth.Args -}}
 					{{- if not $param.IsBaseType -}}
 						// Add custom business logic for interpreting {{$param.FlagArg}},
@@ -291,7 +290,7 @@ var clientMethods string = `
 				{{- end -}}
 			{{- end -}}
 			request := pb.{{GoName $i.RequestType.GetName}}{
-			{{- with $meth := index $tE.ClientArgs.MethArgs $i.GetName -}}
+			{{- with $meth := index $te.ClientArgs.MethArgs $i.GetName -}}
 				{{range $param := $meth.Args -}}
 					{{- if $param.IsBaseType}}
 						{{GoName $param.Name}} : {{GoName $param.FlagArg}},
@@ -306,20 +305,18 @@ var clientMethods string = `
 `
 
 var serverMethods string = `
-{{ with $tE := .}}
-	{{ with $PackageName := $tE.PackageName}}
-		{{range $i := $tE.Service.Methods}}
+{{ with $te := .}}
+		{{range $i := $te.Service.Methods}}
 		// {{.GetName}} implements Service.
-		func (s {{$PackageName}}Service) {{.GetName}}(ctx context.Context, in *pb.{{GoName .RequestType.GetName}}) (*pb.{{GoName .ResponseType.GetName}}, error){
+		func (s {{$te.PackageName}}Service) {{.GetName}}(ctx context.Context, in *pb.{{GoName .RequestType.GetName}}) (*pb.{{GoName .ResponseType.GetName}}, error){
 			var resp pb.{{GoName .ResponseType.GetName}}
 			resp = pb.{{GoName .ResponseType.GetName}}{
-				{{range $j := $i.ResponseType.Fields -}}
-					// {{GoName $j.GetName }}: 
+				{{range $j := $i.ResponseType.Message.Fields -}}
+					// {{GoName $j.GetName}}: 
 				{{end -}}
 			}
 			return &resp, nil
 		}
 		{{end}}
-	{{- end}}
 {{- end}}
 `
