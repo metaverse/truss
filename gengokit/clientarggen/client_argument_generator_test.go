@@ -6,8 +6,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
+	"github.com/TuneLab/go-truss/svcdef"
 )
 
 var (
@@ -17,57 +17,37 @@ var (
 )
 
 func TestNewClientServiceArgs(t *testing.T) {
-	svc := deftree.ProtoService{
-		Name: "AddSvc",
-		Methods: []*deftree.ServiceMethod{
-			&deftree.ServiceMethod{
-				Name: "Sum",
-				RequestType: &deftree.ProtoMessage{
-					Name: "SumRequest",
-					Fields: []*deftree.MessageField{
-						&deftree.MessageField{
-							Name:   "a",
-							Number: 1,
-							Label:  "LABEL_REPEATED",
-							Type: deftree.FieldType{
-								Name: "TYPE_INT64",
-							},
-						},
-						&deftree.MessageField{
-							Name:   "b",
-							Number: 2,
-							Label:  "LABEL_OPTIONAL",
-							Type: deftree.FieldType{
-								Name: "TYPE_INT64",
-							},
-						},
-					},
-				},
-				ResponseType: &deftree.ProtoMessage{
-					Name: "SumReply",
-					Fields: []*deftree.MessageField{
-						&deftree.MessageField{
-							Name:   "v",
-							Number: 1,
-							Label:  "LABEL_OPTIONAL",
-							Type: deftree.FieldType{
-								Name: "TYPE_INT64",
-							},
-						},
-						&deftree.MessageField{
-							Name:   "err",
-							Number: 2,
-							Label:  "LABEL_OPTIONAL",
-							Type: deftree.FieldType{
-								Name: "TYPE_STRING",
-							},
-						},
-					},
-				},
-			},
-		},
+	defStr := `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "google/api/annotations.proto";
+
+		message SumRequest {
+			repeated int64 a = 1;
+			int64 b = 2;
+		}
+
+		message SumReply {
+			int64 v = 1;
+			string err = 2;
+		}
+
+		service SumSvc {
+			rpc Sum(SumRequest) returns (SumReply) {
+				option (google.api.http) = {
+					get: "/sum/{a}"
+				};
+			}
+		}
+	`
+	sd, err := svcdef.NewFromString(defStr)
+	if err != nil {
+		t.Fatal(err, "Failed to create a service from the definition string")
 	}
-	csa := New(&svc)
+	csa := New(sd.Service)
 
 	expected := &ClientServiceArgs{
 		MethArgs: map[string]*MethodArgs{
@@ -82,7 +62,6 @@ func TestNewClientServiceArgs(t *testing.T) {
 						GoArg:           "ASum",
 						GoType:          "[]int64",
 						GoConvertInvoc:  "\nvar ASum []int64\nif flagASum != nil && len(*flagASum) > 0 {\n\terr = json.Unmarshal([]byte(*flagASum), &ASum)\n\tif err != nil {\n\t\tpanic(errors.Wrapf(err, \"unmarshalling ASum from %v:\", flagASum))\n\t}\n}\n",
-						ProtbufType:     "TYPE_INT64",
 						IsBaseType:      true,
 						Repeated:        true,
 					},
@@ -96,7 +75,6 @@ func TestNewClientServiceArgs(t *testing.T) {
 						GoArg:           "BSum",
 						GoType:          "int64",
 						GoConvertInvoc:  "BSum := *flagBSum",
-						ProtbufType:     "TYPE_INT64",
 						IsBaseType:      true,
 						Repeated:        false,
 					},

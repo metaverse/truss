@@ -18,6 +18,7 @@ import (
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
 	"github.com/TuneLab/go-truss/gengokit"
+	ggkconf "github.com/TuneLab/go-truss/gengokit/config"
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
@@ -44,11 +45,10 @@ func main() {
 	cfg, err := parseInput()
 	exitIfError(errors.Wrap(err, "cannot parse input"))
 
-	//dt, sd, err := parseServiceDefinition(cfg)
-	dt, _, err := parseServiceDefinition(cfg)
+	dt, sd, err := parseServiceDefinition(cfg)
 	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
-	genFiles, err := generateCode(cfg, dt)
+	genFiles, err := generateCode(cfg, dt, sd)
 	exitIfError(errors.Wrap(err, "cannot generate service"))
 
 	for _, f := range genFiles {
@@ -190,9 +190,14 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 
 // generateCode returns a []truss.NamedReadWriter that represents a gokit
 // service with documentation
-func generateCode(cfg *truss.Config, dt deftree.Deftree) ([]truss.NamedReadWriter, error) {
+func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) ([]truss.NamedReadWriter, error) {
+	conf := ggkconf.Config{
+		PBPackage:     cfg.PBPackage,
+		GoPackage:     cfg.ServicePackage,
+		PreviousFiles: cfg.PrevGen,
+	}
 
-	genGokitFiles, err := gengokit.GenerateGokit(dt, cfg.ServicePackage, cfg.PBPackage, cfg.PrevGen)
+	genGokitFiles, err := gengokit.GenerateGokit(sd, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot generate gokit service")
 	}

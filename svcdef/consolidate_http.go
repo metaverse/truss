@@ -7,9 +7,21 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/TuneLab/go-truss/deftree/svcparse"
 	"github.com/pkg/errors"
+
+	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
+
+	"github.com/TuneLab/go-truss/deftree/svcparse"
 )
+
+type optional interface {
+	Optional() bool
+}
+
+func isOptionalError(err error) bool {
+	opt, ok := errors.Cause(err).(optional)
+	return ok && opt.Optional()
+}
 
 // consolidateHTTP accepts a SvcDef and the io.Readers for the proto files
 // comprising the definition. It modifies the SvcDef so that HTTPBindings and
@@ -22,13 +34,13 @@ func consolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
 		lex := svcparse.NewSvcLexer(pfile)
 		protosvc, err := svcparse.ParseService(lex)
 		if err != nil {
-			if strings.Contains("'options' or", err.Error()) {
+			if isOptionalError(err) {
 				log.Warnf("Parser found rpc method which lacks HTTP " +
 					"annotations; this is allowed, but will result in HTTP " +
 					"transport not being generated.")
-			} else {
-				return errors.Wrap(err, "error while parsing http options for the service definition")
+				return nil
 			}
+			return errors.Wrap(err, "error while parsing http options for the service definition")
 		}
 		assembleHTTPParams(sd.Service, protosvc)
 	}
@@ -55,12 +67,13 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 		bind := HTTPBinding{}
 		bind.Verb, bind.Path = getVerb(parsedbind)
 
-		params := make([]*HTTPParameter, 0)
+		//params := make([]*HTTPParameter, 0)
+		var params []*HTTPParameter
 		for _, field := range msg.Fields {
-			new_param := &HTTPParameter{}
-			new_param.Field = field
-			new_param.Location = paramLocation(field, parsedbind)
-			params = append(params, new_param)
+			newParam := &HTTPParameter{}
+			newParam.Field = field
+			newParam.Location = paramLocation(field, parsedbind)
+			params = append(params, newParam)
 		}
 		bind.Params = params
 		meth.Bindings = append(meth.Bindings, &bind)
@@ -71,7 +84,7 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 	for _, hm := range httpsvc.Methods {
 		m := getMethNamed(hm.Name)
 		if m == nil {
-			return errors.New(fmt.Sprintf("Could not find service method named %q", hm.Name))
+			return fmt.Errorf("Could not find service method named %q", hm.Name)
 		}
 		for _, hbind := range hm.HTTPBindings {
 			createParams(m, hbind)
@@ -96,9 +109,11 @@ func getVerb(binding *svcparse.HTTPBinding) (verb string, path string) {
 // paramLocation returns the location that a field would be found according to
 // the rules of a given HTTPBinding.
 func paramLocation(field *Field, binding *svcparse.HTTPBinding) string {
-	path_params := getPathParams(binding)
-	for _, path_param := range path_params {
-		if strings.Split(path_param, ".")[0] == field.Name {
+	pathParams := getPathParams(binding)
+	for _, param := range pathParams {
+		// Have to CamelCase the data from the parser since it may be lowercase
+		// while the name from the Go file will be CamelCased
+		if gogen.CamelCase(strings.Split(param, ".")[0]) == field.Name {
 			return "path"
 		}
 	}
@@ -118,12 +133,12 @@ func paramLocation(field *Field, binding *svcparse.HTTPBinding) string {
 // Returns a slice of strings containing all parameters in the path
 func getPathParams(binding *svcparse.HTTPBinding) []string {
 	_, path := getVerb(binding)
-	find_params := regexp.MustCompile("{(.*?)}")
-	remove_braces := regexp.MustCompile("{|}")
-	params := find_params.FindAllString(path, -1)
+	findParams := regexp.MustCompile("{(.*?)}")
+	removeBraces := regexp.MustCompile("{|}")
+	params := findParams.FindAllString(path, -1)
 	rv := []string{}
 	for _, p := range params {
-		rv = append(rv, remove_braces.ReplaceAllString(p, ""))
+		rv = append(rv, removeBraces.ReplaceAllString(p, ""))
 	}
 	return rv
 }

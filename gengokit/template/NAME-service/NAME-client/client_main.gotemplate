@@ -27,7 +27,7 @@ var (
 	_ = strings.Split
 	_ = json.Compact
 	_ = errors.Wrapf
-	_ = pb.Register{{.Service.GetName}}Server
+	_ = pb.Register{{.Service.Name}}Server
 )
 
 
@@ -40,7 +40,7 @@ func main() {
 	var (
 		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
 		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) address of addsvc")
-		method         = flag.String("method", "{{range $index, $i := .Service.Methods}}{{if $index}}{{else}}{{ToLower $i.GetName}}{{end}}{{end}}",	"{{range $index, $i := .Service.Methods}}{{if $index}},{{end}}{{ToLower $i.GetName}}{{end}}")
+		method         = flag.String("method", "{{range $index, $i := .Service.Methods}}{{if $index}}{{else}}{{ToLower $i.Name}}{{end}}{{end}}",	"{{range $index, $i := .Service.Methods}}{{if $index}},{{end}}{{ToLower $i.Name}}{{end}}")
 	)
 
 	var (
@@ -75,24 +75,24 @@ func main() {
 	switch *method {
 {{ with $tE := .}}
 	{{range $i := $tE.Service.Methods}}
-		case "{{ToLower $i.GetName}}":
-			{{- with index $tE.ClientArgs.MethArgs $i.GetName -}}
+		case "{{ToLower $i.Name}}":
+			{{- with index $tE.ClientArgs.MethArgs $i.Name -}}
 				var err error
 				{{.MarshalFlags}}
 			{{- end}}
-			request, err := clientHandler.{{$i.GetName}}({{with index $tE.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
+			request, err := clientHandler.{{$i.Name}}({{with index $tE.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$i.GetName}}: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$i.Name}}: %v\n", err)
 				os.Exit(1)
 			}
 
-			v, err := service.{{$i.GetName}}(context.Background(), request)
+			v, err := service.{{$i.Name}}(context.Background(), request)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error calling service.{{$i.GetName}}: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error calling service.{{$i.Name}}: %v\n", err)
 				os.Exit(1)
 			}
 			fmt.Println("Client Requested with:")
-			fmt.Println({{with index $tE.ClientArgs.MethArgs $i.GetName}}{{.CallArgs}}{{end}})
+			fmt.Println({{with index $tE.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
 			fmt.Println("Server Responded with:")
 			fmt.Println(v)
 	{{- end}}

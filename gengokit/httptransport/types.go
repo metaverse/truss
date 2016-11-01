@@ -1,16 +1,17 @@
 package httptransport
 
 // Method contains the distillation of information within an
-// deftree.ServiceMethod that's useful for templating http transport.
+// svcdef.ServiceMethod that's useful for templating http transport.
 type Method struct {
-	Name         string
+	Name string
+	// RequestType is the name of type of the Request, e.g. *EchoRequest
 	RequestType  string
 	ResponseType string
 	Bindings     []*Binding
 }
 
 // Binding contains the distillation of information within an
-// deftree.HttpBinding that's useful for templating http transport.
+// svcdef.HTTPBinding that's useful for templating http transport.
 type Binding struct {
 	// Label is the name of this method, plus the english word for the index of
 	// this binding in this methods slice of bindings. So if this binding where
@@ -31,8 +32,8 @@ type Binding struct {
 	Parent *Method
 }
 
-// Field contains the distillation of information within an
-// deftree.MessageField that's useful for templating http transport.
+// Field contains the distillation of information within an svcdef.Field that's
+// useful for templating http transport.
 type Field struct {
 	Name string
 	// The name of this field, but passed through the CamelCase function.
@@ -48,14 +49,9 @@ type Field struct {
 	LocalName string
 	// The location within the the http request that this field is to be found.
 	Location string
-	// The protobuf type that this field is of.
-	ProtobufType string
 	// The type within the Go language that's used to represent the original
 	// field that this field refers to.
 	GoType string
-	// The protobuf label for the original field that this field refers to. Is
-	// probably "OPTIONAL", though may be "REPEATED".
-	ProtobufLabel string
 	// The string form of the function to be used to convert the incoming
 	// string msg from a string into it's intended type.
 	ConvertFunc string

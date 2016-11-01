@@ -52,15 +52,15 @@ func main() {
 
 	// Endpoint domain.
 	{{range $i := .Service.Methods}}
-	var {{ToLower $i.GetName}}Endpoint endpoint.Endpoint
+	var {{ToLower $i.Name}}Endpoint endpoint.Endpoint
 	{
-		{{ToLower $i.GetName}}Endpoint = svc.Make{{$i.GetName}}Endpoint(service)
+		{{ToLower $i.Name}}Endpoint = svc.Make{{$i.Name}}Endpoint(service)
 		// Add endpoint tracing, instrumentation and logging here
 	}
 	{{end}}
 	endpoints := svc.Endpoints{
 	{{range $i := .Service.Methods -}}
-		{{$i.GetName}}Endpoint:    {{ToLower $i.GetName}}Endpoint,
+		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
 	{{end}}
 	}
 
@@ -110,7 +110,7 @@ func main() {
 
 		srv := svc.MakeGRPCServer(ctx, endpoints)
 		s := grpc.NewServer()
-		pb.Register{{.Service.GetName}}Server(s, srv)
+		pb.Register{{.Service.Name}}Server(s, srv)
 
 		logger.Log("addr", *grpcAddr)
 		errc <- s.Serve(ln)

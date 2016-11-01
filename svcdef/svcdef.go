@@ -22,6 +22,8 @@ import (
 	"go/token"
 	"io"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/pkg/errors"
 )
@@ -144,8 +146,12 @@ func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "couldn't parse go file to create Svcdef")
 		}
+		rv.PkgName = fileAst.Name.Name
 
-		typespecs, _ := retrieveTypeSpecs(fileAst)
+		typespecs, err := retrieveTypeSpecs(fileAst)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not retrive type specs")
+		}
 		for _, t := range typespecs {
 			switch typdf := t.Type.(type) {
 			case *ast.Ident:
@@ -157,6 +163,10 @@ func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
 					rv.Enums = append(rv.Enums, nenm)
 				}
 			case *ast.StructType:
+				// Non-exported structs do not represent types
+				if !isExported(t.Name.Name) {
+					break
+				}
 				nmsg, err := NewMessage(t)
 				if err != nil {
 					return nil, errors.Wrapf(err, "error parsing message %q", t.Name.Name)
@@ -252,10 +262,10 @@ func NewMap(m ast.Expr) (*Map, error) {
 }
 
 // NewService returns a new Service struct derived from an *ast.TypeSpec with a
-// Type of *ast.InterfaceType representing an "{SVCNAME}Client" interface.
+// Type of *ast.InterfaceType representing an "{SVCNAME}Server" interface.
 func NewService(s *ast.TypeSpec) (*Service, error) {
 	rv := &Service{
-		Name: s.Name.Name,
+		Name: strings.TrimSuffix(s.Name.Name, "Server"),
 	}
 	asvc := s.Type.(*ast.InterfaceType)
 	for _, m := range asvc.Methods.List {
@@ -372,4 +382,14 @@ func NewField(f *ast.Field) (*Field, error) {
 		return nil, err
 	}
 	return rv, nil
+}
+
+// isExported returns true if the provided name of a declaration begins with a
+// capital letter.
+func isExported(name string) bool {
+	r, _ := utf8.DecodeRuneInString(name)
+	if unicode.IsUpper(r) {
+		return true
+	}
+	return false
 }

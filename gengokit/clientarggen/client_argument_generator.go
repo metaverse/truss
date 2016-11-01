@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"html/template"
 	"strings"
+	"unicode"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/TuneLab/go-truss/deftree"
-	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
+	"github.com/TuneLab/go-truss/svcdef"
+	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 )
 
@@ -53,12 +53,6 @@ type ClientArg struct {
 	// GoConvertInvoc is the code for initializing GoArg with either a typecast
 	// from FlagArg or the invocation of a json unmarshal function.
 	GoConvertInvoc string
-
-	// ProtobufType contains the raw value of the type of the original protobuf
-	// field corresponding to this arg, as provided by the protocol buffer
-	// compiler. For a list of these basic types and their corresponding Go
-	// types, see the ProtoToGoTypeMap map in this file.
-	ProtbufType string
 
 	// IsBaseType is true if this arg corresponds to a protobuf field which is
 	// any of the basic types, or a basic type but repeated. If this the field
@@ -161,54 +155,50 @@ var ProtoToGoTypeMap = map[string]string{
 
 // New creates a ClientServiceArgs struct containing all the arguments for all
 // the methods of a given RPC.
-func New(svc *deftree.ProtoService) *ClientServiceArgs {
+func New(svc *svcdef.Service) *ClientServiceArgs {
 	svcArgs := ClientServiceArgs{
 		MethArgs: make(map[string]*MethodArgs),
 	}
 	for _, meth := range svc.Methods {
 		m := MethodArgs{}
-		for _, field := range meth.RequestType.Fields {
-			// Skip map fields, as they're currently incorrectly implemented by
-			// deftree
-			// TODO implement correct map support in client argument generation
-			if field.IsMap {
+		// TODO implement correct map support in client argument generation
+		for _, field := range meth.RequestType.Message.Fields {
+			if field.Type.Map != nil {
 				continue
 			}
-			newArg := newClientArg(meth.GetName(), field)
+			newArg := newClientArg(meth.Name, field)
 			m.Args = append(m.Args, newArg)
 		}
-		svcArgs.MethArgs[meth.GetName()] = &m
+		svcArgs.MethArgs[meth.Name] = &m
 	}
 
 	return &svcArgs
 }
 
 // newClientArg returns a ClientArg generated from the provided method name and MessageField
-func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
+func newClientArg(methName string, field *svcdef.Field) *ClientArg {
 	newArg := ClientArg{}
-	newArg.Name = field.GetName()
+	newArg.Name = lowCamelName(field.Name)
 
-	if field.Label == "LABEL_REPEATED" {
+	if field.Type.ArrayType {
 		newArg.Repeated = true
 	}
-	newArg.ProtbufType = field.Type.GetName()
 
-	newArg.FlagName = fmt.Sprintf("%s.%s", strings.ToLower(methName), strings.ToLower(field.GetName()))
-	newArg.FlagArg = fmt.Sprintf("flag%s%s", generatego.CamelCase(newArg.Name), generatego.CamelCase(methName))
+	newArg.FlagName = fmt.Sprintf("%s.%s", strings.ToLower(methName), strings.ToLower(field.Name))
+	newArg.FlagArg = fmt.Sprintf("flag%s%s", gogen.CamelCase(field.Name), gogen.CamelCase(methName))
 
 	if field.Type.Enum != nil {
 		newArg.Enum = true
-		log.WithField("Method", methName).WithField("Arg", newArg.Name).Debugf("type: %s", field.Type.GetName())
 	}
+	// Determine the FlagType and flag invocation
 	var ft string
-	var ok bool
-	log.WithField("Method", methName).WithField("Arg", newArg.Name).Debugf("type: %s", field.Type.GetName())
-	// For types outside the base types, have flag treat them as strings
-	if ft, ok = ProtoToGoTypeMap[field.Type.GetName()]; !ok {
+	if field.Type.Message == nil && field.Type.Enum == nil && field.Type.Map == nil {
+		ft = field.Type.Name
+		newArg.IsBaseType = true
+	} else {
+		// For types outside the base types, have flag treat them as strings
 		ft = "string"
 		newArg.IsBaseType = false
-	} else {
-		newArg.IsBaseType = true
 	}
 	if newArg.Repeated {
 		ft = "string"
@@ -216,19 +206,13 @@ func newClientArg(methName string, field *deftree.MessageField) *ClientArg {
 	newArg.FlagType = ft
 	newArg.FlagConvertFunc = createFlagConvertFunc(newArg)
 
-	newArg.GoArg = fmt.Sprintf("%s%s", generatego.CamelCase(newArg.Name), generatego.CamelCase(methName))
+	newArg.GoArg = fmt.Sprintf("%s%s", gogen.CamelCase(newArg.Name), gogen.CamelCase(methName))
 	// For types outside the base types, treat them as strings
 	if newArg.IsBaseType {
-		newArg.GoType = ProtoToGoTypeMap[field.Type.GetName()]
+		//newArg.GoType = ProtoToGoTypeMap[field.Type.GetName()]
+		newArg.GoType = field.Type.Name
 	} else {
-		// TODO: Have GoType derivation respect nested definitions
-		tn := field.Type.GetName()
-		sections := strings.Split(tn, ".")
-		// Extract everything after the package name
-		remaining := sections[2:]
-		tn = generatego.CamelCaseSlice(remaining)
-		//log.WithField("Method", methName).WithField("Arg", newArg.Name).Warnf("type: %v, %v", sections[2:], generatego.CamelCaseSlice(sections[2:]))
-		newArg.GoType = "pb." + tn
+		newArg.GoType = "pb." + field.Type.Name
 	}
 	// The GoType is a slice of the GoType if it's a repeated field
 	if newArg.Repeated {
@@ -257,7 +241,7 @@ if {{.FlagArg}} != nil && len(*{{.FlagArg}}) > 0 {
 }
 `
 	if a.Repeated || !a.IsBaseType {
-		code, err := ApplyTemplate("UnmarshalCliArgs", jsonConvTmpl, a, nil)
+		code, err := applyTemplate("UnmarshalCliArgs", jsonConvTmpl, a, nil)
 		if err != nil {
 			panic(fmt.Sprintf("Couldn't apply template: %v", err))
 		}
@@ -312,10 +296,10 @@ func flagTypeConversion(a ClientArg) string {
 	return fmt.Sprintf(fType, a.FlagArg)
 }
 
-// ApplyTemplate applies a template with a given name, executor context, and
+// applyTemplate applies a template with a given name, executor context, and
 // function map. Returns the output of the template on success, returns an
 // error if template failed to execute.
-func ApplyTemplate(name string, tmpl string, executor interface{}, fncs template.FuncMap) (string, error) {
+func applyTemplate(name string, tmpl string, executor interface{}, fncs template.FuncMap) (string, error) {
 	codeTemplate := template.Must(template.New(name).Funcs(fncs).Parse(tmpl))
 
 	code := bytes.NewBuffer(nil)
@@ -324,4 +308,18 @@ func ApplyTemplate(name string, tmpl string, executor interface{}, fncs template
 		return "", errors.Wrapf(err, "attempting to execute template %q", name)
 	}
 	return code.String(), nil
+}
+
+// lowCamelName returns a CamelCased string, but with the first letter
+// lowercased. "package_name" becomes "packageName".
+func lowCamelName(s string) string {
+	s = gogen.CamelCase(s)
+	new := []rune(s)
+	if len(new) < 1 {
+		return s
+	}
+	rv := []rune{}
+	rv = append(rv, unicode.ToLower(new[0]))
+	rv = append(rv, new[1:]...)
+	return string(rv)
 }
