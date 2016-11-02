@@ -23,7 +23,8 @@ import (
 )
 
 var (
-	pbPackageFlag = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
+	pbPackageFlag  = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
+	svcPackageFlag = flag.String("svcout", "", "The go package path where the generated service directory will be written.")
 )
 
 func init() {
@@ -82,17 +83,27 @@ func parseInput() (*truss.Config, error) {
 	// Service Path
 	defFile, err := os.Open(cfg.DefPaths[0])
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not open package file %q", cfg.DefPaths[0])
+		return nil, errors.Wrapf(err, "cannot open package file %q", cfg.DefPaths[0])
 	}
 	svcName, err := parsepkgname.FromReader(defFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot parse package name from file %q", cfg.DefPaths[0])
 	}
 	svcFolderName := svcName + "-service"
-	svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcFolderName)
-	cfg.ServicePackage, err = filepath.Rel(filepath.Join(cfg.GOPATH, "src"), svcPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "service path is not in GOPATH")
+
+	if *svcPackageFlag == "" {
+		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcFolderName)
+		cfg.ServicePackage, err = filepath.Rel(filepath.Join(cfg.GOPATH, "src"), svcPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "current path is not in GOPATH")
+		}
+	} else {
+		baseSVCPackage := *svcPackageFlag
+		svcPath := filepath.Join(cfg.GOPATH, "src", baseSVCPackage)
+		if !fileExists(svcPath) {
+			return nil, errors.Errorf("specified package path for service output directory does not exist: %q", svcPath)
+		}
+		cfg.ServicePackage = filepath.Join(baseSVCPackage, svcFolderName)
 	}
 
 	// PrevGen
@@ -106,9 +117,9 @@ func parseInput() (*truss.Config, error) {
 		cfg.PBPackage = cfg.ServicePackage
 	} else {
 		cfg.PBPackage = *pbPackageFlag
-		if !fileExists(
-			filepath.Join(cfg.GOPATH, "src", cfg.PBPackage)) {
-			return nil, errors.Errorf(".pb.go output package directory does not exist: %q", cfg.PBPackage)
+		PBPackagePath := filepath.Join(cfg.GOPATH, "src", cfg.PBPackage)
+		if !fileExists(PBPackagePath) {
+			return nil, errors.Errorf(".pb.go output package directory does not exist: %q", PBPackagePath)
 		}
 	}
 
@@ -140,7 +151,7 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 		for _, p := range paths {
 			reader, err := os.Open(p)
 			if err != nil {
-				return nil, errors.Wrapf(err, "couldn't open file %q", p)
+				return nil, errors.Wrapf(err, "cannot open file %q", p)
 			}
 			rv = append(rv, reader)
 		}
@@ -156,17 +167,17 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	}
 	pbgoFiles, err := openFiles(pbgoPaths)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to open a .pb.go file")
+		return nil, nil, errors.Wrap(err, "cannot open all .pb.go files")
 	}
 	pbFiles, err := openFiles(protoDefPaths)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to open a .proto file")
+		return nil, nil, errors.Wrap(err, "cannot open all .proto files")
 	}
 
 	// Create the svcdef
 	sd, err := svcdef.New(pbgoFiles, pbFiles)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Failed to create svcdef")
+		return nil, nil, errors.Wrap(err, "cannot create svcdef")
 	}
 
 	// Create the Deftree
