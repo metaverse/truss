@@ -142,9 +142,13 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	var desc string
 
 	tk, val := lex.GetTokenIgnoreWhitespace()
-	if tk == COMMENT {
-		desc = val
-		tk, val = lex.GetTokenIgnoreWhitespace()
+	for {
+		if tk == COMMENT {
+			desc = val
+			tk, val = lex.GetTokenIgnoreWhitespace()
+		} else {
+			break
+		}
 	}
 
 	switch {
