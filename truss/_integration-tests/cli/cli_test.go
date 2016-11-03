@@ -42,7 +42,7 @@ func TestBasicTypesWithPBOutFlag(t *testing.T) {
 }
 
 // Disabled until repeated types are implemented for cliclient
-func _TestRepeatedTypes(t *testing.T) {
+func TestRepeatedTypes(t *testing.T) {
 	testEndToEnd("2-repeated", t)
 }
 

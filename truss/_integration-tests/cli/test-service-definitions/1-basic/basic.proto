@@ -34,8 +34,7 @@ message BasicTypeRequest {
   sfixed32 K = 11;
   bool L = 12;
   string M = 13;
-  // Don't handle bytes currently
-  //  bytes N = 14;
+  bytes N = 14;
 }
 
 message BasicTypeResponse {
@@ -52,7 +51,6 @@ message BasicTypeResponse {
   sfixed32 K = 11;
   bool L = 12;
   string M = 13;
-  // Don't handle bytes currently
-  // bytes N = 14;
+  bytes N = 14;
 }
 
