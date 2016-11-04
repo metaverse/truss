@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package TEST;
+
+import "google/api/annotations.proto";
+
+import "imported.proto";
+
+service Basic {
+  rpc GetBasic (BasicTypeRequest) returns (BasicTypeResponse) {
+    option (google.api.http) = {
+      get: "/1"
+    };
+  }
+
+
+  rpc PostBasic (BasicTypeRequest) returns (BasicTypeRequest) {
+    option (google.api.http) = {
+      post: "/2"
+      body: "*"
+    };
+  }
+}
+
