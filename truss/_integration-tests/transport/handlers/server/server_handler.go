@@ -10,7 +10,7 @@ import (
 )
 
 // NewService returns a naïve, stateless implementation of Service.
-func NewService() Service {
+func NewService() pb.TransportPermutationsServer {
 	return transportService{}
 }
 
@@ -62,11 +62,4 @@ func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb
 	}
 
 	return &resp, nil
-}
-
-type Service interface {
-	GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error)
-	GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error)
-	PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error)
-	CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb.MetaResponse, error)
 }

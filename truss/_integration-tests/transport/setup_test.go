@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 	var logger log.Logger
 	logger = log.NewNopLogger()
 
-	var service handler.Service
+	var service pb.TransportPermutationsServer
 	{
 		service = handler.NewService()
 	}
