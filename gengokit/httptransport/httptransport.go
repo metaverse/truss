@@ -12,9 +12,10 @@ import (
 	"unicode"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/TuneLab/go-truss/svcdef"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
+
+	"github.com/TuneLab/go-truss/svcdef"
 )
 
 // Helper is the base struct for the data structure containing all the
