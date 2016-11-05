@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -61,4 +62,31 @@ func DiffStrings(a, b string) string {
 	}
 	text, _ := difflib.GetUnifiedDiffString(t)
 	return text
+}
+
+// DiffGoCode
+func DiffGoCode(inA, inB string) (outA, outB, diff string) {
+	codeFormat := func(in string) string {
+		// Trim starting and ending space so format starts indenting at 0 for
+		// both strings
+		out := strings.TrimSpace(in)
+
+		// Format code, if we get an error we keep out the same,
+		// otherwise we use the formmated version
+		outBytes, err := format.Source([]byte(out))
+		if err != nil {
+			return "FAILED TO FORMAT\n" + out
+		} else {
+			return string(outBytes)
+		}
+
+		return out
+	}
+	outA = codeFormat(inA)
+	outB = codeFormat(inB)
+	diff = DiffStrings(
+		outA,
+		outB,
+	)
+	return
 }

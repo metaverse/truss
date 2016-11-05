@@ -163,7 +163,7 @@ const serverTempl = `
 			var resp pb.{{GoName .ResponseType.Name}}
 			resp = pb.{{GoName .ResponseType.Name}}{
 				{{range $j := $i.ResponseType.Message.Fields -}}
-					// {{GoName $j.Name}}: 
+					// {{GoName $j.Name}}:
 				{{end -}}
 			}
 			return &resp, nil
