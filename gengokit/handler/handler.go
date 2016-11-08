@@ -40,18 +40,22 @@ func New(svc *svcdef.Service, prev io.Reader) (gengokit.Renderable, error) {
 	}
 
 	return &handler{
-		fset:      fset,
-		prevAst:   f,
-		methodMap: mMap,
-		service:   svc,
+		fset:    fset,
+		ast:     f,
+		mMap:    mMap,
+		service: svc,
 	}, nil
 }
 
+// methodMap stores all defined service methods by name
+// and is updated to remove service methods already in the handler file
+type methodMap map[string]*svcdef.ServiceMethod
+
 type handler struct {
-	fset      *token.FileSet
-	service   *svcdef.Service
-	methodMap map[string]*svcdef.ServiceMethod
-	prevAst   *ast.File
+	fset    *token.FileSet
+	service *svcdef.Service
+	mMap    methodMap
+	ast     *ast.File
 }
 
 type cliHandlerExecutor struct {
@@ -67,14 +71,19 @@ type handlerExecutor struct {
 func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
 	// Remove exported methods not defined in service definition
 	// and remove methods defined in the previous file from methodMap
-	h.removeUnknownExportedMethods()
+	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls)
 
 	// create a new executor, and add all methods not defined in the previous file
 	ex := handlerExecutor{
 		PackageName: te.PackageName,
 	}
 
-	for k, v := range h.methodMap {
+	// If there are no methods to template than exit early
+	if len(h.mMap) == 0 {
+		return h.buffer()
+	}
+
+	for k, v := range h.mMap {
 		log.WithField("Method", k).
 			Info("Generating handler from rpc definition")
 		ex.Methods = append(ex.Methods, v)
@@ -90,7 +99,6 @@ func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, er
 	var newCode io.Reader
 	switch f {
 	case "NAME-service/handlers/server/server_handler.gotemplate":
-		log.Debug("Generating server handlers....")
 		newCode, err = applyTemplate(serverTempl, "ServerTemplate", ex)
 	default:
 		return nil, errors.Errorf("cannot render unknown file: %q", f)
@@ -109,7 +117,7 @@ func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, er
 
 func (h *handler) buffer() (*bytes.Buffer, error) {
 	code := bytes.NewBuffer(nil)
-	err := printer.Fprint(code, h.fset, h.prevAst)
+	err := printer.Fprint(code, h.fset, h.ast)
 
 	if err != nil {
 		return nil, err
@@ -118,41 +126,51 @@ func (h *handler) buffer() (*bytes.Buffer, error) {
 	return code, nil
 }
 
-func (h handler) removeUnknownExportedMethods() {
+// pruneDecls constructs a new []ast.Decls with the functions in decls
+// who's names are keys in methodMap removed. When a function is removed
+// from decls that key is also deleted from methodMap, resulting in a
+// methodMap only containing keys and values for functions defined in the
+// service but not the handler ast.
+func (m methodMap) pruneDecls(decls []ast.Decl) []ast.Decl {
 	var newDecls []ast.Decl
-	for _, d := range h.prevAst.Decls {
+	for _, d := range decls {
 		switch x := d.(type) {
-		// If it is a function
 		case *ast.FuncDecl:
-			name := x.Name.String()
-
-			log.WithField("Func", name).
-				Debug("Examining function")
-
-			if !x.Name.IsExported() {
+			if ok := m.isValidFunc(x); ok == true {
 				newDecls = append(newDecls, d)
-				log.WithField("Func", name).
-					Debug("Unexported function; ignoring")
-				continue
+				delete(m, x.Name.String())
 			}
-			// and it is exported
-			m := h.methodMap[name]
-			// and it is not defined in the definition then remove it
-			if m == nil && name != ignoredFunc {
-				log.WithField("Method", name).
-					Info("Method does not exist in service definition as an rpc")
-				continue
-			}
-			delete(h.methodMap, name)
-			newDecls = append(newDecls, d)
-			log.WithField("Func", name).
-				Debug("Method already exists in service defintion; ignoring")
 		default:
 			newDecls = append(newDecls, d)
 		}
 
 	}
-	h.prevAst.Decls = newDecls
+	return newDecls
+}
+
+// keepCurrentFunc returns true if f is unexported OR if it exists in m.
+func (m methodMap) isValidFunc(f *ast.FuncDecl) bool {
+	name := f.Name.String()
+	log.WithField("Func", name).
+		Debug("Examining function")
+
+	if !ast.IsExported(name) {
+		log.WithField("Func", name).
+			Debug("Unexported function; ignoring")
+		return true
+	}
+
+	v := m[name]
+	if v == nil && name != ignoredFunc {
+		log.WithField("Method", name).
+			Info("Method does not exist in service definition as an rpc")
+		return false
+	}
+
+	log.WithField("Func", name).
+		Debug("Method already exists in service defintion; ignoring")
+
+	return true
 }
 
 const serverTempl = `
@@ -171,6 +189,10 @@ const serverTempl = `
 		{{end}}
 {{- end}}
 `
+
+func applyServerTempl(exec handlerExecutor) (io.Reader, error) {
+	return applyTemplate(serverTempl, "ServerTempl", exec)
+}
 
 const clientTempl = `
 {{ with $te := .}}
@@ -198,6 +220,16 @@ const clientTempl = `
 	{{end}}
 {{- end}}
 `
+
+func applyClientTempl(exec handlerExecutor, h handler) (io.Reader, error) {
+	newService := *h.service
+	newService.Methods = exec.Methods
+	c := cliHandlerExecutor{
+		handlerExecutor: exec,
+		ClientArgs:      clientarggen.New(&newService),
+	}
+	return applyTemplate(clientTempl, "ClientTemplate", c)
+}
 
 func applyTemplate(templ string, templName string, exec interface{}) (io.Reader, error) {
 	funcMap := template.FuncMap{
