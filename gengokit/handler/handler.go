@@ -17,34 +17,40 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/gengokit"
+	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 	"github.com/TuneLab/go-truss/svcdef"
 
 	// Will be removed when cliclient is fully generated
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 )
 
+// NewService is an exported func that creates a new service
+// it will not be defined in the service definition but is required
 const ignoredFunc = "NewService"
 
 // New returns a truss.Renderable capable of updating server or cli-client handlers
 // New should be passed the previous version of the server or cli-client handler to parse
 func New(svc *svcdef.Service, prev io.Reader) (gengokit.Renderable, error) {
-	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "", prev, parser.ParseComments)
-	if err != nil {
-		return nil, err
-	}
-
+	var h handler
+	log.WithField("Service Methods", len(svc.Methods)).Debug("Handler being created")
 	mMap := make(map[string]*svcdef.ServiceMethod, len(svc.Methods))
 	for _, m := range svc.Methods {
 		mMap[m.Name] = m
 	}
+	h.mMap = mMap
+	h.service = svc
 
-	return &handler{
-		fset:    fset,
-		ast:     f,
-		mMap:    mMap,
-		service: svc,
-	}, nil
+	if prev == nil {
+		return &h, nil
+	}
+
+	h.fset = token.NewFileSet()
+	var err error
+	if h.ast, err = parser.ParseFile(h.fset, "", prev, parser.ParseComments); err != nil {
+		return nil, err
+	}
+
+	return &h, nil
 }
 
 // methodMap stores all defined service methods by name
@@ -68,17 +74,34 @@ type handlerExecutor struct {
 	Methods     []*svcdef.ServiceMethod
 }
 
+func (h *handler) renderFirst(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
+	log.WithField("Template", f).
+		Debug("Rendering for the first time from assets")
+	t, err := templFiles.Asset(f)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot access template: %q", f)
+	}
+	return applyTemplate(string(t), f, te)
+}
+
+// Render returns
 func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
+	if h.ast == nil {
+		return h.renderFirst(f, te)
+	}
+
 	// Remove exported methods not defined in service definition
 	// and remove methods defined in the previous file from methodMap
+	log.WithField("Service Methods", len(h.mMap)).Debug("Before prune")
 	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls)
+	log.WithField("Service Methods", len(h.mMap)).Debug("After prune")
 
 	// create a new executor, and add all methods not defined in the previous file
 	ex := handlerExecutor{
 		PackageName: te.PackageName,
 	}
 
-	// If there are no methods to template than exit early
+	// If there are no methods to template then exit early
 	if len(h.mMap) == 0 {
 		return h.buffer()
 	}
@@ -192,43 +215,6 @@ const serverTempl = `
 
 func applyServerTempl(exec handlerExecutor) (io.Reader, error) {
 	return applyTemplate(serverTempl, "ServerTempl", exec)
-}
-
-const clientTempl = `
-{{ with $te := .}}
-	{{range $i := $te.Methods}}
-		// {{$i.Name}} implements Service.
-		func {{$i.Name}}({{with index $te.ClientArgs.MethArgs $i.Name}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.Name}}, error){
-			{{- with $meth := index $te.ClientArgs.MethArgs $i.Name -}}
-				{{- range $param := $meth.Args -}}
-					{{- if not $param.IsBaseType -}}
-						// Add custom business logic for interpreting {{$param.FlagArg}},
-					{{- end -}}
-				{{- end -}}
-			{{- end -}}
-			request := pb.{{GoName $i.RequestType.Name}}{
-			{{- with $meth := index $te.ClientArgs.MethArgs $i.Name -}}
-				{{range $param := $meth.Args -}}
-					{{- if $param.IsBaseType}}
-						{{GoName $param.Name}} : {{GoName $param.FlagArg}},
-					{{- end -}}
-				{{end -}}
-			{{- end -}}
-			}
-			return &request, nil
-		}
-	{{end}}
-{{- end}}
-`
-
-func applyClientTempl(exec handlerExecutor, h handler) (io.Reader, error) {
-	newService := *h.service
-	newService.Methods = exec.Methods
-	c := cliHandlerExecutor{
-		handlerExecutor: exec,
-		ClientArgs:      clientarggen.New(&newService),
-	}
-	return applyTemplate(clientTempl, "ClientTemplate", c)
 }
 
 func applyTemplate(templ string, templName string, exec interface{}) (io.Reader, error) {

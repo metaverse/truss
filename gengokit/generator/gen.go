@@ -14,7 +14,7 @@ import (
 
 	"github.com/TuneLab/go-truss/gengokit"
 	"github.com/TuneLab/go-truss/gengokit/handler"
-	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
+	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 
 	"github.com/TuneLab/go-truss/svcdef"
 	"github.com/TuneLab/go-truss/truss"
@@ -44,7 +44,7 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWr
 
 	var codeGenFiles []truss.NamedReadWriter
 
-	for _, templFP := range templateFileAssets.AssetNames() {
+	for _, templFP := range templFiles.AssetNames() {
 		file, err := generateResponseFile(templFP, te, fpm)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")
@@ -74,18 +74,15 @@ func generateResponseFile(templFP string, te *gengokit.TemplateExecutor, prevGen
 	// If we are rendering the server and or the client
 	if templFP == "NAME-service/handlers/server/server_handler.gotemplate" ||
 		templFP == "NAME-service/handlers/client/client_handler.gotemplate" {
-		// and they were previously generated
-		if file := prevGenMap[actualFP]; file != nil {
-			var h gengokit.Renderable
-			h, err = handler.New(te.Service, file)
-			if err != nil {
-				return nil, errors.Wrapf(err, "previous handler invalid: %q", actualFP)
-			}
-			if genCode, err = h.Render(templFP, te); err != nil {
-				return nil, errors.Wrap(err, "cannot render template")
-			}
+		file := prevGenMap[actualFP]
+		h, err := handler.New(te.Service, file)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot parse previous handler: %q", actualFP)
 		}
 
+		if genCode, err = h.Render(templFP, te); err != nil {
+			return nil, errors.Wrap(err, "cannot render template")
+		}
 	}
 
 	// if no code has been generated just apply the template
@@ -130,8 +127,7 @@ func templatePathToActual(templFilePath, packageName string) string {
 
 // applyTemplateFromPath calls applyTemplate with the template at templFilePath
 func applyTemplateFromPath(templFilePath string, executor *gengokit.TemplateExecutor) (io.Reader, error) {
-
-	templBytes, err := templateFileAssets.Asset(templFilePath)
+	templBytes, err := templFiles.Asset(templFilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to find template file: %v", templFilePath)
 	}
