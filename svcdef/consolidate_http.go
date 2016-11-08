@@ -23,6 +23,13 @@ func isOptionalError(err error) bool {
 	return ok && opt.Optional()
 }
 
+func isEOF(err error) bool {
+	if errors.Cause(err) == io.EOF || errors.Cause(err) == io.ErrUnexpectedEOF {
+		return true
+	}
+	return false
+}
+
 // consolidateHTTP accepts a SvcDef and the io.Readers for the proto files
 // comprising the definition. It modifies the SvcDef so that HTTPBindings and
 // their associated HTTPParamters are added to each ServiceMethod. After this,
@@ -39,7 +46,10 @@ func consolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
 					"annotations; this is allowed, but will result in HTTP " +
 					"transport not being generated.")
 				return nil
+			} else if isEOF(err) {
+				continue
 			}
+
 			return errors.Wrap(err, "error while parsing http options for the service definition")
 		}
 		assembleHTTPParams(sd.Service, protosvc)

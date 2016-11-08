@@ -41,6 +41,10 @@ func TestBasicTypesWithPBOutFlag(t *testing.T) {
 		"github.com/TuneLab/go-truss/truss/_integration-tests/cli/test-service-definitions/1-basic/pbout")
 }
 
+func TestMultipleFiles(t *testing.T) {
+	testEndToEnd("1-multifile", t)
+}
+
 // Disabled until repeated types are implemented for cliclient
 func _TestRepeatedTypes(t *testing.T) {
 	testEndToEnd("2-repeated", t)
