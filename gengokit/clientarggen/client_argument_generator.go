@@ -11,9 +11,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/TuneLab/go-truss/svcdef"
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
+
+	"github.com/TuneLab/go-truss/svcdef"
 )
 
 // A collection of the necessary information for generating basic business

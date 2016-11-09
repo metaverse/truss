@@ -95,6 +95,10 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 			newField.IsBaseType = true
 		}
 
+		if !newField.IsBaseType {
+			newField.GoType = "pb." + newField.GoType
+		}
+
 		// Modify GoType to reflect pointer or repeated status
 		if field.Type.StarExpr && field.Type.ArrayType {
 			newField.GoType = "[]*" + newField.GoType
@@ -285,6 +289,9 @@ if err != nil {
 // createDecodeTypeConversion creates a go string that converts a 64 bit type to a 32 bit type
 // as strconv.ParseInt, ParseUInt, and ParseFloat always return the 64 bit type
 func createDecodeTypeConversion(f Field) string {
+	if f.Repeated {
+		return f.LocalName
+	}
 	fType := ""
 	switch {
 	case strings.Contains(f.GoType, "uint32"):
