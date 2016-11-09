@@ -71,8 +71,7 @@ func generateResponseFile(templFP string, te *gengokit.TemplateExecutor, prevGen
 	// Get the actual path to the file rather than the template file path
 	actualFP := templatePathToActual(templFP, te.PackageName)
 	// If we are rendering the server and or the client
-	if templFP == "NAME-service/handlers/server/server_handler.gotemplate" ||
-		templFP == "NAME-service/handlers/client/client_handler.gotemplate" {
+	if templFP == "NAME-service/handlers/server/server_handler.gotemplate" {
 		file := prevGenMap[actualFP]
 		h, err := handler.New(te.Service, file, te.PackageName)
 		if err != nil {

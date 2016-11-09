@@ -1,5 +1,5 @@
 // package handler parses service handlers and add/removes exported methods to
-// compile with the definition service's rpcs
+// comply with the definition service methods
 package handler
 
 import (
@@ -19,9 +19,6 @@ import (
 	"github.com/TuneLab/go-truss/gengokit"
 	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 	"github.com/TuneLab/go-truss/svcdef"
-
-	// Will be removed when cliclient is fully generated
-	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 )
 
 func init() {
@@ -31,6 +28,7 @@ func init() {
 // NewService is an exported func that creates a new service
 // it will not be defined in the service definition but is required
 const ignoredFunc = "NewService"
+const serverTemplPath = "NAME-service/handlers/server/server_handler.gotemplate"
 
 // New returns a truss.Renderable capable of updating server or cli-client handlers
 // New should be passed the previous version of the server or cli-client handler to parse
@@ -74,11 +72,6 @@ type handler struct {
 	pkgName string
 }
 
-type cliHandlerExecutor struct {
-	handlerExecutor
-	ClientArgs *clientarggen.ClientServiceArgs
-}
-
 type handlerExecutor struct {
 	PackageName string
 	Methods     []*svcdef.ServiceMethod
@@ -96,6 +89,9 @@ func (h *handler) renderFirst(f string, te *gengokit.TemplateExecutor) (io.Reade
 
 // Render returns
 func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
+	if f != serverTemplPath {
+		return nil, errors.Errorf("cannot render unknown file: %q", f)
+	}
 	if h.ast == nil {
 		return h.renderFirst(f, te)
 	}
@@ -128,14 +124,8 @@ func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, er
 		return nil, err
 	}
 
-	// render the server or client for all methods not already defined
-	var newCode io.Reader
-	switch f {
-	case "NAME-service/handlers/server/server_handler.gotemplate":
-		newCode, err = applyTemplate(serverTempl, "ServerTemplate", ex)
-	default:
-		return nil, errors.Errorf("cannot render unknown file: %q", f)
-	}
+	// render the server for all methods not already defined
+	newCode, err := applyServerTempl(ex)
 
 	if err != nil {
 		return nil, err
@@ -170,8 +160,6 @@ func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 		switch x := d.(type) {
 		case *ast.FuncDecl:
 			if ok := isValidFunc(x, m, pkgName); ok == true {
-				// TODO: when clienthandler is generated remove this check
-				//if
 				newDecls = append(newDecls, d)
 				delete(m, x.Name.String())
 			}
@@ -187,14 +175,15 @@ func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 // reciever pkgName + "Service"
 func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	name := f.Name.String()
-	if !ast.IsExported(name) {
+	if !ast.IsExported(name) || name == ignoredFunc {
 		log.WithField("Func", name).
-			Debug("Unexported function; ignoring")
+			Debug("Unexported or ignored function; ignoring")
 		return true
 	}
 
 	v := m[name]
-	if v == nil && name != ignoredFunc {
+
+	if v == nil {
 		log.WithField("Method", name).
 			Info("Method does not exist in service definition as an rpc; removing")
 		return false
@@ -204,6 +193,7 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	if rName != pkgName+"Service" {
 		log.WithField("Func", name).WithField("Receiver", rName).
 			Info("Func is exported with improper receiver; removing")
+		return false
 	}
 
 	log.WithField("Func", name).
