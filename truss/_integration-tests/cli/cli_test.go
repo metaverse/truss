@@ -157,13 +157,13 @@ func buildTestService(serviceDir string) (err error) {
 	}
 
 	const serverPath = "/TEST-service/TEST-server"
-	const clientPath = "/TEST-service/TEST-client"
+	const clientPath = "/TEST-service/TEST-cli-client"
 
 	// Build server and client
 	errChan := make(chan error)
 
 	go goBuild("TEST-server", binDir, filepath.Join(relDir, serverPath), errChan)
-	go goBuild("TEST-client", binDir, filepath.Join(relDir, clientPath), errChan)
+	go goBuild("TEST-cli-client", binDir, filepath.Join(relDir, clientPath), errChan)
 
 	err = <-errChan
 	if err != nil {
@@ -299,7 +299,7 @@ func runServerAndClient(path string, port int, debugPort int) runReference {
 }
 
 func runClient(path string, trans string, port int) ([]byte, bool) {
-	const relativeClientPath = "/bin/TEST-client"
+	const relativeClientPath = "/bin/TEST-cli-client"
 
 	var client *exec.Cmd
 	switch trans {

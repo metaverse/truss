@@ -15,7 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	// This Service
-	clientHandler "{{.ImportPath -}} /handlers/client"
+	clientHandler "{{.ImportPath -}} /generated/cli/handlers"
 	grpcclient "{{.ImportPath -}} /generated/client/grpc"
 	httpclient "{{.ImportPath -}} /generated/client/http"
 	pb "{{.PBImportPath -}}"
