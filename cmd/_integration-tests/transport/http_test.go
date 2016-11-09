@@ -14,8 +14,8 @@ import (
 	"golang.org/x/net/context"
 
 	// This Service
-	pb "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service"
-	httpclient "github.com/TuneLab/go-truss/truss/_integration-tests/transport/transport-service/generated/client/http"
+	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service"
+	httpclient "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service/generated/client/http"
 
 	"github.com/pkg/errors"
 )

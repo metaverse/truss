@@ -11,14 +11,14 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/TuneLab/go-truss/truss"
 	"github.com/TuneLab/go-truss/truss/execprotoc"
 	"github.com/TuneLab/go-truss/truss/parsepkgname"
-	"github.com/TuneLab/go-truss/truss/truss"
 
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
-	"github.com/TuneLab/go-truss/gengokit"
-	ggkconf "github.com/TuneLab/go-truss/gengokit/config"
+	ggkconf "github.com/TuneLab/go-truss/gengokit"
+	gengokit "github.com/TuneLab/go-truss/gengokit/generator"
 	"github.com/TuneLab/go-truss/svcdef"
 )
 

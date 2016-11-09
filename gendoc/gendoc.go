@@ -4,7 +4,7 @@ package gendoc
 
 import (
 	"github.com/TuneLab/go-truss/deftree"
-	"github.com/TuneLab/go-truss/truss/truss"
+	"github.com/TuneLab/go-truss/truss"
 )
 
 // GenerateDocs accepts a deftree that represents an ast of a group of
