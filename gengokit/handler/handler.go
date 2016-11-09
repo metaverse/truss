@@ -24,21 +24,22 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 )
 
+func init() {
+	log.SetLevel(log.DebugLevel)
+}
+
 // NewService is an exported func that creates a new service
 // it will not be defined in the service definition but is required
 const ignoredFunc = "NewService"
 
 // New returns a truss.Renderable capable of updating server or cli-client handlers
 // New should be passed the previous version of the server or cli-client handler to parse
-func New(svc *svcdef.Service, prev io.Reader) (gengokit.Renderable, error) {
+func New(svc *svcdef.Service, prev io.Reader, pkgName string) (gengokit.Renderable, error) {
 	var h handler
 	log.WithField("Service Methods", len(svc.Methods)).Debug("Handler being created")
-	mMap := make(map[string]*svcdef.ServiceMethod, len(svc.Methods))
-	for _, m := range svc.Methods {
-		mMap[m.Name] = m
-	}
-	h.mMap = mMap
+	h.mMap = newMethodMap(svc.Methods)
 	h.service = svc
+	h.pkgName = pkgName
 
 	if prev == nil {
 		return &h, nil
@@ -57,11 +58,20 @@ func New(svc *svcdef.Service, prev io.Reader) (gengokit.Renderable, error) {
 // and is updated to remove service methods already in the handler file
 type methodMap map[string]*svcdef.ServiceMethod
 
+func newMethodMap(meths []*svcdef.ServiceMethod) methodMap {
+	mMap := make(methodMap, len(meths))
+	for _, m := range meths {
+		mMap[m.Name] = m
+	}
+	return mMap
+}
+
 type handler struct {
 	fset    *token.FileSet
 	service *svcdef.Service
 	mMap    methodMap
 	ast     *ast.File
+	pkgName string
 }
 
 type cliHandlerExecutor struct {
@@ -93,7 +103,7 @@ func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, er
 	// Remove exported methods not defined in service definition
 	// and remove methods defined in the previous file from methodMap
 	log.WithField("Service Methods", len(h.mMap)).Debug("Before prune")
-	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls)
+	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, te.PackageName)
 	log.WithField("Service Methods", len(h.mMap)).Debug("After prune")
 
 	// create a new executor, and add all methods not defined in the previous file
@@ -154,12 +164,14 @@ func (h *handler) buffer() (*bytes.Buffer, error) {
 // from decls that key is also deleted from methodMap, resulting in a
 // methodMap only containing keys and values for functions defined in the
 // service but not the handler ast.
-func (m methodMap) pruneDecls(decls []ast.Decl) []ast.Decl {
+func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 	var newDecls []ast.Decl
 	for _, d := range decls {
 		switch x := d.(type) {
 		case *ast.FuncDecl:
-			if ok := m.isValidFunc(x); ok == true {
+			if ok := isValidFunc(x, m, pkgName); ok == true {
+				// TODO: when clienthandler is generated remove this check
+				//if
 				newDecls = append(newDecls, d)
 				delete(m, x.Name.String())
 			}
@@ -171,12 +183,10 @@ func (m methodMap) pruneDecls(decls []ast.Decl) []ast.Decl {
 	return newDecls
 }
 
-// keepCurrentFunc returns true if f is unexported OR if it exists in m.
-func (m methodMap) isValidFunc(f *ast.FuncDecl) bool {
+// isVaidFunc returns fase if f is exported and does no exist in m with
+// reciever pkgName + "Service"
+func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	name := f.Name.String()
-	log.WithField("Func", name).
-		Debug("Examining function")
-
 	if !ast.IsExported(name) {
 		log.WithField("Func", name).
 			Debug("Unexported function; ignoring")
@@ -186,14 +196,38 @@ func (m methodMap) isValidFunc(f *ast.FuncDecl) bool {
 	v := m[name]
 	if v == nil && name != ignoredFunc {
 		log.WithField("Method", name).
-			Info("Method does not exist in service definition as an rpc")
+			Info("Method does not exist in service definition as an rpc; removing")
 		return false
 	}
 
+	rName := mRecvName(f.Recv)
+	if rName != pkgName+"Service" {
+		log.WithField("Func", name).WithField("Receiver", rName).
+			Info("Func is exported with improper receiver; removing")
+	}
+
 	log.WithField("Func", name).
-		Debug("Method already exists in service defintion; ignoring")
+		Debug("Method already exists in service definition; ignoring")
 
 	return true
+}
+
+func mRecvName(recv *ast.FieldList) string {
+	if recv == nil ||
+		recv.List[0].Type == nil {
+		log.Debug("Function has no reciever")
+		return ""
+	}
+
+	typ := recv.List[0].Type
+	if ptr, _ := typ.(*ast.StarExpr); ptr != nil {
+		typ = ptr.X
+	}
+	if base, _ := typ.(*ast.Ident); base != nil {
+		return base.Name
+	}
+
+	return ""
 }
 
 const serverTempl = `

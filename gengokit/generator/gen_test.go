@@ -422,7 +422,7 @@ func diff(a, b string) string {
 }
 
 func renderService(svc *svcdef.Service, prev string, te *gengokit.TemplateExecutor, templPath string) (string, error) {
-	h, err := handler.New(svc, strings.NewReader(prev))
+	h, err := handler.New(svc, strings.NewReader(prev), te.PackageName)
 	if err != nil {
 		return "", err
 	}
