@@ -112,7 +112,6 @@ func generateResponseFile(templFP string, te *templateExecutor, prevGenMap map[s
 	// Map of template paths to template rendering functions
 	renderTempl := map[string]string{
 		"NAME-service/handlers/server/server_handler.gotemplate": serverMethods,
-		"NAME-service/handlers/client/client_handler.gotemplate": clientMethods,
 	}
 
 	// If we are rendering a template with a renderFunc and the file existed
@@ -276,33 +275,6 @@ func formatCode(code []byte) []byte {
 
 	return formatted
 }
-
-var clientMethods string = `
-{{ with $te := .}}
-	{{range $i := $te.Service.Methods}}
-		// {{$i.GetName}} implements Service.
-		func {{$i.GetName}}({{with index $te.ClientArgs.MethArgs $i.GetName}}{{GoName .FunctionArgs}}{{end}}) (*pb.{{GoName $i.RequestType.GetName}}, error){
-			{{- with $meth := index $te.ClientArgs.MethArgs $i.GetName -}}
-				{{- range $param := $meth.Args -}}
-					{{- if not $param.IsBaseType -}}
-						// Add custom business logic for interpreting {{$param.FlagArg}},
-					{{- end -}}
-				{{- end -}}
-			{{- end -}}
-			request := pb.{{GoName $i.RequestType.GetName}}{
-			{{- with $meth := index $te.ClientArgs.MethArgs $i.GetName -}}
-				{{range $param := $meth.Args -}}
-					{{- if $param.IsBaseType}}
-						{{GoName $param.Name}} : {{GoName $param.FlagArg}},
-					{{- end -}}
-				{{end -}}
-			{{- end -}}
-			}
-			return &request, nil
-		}
-	{{end}}
-{{- end}}
-`
 
 var serverMethods string = `
 {{ with $te := .}}
