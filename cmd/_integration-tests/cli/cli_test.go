@@ -38,7 +38,7 @@ func TestBasicTypes(t *testing.T) {
 func TestBasicTypesWithPBOutFlag(t *testing.T) {
 	testEndToEnd("1-basic", t,
 		"-pbout",
-		"github.com/TuneLab/go-truss/truss/_integration-tests/cli/test-service-definitions/1-basic/pbout")
+		"github.com/TuneLab/go-truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
 }
 
 func TestMultipleFiles(t *testing.T) {

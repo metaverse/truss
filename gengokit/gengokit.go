@@ -11,7 +11,7 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 	"github.com/TuneLab/go-truss/gengokit/httptransport"
 	"github.com/TuneLab/go-truss/svcdef"
-	"github.com/TuneLab/go-truss/truss/truss"
+	"github.com/TuneLab/go-truss/truss"
 )
 
 type Renderable interface {

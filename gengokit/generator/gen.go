@@ -17,7 +17,7 @@ import (
 	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
 
 	"github.com/TuneLab/go-truss/svcdef"
-	"github.com/TuneLab/go-truss/truss/truss"
+	"github.com/TuneLab/go-truss/truss"
 )
 
 func init() {
