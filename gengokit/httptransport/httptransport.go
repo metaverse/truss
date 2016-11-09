@@ -93,6 +93,8 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 
 		if field.Type.Message == nil && field.Type.Enum == nil && field.Type.Map == nil {
 			newField.IsBaseType = true
+		} else {
+			newField.GoType = "pb." + newField.GoType
 		}
 
 		// Modify GoType to reflect pointer or repeated status
@@ -282,9 +284,16 @@ if err != nil {
 	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
 }
 
-// createDecodeTypeConversion creates a go string that converts a 64 bit type to a 32 bit type
-// as strconv.ParseInt, ParseUInt, and ParseFloat always return the 64 bit type
+// createDecodeTypeConversion creates a go string that converts a 64 bit type
+// to a 32 bit type as strconv.ParseInt, ParseUInt, and ParseFloat always
+// return the 64 bit type. If the type is not a 64 bit integer type or is
+// repeated, then returns the LocalName of that Field.
 func createDecodeTypeConversion(f Field) string {
+	if f.Repeated {
+		// Equivalent of the 'default' case below, but taken early for repeated
+		// types.
+		return f.LocalName
+	}
 	fType := ""
 	switch {
 	case strings.Contains(f.GoType, "uint32"):

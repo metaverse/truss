@@ -361,11 +361,15 @@ func NewField(f *ast.Field) (*Field, error) {
 	typeFollower = func(e ast.Expr) error {
 		switch ex := e.(type) {
 		case *ast.Ident:
-			rv.Type.Name = ex.Name
+			rv.Type.Name += ex.Name
 		case *ast.StarExpr:
 			rv.Type.StarExpr = true
 			typeFollower(ex.X)
 		case *ast.ArrayType:
+			// Handle multi-nested slices, such as repeated bytes, which maps to [][]byte
+			if rv.Type.ArrayType {
+				rv.Type.Name = "[]" + rv.Type.Name
+			}
 			rv.Type.ArrayType = true
 			typeFollower(ex.Elt)
 		case *ast.MapType:
