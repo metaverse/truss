@@ -5,14 +5,14 @@ package TEST;
 import "google/api/annotations.proto";
 
 service Repeated {
-  rpc GetRepeated (ComplexTypeRequest) returns (ComplexTypeResponse) {
+  rpc GetRepeated (RepeatedTypeRequest) returns (RepeatedTypeResponse) {
     option (google.api.http) = {
       get: "/1"
     };
   }
 
 
-  rpc PostRepeated (ComplexTypeRequest) returns (ComplexTypeRequest) {
+  rpc PostRepeated (RepeatedTypeRequest) returns (RepeatedTypeResponse) {
     option (google.api.http) = {
       post: "/2"
       body: "*"
