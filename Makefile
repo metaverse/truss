@@ -27,4 +27,4 @@ test-integration:
 
 # Removes generated code from tests
 testclean:
-	$(MAKE) -C _integration-tests clean
+	$(MAKE) -C cmd/_integration-tests clean
