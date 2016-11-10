@@ -189,7 +189,7 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 		return false
 	}
 
-	rName := mRecvName(f.Recv)
+	rName := mRecvTypeString(f.Recv)
 	if rName != pkgName+"Service" {
 		log.WithField("Func", name).WithField("Receiver", rName).
 			Info("Func is exported with improper receiver; removing")
@@ -202,7 +202,11 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	return true
 }
 
-func mRecvName(recv *ast.FieldList) string {
+// mRecvTypeString returns accepts and *ast.FuncDecl.Recv recv, and returns the
+// string of the recv Type
+// func (s Foo) Test() {} -> "Foo"
+func mRecvTypeString(recv *ast.FieldList) string {
+	// func NoRecv {}
 	if recv == nil ||
 		recv.List[0].Type == nil {
 		log.Debug("Function has no reciever")
@@ -210,9 +214,24 @@ func mRecvName(recv *ast.FieldList) string {
 	}
 
 	typ := recv.List[0].Type
+	// *Foo -> Foo
 	if ptr, _ := typ.(*ast.StarExpr); ptr != nil {
 		typ = ptr.X
 	}
+	// *foo.Foo or foo.Foo
+	if sel, _ := typ.(*ast.SelectorExpr); sel != nil {
+		// *foo.Foo -> foo.Foo
+		if ptr, _ := typ.(*ast.StarExpr); ptr != nil {
+			typ = ptr.X
+		}
+		// foo.Foo
+		if x, _ := sel.X.(*ast.Ident); x != nil {
+			return x.Name + "." + sel.Sel.Name
+		}
+		return ""
+	}
+
+	// Foo
 	if base, _ := typ.(*ast.Ident); base != nil {
 		return base.Name
 	}
