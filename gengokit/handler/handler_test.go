@@ -6,6 +6,8 @@ import (
 	"go/parser"
 	"go/token"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -15,20 +17,25 @@ import (
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
+var gopath []string
+
+func init() {
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
+}
+
 func init() {
 	_ = thelper.DiffStrings
 	log.SetLevel(log.DebugLevel)
-
 }
 
-func TestServerTempl(t *testing.T) {
+func TestServerMethsTempl(t *testing.T) {
 	const def = `
 		syntax = "proto3";
 
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -51,7 +58,7 @@ func TestServerTempl(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +67,7 @@ func TestServerTempl(t *testing.T) {
 	he.Methods = sd.Service.Methods
 	he.PackageName = sd.PkgName
 
-	gen, err := applyServerTempl(he)
+	gen, err := applyServerMethsTempl(he)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +114,7 @@ func TestIsValidFunc(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -130,7 +137,7 @@ func TestIsValidFunc(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}

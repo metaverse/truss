@@ -17,7 +17,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/gengokit"
-	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
@@ -77,14 +76,10 @@ type handlerExecutor struct {
 	Methods     []*svcdef.ServiceMethod
 }
 
-func (h *handler) renderFirst(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
+func renderFirst(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
 	log.WithField("Template", f).
-		Debug("Rendering for the first time from assets")
-	t, err := templFiles.Asset(f)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot access template: %q", f)
-	}
-	return applyTemplate(string(t), f, te)
+		Debug("Rendering handler for the first time")
+	return applyTemplate(serverTempl, f, te)
 }
 
 // Render returns
@@ -93,7 +88,7 @@ func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, er
 		return nil, errors.Errorf("cannot render unknown file: %q", f)
 	}
 	if h.ast == nil {
-		return h.renderFirst(f, te)
+		return renderFirst(f, te)
 	}
 
 	// Remove exported methods not defined in service definition
@@ -125,7 +120,7 @@ func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, er
 	}
 
 	// render the server for all methods not already defined
-	newCode, err := applyServerTempl(ex)
+	newCode, err := applyServerMethsTempl(ex)
 
 	if err != nil {
 		return nil, err
@@ -239,25 +234,8 @@ func mRecvTypeString(recv *ast.FieldList) string {
 	return ""
 }
 
-const serverTempl = `
-{{ with $te := .}}
-		{{range $i := .Methods}}
-		// {{.Name}} implements Service.
-		func (s {{$te.PackageName}}Service) {{.Name}}(ctx context.Context, in *pb.{{GoName .RequestType.Name}}) (*pb.{{GoName .ResponseType.Name}}, error){
-			var resp pb.{{GoName .ResponseType.Name}}
-			resp = pb.{{GoName .ResponseType.Name}}{
-				{{range $j := $i.ResponseType.Message.Fields -}}
-					// {{GoName $j.Name}}:
-				{{end -}}
-			}
-			return &resp, nil
-		} 
-		{{end}}
-{{- end}}
-`
-
-func applyServerTempl(exec handlerExecutor) (io.Reader, error) {
-	return applyTemplate(serverTempl, "ServerTempl", exec)
+func applyServerMethsTempl(exec handlerExecutor) (io.Reader, error) {
+	return applyTemplate(serverMethsTempl, "ServerMethsTempl", exec)
 }
 
 func applyTemplate(templ string, templName string, exec interface{}) (io.Reader, error) {
