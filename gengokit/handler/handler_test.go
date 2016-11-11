@@ -13,6 +13,7 @@ import (
 
 	//	"github.com/y0ssar1an/q"
 
+	"github.com/TuneLab/go-truss/gengokit"
 	thelper "github.com/TuneLab/go-truss/gengokit/gentesthelper"
 	"github.com/TuneLab/go-truss/svcdef"
 )
@@ -84,7 +85,80 @@ func TestServerMethsTempl(t *testing.T) {
 	`
 	a, b, di := thelper.DiffGoCode(string(genBytes), expected)
 	if strings.Compare(a, b) != 0 {
-		t.Fatalf("Server template different than expected\n %s", di)
+		t.Fatalf("Server method template output different than expected\n %s", di)
+	}
+}
+
+func TestApplyServerTempl(t *testing.T) {
+	const def = `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+
+		// RequestMessage is so foo
+		message RequestMessage {
+			string input = 1;
+		}
+
+		// ResponseMessage is so bar
+		message ResponseMessage {
+			string output = 1;
+		}
+
+		// ProtoService is a service
+		service ProtoService {
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
+		}
+	`
+	conf := gengokit.Config{
+		GoPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
+	sd, err := svcdef.NewFromString(def, gopath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	te, err := gengokit.NewTemplateExecutor(sd, conf)
+
+	gen, err := applyServerTempl(te)
+	genBytes, err := ioutil.ReadAll(gen)
+	expected := `
+		package handler
+
+		import (
+			"golang.org/x/net/context"
+
+			pb "github.com/TuneLab/go-truss/gengokit/general-service"
+		)
+
+		// NewService returns a naïve, stateless implementation of Service.
+		func NewService() pb.ProtoServiceServer {
+			return generalService{}
+		}
+
+		type generalService struct{}
+
+		// ProtoMethod implements Service.
+		func (s generalService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
+			var resp pb.ResponseMessage
+			resp = pb.ResponseMessage{
+			// Output:
+			}
+			return &resp, nil
+		}
+	`
+	a, b, di := thelper.DiffGoCode(string(genBytes), expected)
+	if strings.Compare(a, b) != 0 {
+		t.Fatalf("Server template output different than expected\n %s", di)
 	}
 }
 
@@ -174,14 +248,129 @@ func TestIsValidFunc(t *testing.T) {
 	}
 }
 
-func parseFuncFromString(f string, t *testing.T) *ast.FuncDecl {
-	fset := token.NewFileSet()
-	e, err := parser.ParseFile(fset, "", f, 0)
+func TestPruneDecls(t *testing.T) {
+	const def = `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+
+		// RequestMessage is so foo
+		message RequestMessage {
+			string input = 1;
+		}
+
+		// ResponseMessage is so bar
+		message ResponseMessage {
+			string output = 1;
+		}
+
+		// ProtoService is a service
+		service ProtoService {
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
+			// ProtoMethodAgain is simple. Like a gopher again.
+			rpc ProtoMethodAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route2"
+				};
+			}
+			// ProtoMethodAgainAgain is simple. Like a gopher again again.
+			rpc ProtoMethodAgainAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route3"
+				};
+			}
+		}
+	`
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	m := newMethodMap(sd.Service.Methods)
+
+	//gen, err := applyServerTempl(te)
+	//genBytes, err := ioutil.ReadAll(gen)
+
+	partial := `
+		package handler
+
+		import (
+			"golang.org/x/net/context"
+
+			pb "github.com/TuneLab/go-truss/gengokit/general-service"
+		)
+
+		// NewService returns a naïve, stateless implementation of Service.
+		func NewService() pb.ProtoServiceServer {
+			return generalService{}
+		}
+
+		type generalService struct{}
+
+		func init() {
+			//FOOING
+		}
+
+		// ProtoMethod implements Service.
+		func (s generalService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
+			var resp pb.ResponseMessage
+			resp = pb.ResponseMessage{
+			// Output:
+			}
+			return &resp, nil
+		}
+
+		// FOOBAR implements Service.
+		func (s generalService) FOOBAR(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
+			var resp pb.ResponseMessage
+			resp = pb.ResponseMessage{
+			// Output:
+			}
+			return &resp, nil
+		}
+	`
+	f := parseASTFromString(partial, t)
+	lenDeclsBefore := len(f.Decls)
+	lenMMapBefore := len(m)
+
+	newDecls := m.pruneDecls(f.Decls, sd.PkgName)
+
+	lenDeclsAfter := len(newDecls)
+	lenMMapAfter := len(m)
+
+	if lenDeclsBefore-1 != lenDeclsAfter {
+		t.Fatalf("Prune did update Decls as expected; got: %d, want: %d", lenDeclsBefore-1, lenDeclsAfter)
+	}
+
+	if lenMMapBefore-1 != lenMMapAfter {
+		t.Fatalf("Prune did update mMap as expected; got: %d, want: %d", lenMMapBefore-1, lenMMapAfter)
+	}
+}
+
+func parseASTFromString(s string, t *testing.T) *ast.File {
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "", s, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+
+func parseFuncFromString(f string, t *testing.T) *ast.FuncDecl {
+	file := parseASTFromString(f, t)
 	var fnc *ast.FuncDecl
-	for _, d := range e.Decls {
+	for _, d := range file.Decls {
 		if d, ok := d.(*ast.FuncDecl); ok {
 			fnc = d
 			break

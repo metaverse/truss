@@ -76,19 +76,13 @@ type handlerExecutor struct {
 	Methods     []*svcdef.ServiceMethod
 }
 
-func renderFirst(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
-	log.WithField("Template", f).
-		Debug("Rendering handler for the first time")
-	return applyTemplate(serverTempl, f, te)
-}
-
 // Render returns
 func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
 	if f != serverTemplPath {
 		return nil, errors.Errorf("cannot render unknown file: %q", f)
 	}
 	if h.ast == nil {
-		return renderFirst(f, te)
+		return applyServerTempl(te)
 	}
 
 	// Remove exported methods not defined in service definition
@@ -232,6 +226,10 @@ func mRecvTypeString(recv *ast.FieldList) string {
 	}
 
 	return ""
+}
+func applyServerTempl(exec *gengokit.TemplateExecutor) (io.Reader, error) {
+	log.Debug("Rendering handler for the first time")
+	return applyTemplate(serverTempl, "ServerTempl", exec)
 }
 
 func applyServerMethsTempl(exec handlerExecutor) (io.Reader, error) {
