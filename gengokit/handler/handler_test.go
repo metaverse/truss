@@ -11,8 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	//	"github.com/y0ssar1an/q"
-
 	"github.com/TuneLab/go-truss/gengokit"
 	thelper "github.com/TuneLab/go-truss/gengokit/gentesthelper"
 	"github.com/TuneLab/go-truss/svcdef"
@@ -166,9 +164,9 @@ func TestMRecvTypeString(t *testing.T) {
 	values := []string{
 		`package p; func NoRecv() {}`, "",
 		`package p; func (s Foo) RecvFoo() {}`, "Foo",
-		`package p; func (s *Foo) RecvStarFoo() {}`, "Foo",
+		`package p; func (s *Foo) RecvStarFoo() {}`, "*Foo",
 		`package p; func (s foo.Foo) RecvFooDotFoo() {}`, "foo.Foo",
-		`package p; func (s *foo.Foo) RecvStarFooDotFoo() {}`, "foo.Foo",
+		`package p; func (s *foo.Foo) RecvStarFooDotFoo() {}`, "*foo.Foo",
 	}
 
 	for i := 0; i < len(values); i += 2 {
@@ -176,7 +174,7 @@ func TestMRecvTypeString(t *testing.T) {
 		got := mRecvTypeString(fnc.Recv)
 		want := values[i+1]
 		if got != want {
-			t.Fatalf("Func Recv got: \"%s\", want: \"%s\": for func: %s", got, want, values[i])
+			t.Errorf("Func Recv got: \"%s\", want: \"%s\": for func: %s", got, want, values[i])
 		}
 	}
 }
@@ -299,10 +297,7 @@ func TestPruneDecls(t *testing.T) {
 
 	m := newMethodMap(sd.Service.Methods)
 
-	//gen, err := applyServerTempl(te)
-	//genBytes, err := ioutil.ReadAll(gen)
-
-	partial := `
+	prev := `
 		package handler
 
 		import (
@@ -340,7 +335,7 @@ func TestPruneDecls(t *testing.T) {
 			return &resp, nil
 		}
 	`
-	f := parseASTFromString(partial, t)
+	f := parseASTFromString(prev, t)
 	lenDeclsBefore := len(f.Decls)
 	lenMMapBefore := len(m)
 
@@ -355,6 +350,26 @@ func TestPruneDecls(t *testing.T) {
 
 	if lenMMapBefore-1 != lenMMapAfter {
 		t.Fatalf("Prune did update mMap as expected; got: %d, want: %d", lenMMapBefore-1, lenMMapAfter)
+	}
+}
+
+func TestUpdatePBFieldType(t *testing.T) {
+	values := []string{
+		`*pb.Old`, "New", "*pb.New",
+		`pb.Old`, "New", "pb.New",
+		`Old`, "New", "Old",
+	}
+	for i := 0; i < len(values); i += 3 {
+		exp, err := parser.ParseExpr(values[i])
+		if err != nil {
+			t.Error(err)
+		}
+		updatePBFieldType(exp, values[i+1])
+		got := exprString(exp)
+		want := values[i+2]
+		if got != want {
+			t.Errorf("Func Recv got: \"%s\", want: \"%s\": for func: %s", got, want, values[i])
+		}
 	}
 }
 

@@ -29,8 +29,8 @@ func init() {
 const ignoredFunc = "NewService"
 const serverTemplPath = "NAME-service/handlers/server/server_handler.gotemplate"
 
-// New returns a truss.Renderable capable of updating server or cli-client handlers
-// New should be passed the previous version of the server or cli-client handler to parse
+// New returns a truss.Renderable capable of updating server handlers.
+// New should be passed the previous version of the server handler to parse.
 func New(svc *svcdef.Service, prev io.Reader, pkgName string) (gengokit.Renderable, error) {
 	var h handler
 	log.WithField("Service Methods", len(svc.Methods)).Debug("Handler being created")
@@ -51,8 +51,8 @@ func New(svc *svcdef.Service, prev io.Reader, pkgName string) (gengokit.Renderab
 	return &h, nil
 }
 
-// methodMap stores all defined service methods by name
-// and is updated to remove service methods already in the handler file
+// methodMap stores all defined service methods by name and is updated to
+// remove service methods already in the handler file.
 type methodMap map[string]*svcdef.ServiceMethod
 
 func newMethodMap(meths []*svcdef.ServiceMethod) methodMap {
@@ -76,7 +76,8 @@ type handlerExecutor struct {
 	Methods     []*svcdef.ServiceMethod
 }
 
-// Render returns
+// Render returns a go code server handler that has functions for all
+// ServiceMethods in the service definition.
 func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
 	if f != serverTemplPath {
 		return nil, errors.Errorf("cannot render unknown file: %q", f)
@@ -138,19 +139,33 @@ func (h *handler) buffer() (*bytes.Buffer, error) {
 	return code, nil
 }
 
-// pruneDecls constructs a new []ast.Decls with the functions in decls
-// who's names are keys in methodMap removed. When a function is removed
-// from decls that key is also deleted from methodMap, resulting in a
-// methodMap only containing keys and values for functions defined in the
-// service but not the handler ast.
+// pruneDecls constructs a new []ast.Decls with the exported funcs in decls
+// who's names are not keys in methodMap and/or does not have the function
+// receiver pkgName + "Service" ("Handler func")  removed.
+//
+// When a "Handler func" is not removed from decls that funcs name is also
+// deleted from methodMap, resulting in a methodMap only containing keys and
+// values for functions defined in the service but not in the handler ast.
+//
+// In addition pruneDecls will update unremoved "Handler func"s input
+// paramaters and output results to by the types described in methodMap's
+// serviceMethod for that "Handler func".
 func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 	var newDecls []ast.Decl
 	for _, d := range decls {
 		switch x := d.(type) {
 		case *ast.FuncDecl:
+			// Special case NewService
+			if x.Name.Name == ignoredFunc {
+				newDecls = append(newDecls, x)
+				continue
+			}
 			if ok := isValidFunc(x, m, pkgName); ok == true {
-				newDecls = append(newDecls, d)
-				delete(m, x.Name.String())
+				name := x.Name.Name
+				updateParams(x, m[name])
+				updateResults(x, m[name])
+				newDecls = append(newDecls, x)
+				delete(m, name)
 			}
 		default:
 			newDecls = append(newDecls, d)
@@ -160,13 +175,48 @@ func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 	return newDecls
 }
 
+// updateParams updates the second param of f to be `X`.(m.RequestType.Name).
+// func ProtoMethod(ctx context.Context, *pb.Old) ...-> func ProtoMethod(ctx context.Context, *pb.(m.RequestType.Name))...
+func updateParams(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
+	if f.Type.Params.NumFields() != 2 {
+		log.WithField("Function", f.Name.Name).
+			Warn("Function params signature should be func NAME(ctx context.Context, in *pb.TYPE), cannot fix")
+		return
+	}
+	updatePBFieldType(f.Type.Params.List[1].Type, m.RequestType.Name)
+}
+
+// updateResults updates the first result of f to be `X`.(m.ResponseType.Name).
+// func ProtoMethod(...) (*pb.Old, error) ->  func ProtoMethod(...) (*pb.(m.ResponseType.Name), error)
+func updateResults(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
+	if f.Type.Results.NumFields() != 2 {
+		log.WithField("Function", f.Name.Name).
+			Warn("Function results signature should be (*pb.TYPE, error), cannot fix")
+		return
+	}
+	updatePBFieldType(f.Type.Results.List[0].Type, m.ResponseType.Name)
+}
+
+// updatePBFieldType updates t if in the form X.Sel/*X.Sel to X.newType/*X.newType.
+func updatePBFieldType(t ast.Expr, newType string) {
+	// *pb.TYPE -> pb.TYPE
+	if ptr, _ := t.(*ast.StarExpr); ptr != nil {
+		t = ptr.X
+	}
+	// pb.TYPE -> TYPE
+	if sel, _ := t.(*ast.SelectorExpr); sel != nil {
+		//pb.SOMETYPE -> pb.newType
+		sel.Sel.Name = newType
+	}
+}
+
 // isVaidFunc returns fase if f is exported and does no exist in m with
-// reciever pkgName + "Service"
+// reciever pkgName + "Service".
 func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	name := f.Name.String()
-	if !ast.IsExported(name) || name == ignoredFunc {
+	if !ast.IsExported(name) {
 		log.WithField("Func", name).
-			Debug("Unexported or ignored function; ignoring")
+			Debug("Unexported function; ignoring")
 		return true
 	}
 
@@ -192,7 +242,7 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 }
 
 // mRecvTypeString returns accepts and *ast.FuncDecl.Recv recv, and returns the
-// string of the recv Type
+// string of the recv type.
 // func (s Foo) Test() {} -> "Foo"
 func mRecvTypeString(recv *ast.FieldList) string {
 	// func NoRecv {}
@@ -202,31 +252,40 @@ func mRecvTypeString(recv *ast.FieldList) string {
 		return ""
 	}
 
-	typ := recv.List[0].Type
+	return exprString(recv.List[0].Type)
+}
+
+// exprString returns the string representation of
+// ast.Expr for function receivers, parameters, and results.
+func exprString(e ast.Expr) string {
+	var hasPtr string
 	// *Foo -> Foo
-	if ptr, _ := typ.(*ast.StarExpr); ptr != nil {
-		typ = ptr.X
+	if ptr, _ := e.(*ast.StarExpr); ptr != nil {
+		hasPtr = "*"
+		e = ptr.X
 	}
 	// *foo.Foo or foo.Foo
-	if sel, _ := typ.(*ast.SelectorExpr); sel != nil {
+	if sel, _ := e.(*ast.SelectorExpr); sel != nil {
 		// *foo.Foo -> foo.Foo
-		if ptr, _ := typ.(*ast.StarExpr); ptr != nil {
-			typ = ptr.X
+		if ptr, _ := e.(*ast.StarExpr); ptr != nil {
+			hasPtr = "*"
+			e = ptr.X
 		}
 		// foo.Foo
 		if x, _ := sel.X.(*ast.Ident); x != nil {
-			return x.Name + "." + sel.Sel.Name
+			return hasPtr + x.Name + "." + sel.Sel.Name
 		}
 		return ""
 	}
 
 	// Foo
-	if base, _ := typ.(*ast.Ident); base != nil {
-		return base.Name
+	if base, _ := e.(*ast.Ident); base != nil {
+		return hasPtr + base.Name
 	}
 
 	return ""
 }
+
 func applyServerTempl(exec *gengokit.TemplateExecutor) (io.Reader, error) {
 	log.Debug("Rendering handler for the first time")
 	return applyTemplate(serverTempl, "ServerTempl", exec)
