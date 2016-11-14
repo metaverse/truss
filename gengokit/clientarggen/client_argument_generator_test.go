@@ -1,6 +1,8 @@
 package clientarggen
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -16,6 +18,12 @@ var (
 	}
 )
 
+var GOPATH string
+
+func init() {
+	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+}
+
 func TestNewClientServiceArgs(t *testing.T) {
 	defStr := `
 		syntax = "proto3";
@@ -23,7 +31,7 @@ func TestNewClientServiceArgs(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		message SumRequest {
 			repeated int64 a = 1;
@@ -43,7 +51,7 @@ func TestNewClientServiceArgs(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(defStr)
+	sd, err := svcdef.NewFromString(defStr, GOPATH)
 	if err != nil {
 		t.Fatal(err, "Failed to create a service from the definition string")
 	}

@@ -139,7 +139,7 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 		}
 	}
 
-	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, svcPath, cfg.PBPath())
+	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GOPATH, cfg.PBPath())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "cannot create .pb.go files")
 	}
@@ -181,7 +181,7 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	}
 
 	// Create the Deftree
-	protocOut, err := execprotoc.CodeGeneratorRequest(protoDefPaths)
+	protocOut, err := execprotoc.CodeGeneratorRequest(protoDefPaths, cfg.GOPATH)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "cannot parse input files with protoc")
 	}

@@ -1,12 +1,20 @@
 package svcdef
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
 	"github.com/davecgh/go-spew/spew"
 )
+
+var GOPATH string
+
+func init() {
+	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+}
 
 func basicFromString(t *testing.T) *Svcdef {
 	defStr := `
@@ -15,7 +23,7 @@ func basicFromString(t *testing.T) *Svcdef {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;
@@ -35,7 +43,7 @@ func basicFromString(t *testing.T) *Svcdef {
 			}
 		}
 	`
-	sd, err := NewFromString(defStr)
+	sd, err := NewFromString(defStr, GOPATH)
 
 	if err != nil {
 		t.Fatal("Failed to create a svcdef from the definition string:", err)
@@ -150,7 +158,7 @@ func TestNoHTTPBinding(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;
@@ -166,7 +174,7 @@ func TestNoHTTPBinding(t *testing.T) {
 			rpc Sum(SumRequest) returns (SumReply) {}
 		}
 	`
-	_, err := NewFromString(defstr)
+	_, err := NewFromString(defstr, GOPATH)
 	if err != nil {
 		t.Fatal("Failed to create svcdef from string:", err)
 	}

@@ -1,4 +1,4 @@
-// Package execprotoc provides an interface for interacting with protoc
+// Package execprotoc provides an interface for interacting with proto
 // requiring only paths to files on disk
 package execprotoc
 
@@ -7,40 +7,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pkg/errors"
-
-	assets "github.com/TuneLab/go-truss/truss/template"
 )
 
 // GeneratePBDotGo creates .pb.go files from the passed protoPaths and writes
-// them to outDir. These files import Google api's which will be created at
-// importDir.
-func GeneratePBDotGo(protoPaths []string, importDir, outDir string) error {
-	err := outputGoogleImport(importDir)
-	if err != nil {
-		return err
-	}
-
-	goImportPath, err := filepath.Rel(filepath.Join(os.Getenv("GOPATH"), "src"), importDir)
-	if err != nil {
-		return err
-	}
-
-	genGoCode := "--go_out=Mgoogle/api/annotations.proto=" +
-		goImportPath + "/third_party/googleapis/google/api," +
+// them to outDir.
+func GeneratePBDotGo(protoPaths []string, GOPATH, outDir string) error {
+	genGoCode := "--go_out=" +
 		"plugins=grpc:" +
 		outDir
 
-	_, err = exec.LookPath("protoc-gen-go")
+	_, err := exec.LookPath("protoc-gen-go")
 	if err != nil {
 		return errors.Wrap(err, "cannot find protoc-gen-go in PATH")
 	}
 
-	err = protoc(protoPaths, importDir, genGoCode)
+	err = protoc(protoPaths, GOPATH, genGoCode)
 	if err != nil {
 		return errors.Wrap(err, "cannot exec protoc with protoc-gen-go")
 	}
@@ -50,8 +35,8 @@ func GeneratePBDotGo(protoPaths []string, importDir, outDir string) error {
 
 // CodeGeneratorRequest returns a protoc CodeGeneratorRequest from running
 // protoc on protoPaths
-func CodeGeneratorRequest(protoPaths []string) (*plugin.CodeGeneratorRequest, error) {
-	protocOut, err := getProtocOutput(protoPaths)
+func CodeGeneratorRequest(protoPaths []string, GOPATH string) (*plugin.CodeGeneratorRequest, error) {
+	protocOut, err := getProtocOutput(protoPaths, GOPATH)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get output from protoc")
 	}
@@ -89,7 +74,7 @@ func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.Fil
 
 // getProtocOutput executes protoc with the passed protofiles and the
 // protoc-gen-truss-protocast plugin and returns the output of protoc
-func getProtocOutput(protoPaths []string) ([]byte, error) {
+func getProtocOutput(protoPaths []string, GOPATH string) ([]byte, error) {
 	_, err := exec.LookPath("protoc-gen-truss-protocast")
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc-gen-truss-protocast does not exist in $PATH")
@@ -101,14 +86,9 @@ func getProtocOutput(protoPaths []string) ([]byte, error) {
 	}
 	defer os.RemoveAll(protocOutDir)
 
-	err = outputGoogleImport(protocOutDir)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot write protoc imports to dir: %s", protocOutDir)
-	}
-
 	pluginCall := filepath.Join("--truss-protocast_out=", protocOutDir)
 
-	err = protoc(protoPaths, protocOutDir, pluginCall)
+	err = protoc(protoPaths, GOPATH, pluginCall)
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc failed")
 	}
@@ -134,12 +114,10 @@ func getProtocOutput(protoPaths []string) ([]byte, error) {
 }
 
 // protoc executes protoc on protoPaths
-func protoc(protoPaths []string, importDir, plugin string) error {
-	const googleAPIImportPath = "/third_party/googleapis"
-
+func protoc(protoPaths []string, GOPATH, plugin string) error {
 	cmdArgs := []string{
-		"-I" + filepath.Join(importDir, googleAPIImportPath),
 		"--proto_path=" + filepath.Dir(protoPaths[0]),
+		"-I" + filepath.Join(GOPATH, "src"),
 		plugin,
 	}
 	// Append each definition file path to the end of that command args
@@ -155,33 +133,6 @@ func protoc(protoPaths []string, importDir, plugin string) error {
 		return errors.Wrapf(err,
 			"protoc exec failed.\nprotoc output:\n\n%v\nprotoc arguments:\n\n%v\n\n",
 			string(outBytes), protocExec.Args)
-	}
-
-	return nil
-}
-
-// outputGoogleImport places imported and required google.api.http protobuf
-// option files
-func outputGoogleImport(dir string) error {
-	// Output files that are stored in template package
-	for _, assetPath := range assets.AssetNames() {
-		fileBytes, _ := assets.Asset(assetPath)
-		fullPath := filepath.Join(dir, assetPath)
-
-		// Rename .gotemplate to .go
-		if strings.HasSuffix(fullPath, ".gotemplate") {
-			fullPath = strings.TrimSuffix(fullPath, "template")
-		}
-
-		err := os.MkdirAll(filepath.Dir(fullPath), 0777)
-		if err != nil {
-			return errors.Wrapf(err, "cannot create directory %v", filepath.Dir(fullPath))
-		}
-
-		err = ioutil.WriteFile(fullPath, fileBytes, 0666)
-		if err != nil {
-			return errors.Wrapf(err, "cannot create template file at path %v", fullPath)
-		}
 	}
 
 	return nil

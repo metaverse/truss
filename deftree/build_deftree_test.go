@@ -1,6 +1,8 @@
 package deftree
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -8,11 +10,16 @@ import (
 	// registering the `google.api.http` extension, allowing us to specify it
 	// in the sources below.
 	_ "github.com/TuneLab/go-truss/deftree/googlethirdparty"
-	//"github.com/davecgh/go-spew/spew"
 
 	"github.com/golang/protobuf/proto"
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
+
+var GOPATH string
+
+func init() {
+	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+}
 
 func TestNewFromString(t *testing.T) {
 	const def = `
@@ -21,7 +28,7 @@ func TestNewFromString(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -45,7 +52,7 @@ func TestNewFromString(t *testing.T) {
 		}
 	`
 
-	deftree, err := NewFromString(def)
+	deftree, err := NewFromString(def, GOPATH)
 	if err != nil {
 		t.Error(err)
 	}

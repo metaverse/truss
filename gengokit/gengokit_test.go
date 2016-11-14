@@ -1,10 +1,18 @@
 package gengokit
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/TuneLab/go-truss/svcdef"
 )
+
+var GOPATH string
+
+func init() {
+	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+}
 
 func TestNewTemplateExecutor(t *testing.T) {
 	const def = `
@@ -13,7 +21,7 @@ func TestNewTemplateExecutor(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -36,7 +44,7 @@ func TestNewTemplateExecutor(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, GOPATH)
 	if err != nil {
 		t.Fatal(err)
 	}
