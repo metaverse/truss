@@ -231,6 +231,7 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 	{{- if .HTTPHelper.Methods}}
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
+			httptransport.ServerErrorEncoder(errorEncoder),
 		}
 	{{- end }}
 	m := http.NewServeMux()
