@@ -92,7 +92,7 @@ func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (Deftree, erro
 	return &dt, nil
 }
 
-func NewFromString(def, GOPATH string) (Deftree, error) {
+func NewFromString(def string, gopath []string) (Deftree, error) {
 	const defFileName = "definition.proto"
 
 	protoDir, err := ioutil.TempDir("", "truss-deftree-")
@@ -108,7 +108,7 @@ func NewFromString(def, GOPATH string) (Deftree, error) {
 		return nil, errors.Wrap(err, "cannot write proto definition to file")
 	}
 
-	req, err := execprotoc.CodeGeneratorRequest([]string{defPath}, GOPATH)
+	req, err := execprotoc.CodeGeneratorRequest([]string{defPath}, gopath)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create a proto CodeGeneratorRequest")
 	}

@@ -17,10 +17,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-var GOPATH string
+var gopath []string
 
 func init() {
-	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
 func init() {
@@ -72,7 +72,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(def, GOPATH)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +202,7 @@ func svcMethodsNames(methods []*svcdef.ServiceMethod) []string {
 }
 
 func stringToTemplateExector(def, importPath string) (*gengokit.TemplateExecutor, error) {
-	sd, err := svcdef.NewFromString(def, GOPATH)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		return nil, err
 	}
@@ -252,7 +252,7 @@ func TestUpdateMethods(t *testing.T) {
 		}
 	`
 
-	sd, err := svcdef.NewFromString(def, GOPATH)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -381,7 +381,7 @@ func TestAllTemplates(t *testing.T) {
 		}
 	`
 
-	sd, err := svcdef.NewFromString(def, GOPATH)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,7 +396,7 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sd2, err := svcdef.NewFromString(def, GOPATH)
+	sd2, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -15,7 +15,7 @@ import (
 
 // GeneratePBDotGo creates .pb.go files from the passed protoPaths and writes
 // them to outDir.
-func GeneratePBDotGo(protoPaths []string, GOPATH, outDir string) error {
+func GeneratePBDotGo(protoPaths, gopath []string, outDir string) error {
 	genGoCode := "--go_out=" +
 		"plugins=grpc:" +
 		outDir
@@ -25,7 +25,7 @@ func GeneratePBDotGo(protoPaths []string, GOPATH, outDir string) error {
 		return errors.Wrap(err, "cannot find protoc-gen-go in PATH")
 	}
 
-	err = protoc(protoPaths, GOPATH, genGoCode)
+	err = protoc(protoPaths, gopath, genGoCode)
 	if err != nil {
 		return errors.Wrap(err, "cannot exec protoc with protoc-gen-go")
 	}
@@ -35,8 +35,8 @@ func GeneratePBDotGo(protoPaths []string, GOPATH, outDir string) error {
 
 // CodeGeneratorRequest returns a protoc CodeGeneratorRequest from running
 // protoc on protoPaths
-func CodeGeneratorRequest(protoPaths []string, GOPATH string) (*plugin.CodeGeneratorRequest, error) {
-	protocOut, err := getProtocOutput(protoPaths, GOPATH)
+func CodeGeneratorRequest(protoPaths, gopath []string) (*plugin.CodeGeneratorRequest, error) {
+	protocOut, err := getProtocOutput(protoPaths, gopath)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get output from protoc")
 	}
@@ -74,7 +74,7 @@ func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.Fil
 
 // getProtocOutput executes protoc with the passed protofiles and the
 // protoc-gen-truss-protocast plugin and returns the output of protoc
-func getProtocOutput(protoPaths []string, GOPATH string) ([]byte, error) {
+func getProtocOutput(protoPaths, gopath []string) ([]byte, error) {
 	_, err := exec.LookPath("protoc-gen-truss-protocast")
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc-gen-truss-protocast does not exist in $PATH")
@@ -88,7 +88,7 @@ func getProtocOutput(protoPaths []string, GOPATH string) ([]byte, error) {
 
 	pluginCall := filepath.Join("--truss-protocast_out=", protocOutDir)
 
-	err = protoc(protoPaths, GOPATH, pluginCall)
+	err = protoc(protoPaths, gopath, pluginCall)
 	if err != nil {
 		return nil, errors.Wrap(err, "protoc failed")
 	}
@@ -114,12 +114,16 @@ func getProtocOutput(protoPaths []string, GOPATH string) ([]byte, error) {
 }
 
 // protoc executes protoc on protoPaths
-func protoc(protoPaths []string, GOPATH, plugin string) error {
-	cmdArgs := []string{
-		"--proto_path=" + filepath.Dir(protoPaths[0]),
-		"-I" + filepath.Join(GOPATH, "src"),
-		plugin,
+func protoc(protoPaths, gopath []string, plugin string) error {
+	var cmdArgs []string
+
+	cmdArgs = append(cmdArgs, "--proto_path="+filepath.Dir(protoPaths[0]))
+
+	for _, gp := range gopath {
+		cmdArgs = append(cmdArgs, "-I"+filepath.Join(gp, "src"))
 	}
+
+	cmdArgs = append(cmdArgs, plugin)
 	// Append each definition file path to the end of that command args
 	cmdArgs = append(cmdArgs, protoPaths...)
 

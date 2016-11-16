@@ -8,10 +8,10 @@ import (
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
-var GOPATH string
+var gopath []string
 
 func init() {
-	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
 func TestNewTemplateExecutor(t *testing.T) {
@@ -44,7 +44,7 @@ func TestNewTemplateExecutor(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(def, GOPATH)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,7 +13,7 @@ import (
 
 // NewFromString creates a Svcdef from a string of a valid protobuf file. Very
 // useful in tests.
-func NewFromString(def, GOPATH string) (*Svcdef, error) {
+func NewFromString(def string, gopath []string) (*Svcdef, error) {
 	const defFileName = "definition.proto"
 	const goFileName = "definition.pb.go"
 
@@ -32,7 +32,7 @@ func NewFromString(def, GOPATH string) (*Svcdef, error) {
 	}
 
 	// Create our pb.go file
-	err = execprotoc.GeneratePBDotGo([]string{defPath}, GOPATH, protoDir)
+	err = execprotoc.GeneratePBDotGo([]string{defPath}, gopath, protoDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create a pb.go file")
 	}

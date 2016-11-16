@@ -15,10 +15,10 @@ import (
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 )
 
-var GOPATH string
+var gopath []string
 
 func init() {
-	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
 func TestNewFromString(t *testing.T) {
@@ -52,7 +52,7 @@ func TestNewFromString(t *testing.T) {
 		}
 	`
 
-	deftree, err := NewFromString(def, GOPATH)
+	deftree, err := NewFromString(def, gopath)
 	if err != nil {
 		t.Error(err)
 	}

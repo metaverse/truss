@@ -10,10 +10,10 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-var GOPATH string
+var gopath []string
 
 func init() {
-	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
 func basicFromString(t *testing.T) *Svcdef {
@@ -43,7 +43,7 @@ func basicFromString(t *testing.T) *Svcdef {
 			}
 		}
 	`
-	sd, err := NewFromString(defStr, GOPATH)
+	sd, err := NewFromString(defStr, gopath)
 
 	if err != nil {
 		t.Fatal("Failed to create a svcdef from the definition string:", err)
@@ -174,7 +174,7 @@ func TestNoHTTPBinding(t *testing.T) {
 			rpc Sum(SumRequest) returns (SumReply) {}
 		}
 	`
-	_, err := NewFromString(defstr, GOPATH)
+	_, err := NewFromString(defstr, gopath)
 	if err != nil {
 		t.Fatal("Failed to create svcdef from string:", err)
 	}

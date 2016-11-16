@@ -18,10 +18,10 @@ var (
 	}
 )
 
-var GOPATH string
+var gopath []string
 
 func init() {
-	GOPATH = filepath.SplitList(os.Getenv("GOPATH"))[0]
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
 func TestNewClientServiceArgs(t *testing.T) {
@@ -51,7 +51,7 @@ func TestNewClientServiceArgs(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(defStr, GOPATH)
+	sd, err := svcdef.NewFromString(defStr, gopath)
 	if err != nil {
 		t.Fatal(err, "Failed to create a service from the definition string")
 	}
