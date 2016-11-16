@@ -33,12 +33,14 @@ func TestMain(m *testing.M) {
 	getWithRepeatedQueryE := svc.MakeGetWithRepeatedQueryEndpoint(service)
 	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
 	ctxToCtxE := svc.MakeCtxToCtxEndpoint(service)
+	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
 		GetWithRepeatedQueryEndpoint:      getWithRepeatedQueryE,
 		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
 		CtxToCtxEndpoint:                  ctxToCtxE,
+		ErrorRPCEndpoint:                  errorRPCE,
 	}
 
 	ctx := context.Background()

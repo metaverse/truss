@@ -27,7 +27,14 @@ service TransportPermutations {
       body: "*"
     };
   }
+  rpc ErrorRPC (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/error"
+    };
+  }
 }
+
+message Empty {}
 
 message GetWithQueryRequest {
   int64 A = 1;

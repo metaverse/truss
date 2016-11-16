@@ -12,15 +12,12 @@ import (
 
 	// 3d Party
 	"golang.org/x/net/context"
-
 	// This Service
 	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service"
 	httpclient "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service/generated/client/http"
 
 	"github.com/pkg/errors"
 )
-
-// httpTestServer
 
 var httpAddr string
 
@@ -65,7 +62,7 @@ func TestGetWithQueryRequest(t *testing.T) {
 
 		err = json.Unmarshal(respBytes, &resp)
 		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
 		}
 
 		if resp.V != want {
@@ -115,7 +112,7 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 
 		err = json.Unmarshal(respBytes, &resp)
 		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
 		}
 
 		if resp.V != want {
@@ -174,7 +171,7 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 
 		err = json.Unmarshal(respBytes, &resp)
 		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
 		}
 
 		if resp.V != want {
@@ -234,13 +231,34 @@ func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
 
 	err = json.Unmarshal(respBytes, &resp)
 	if err != nil {
-		t.Fatal(errors.Wrapf(err, "json error, got json: %q", string(respBytes)))
+		t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
 	}
 
 	if resp.V != value {
 		t.Fatalf("Expect: %q, got %q", value, resp.V)
 	}
+}
 
+func TestErrorRPCReturnsJSONError(t *testing.T) {
+	req, err := http.NewRequest("GET", httpAddr+"/"+"error", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	jsonOut := make(map[string]interface{})
+	err = json.Unmarshal(respBytes, &jsonOut)
+	if err != nil {
+		t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
+	}
+
+	if jsonOut["error"] == nil {
+		t.Fatal("http transport did not send error as json")
+	}
 }
 
 // Helpers

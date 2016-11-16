@@ -4,6 +4,7 @@ package handler
 // implementation. It also includes service middlewares.
 
 import (
+	"errors"
 	"golang.org/x/net/context"
 
 	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service"
@@ -62,4 +63,11 @@ func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb
 	}
 
 	return &resp, nil
+}
+
+var testError error = errors.New("This error should be json over http transport")
+
+// ErrorRPC implements Service.
+func (s transportService) ErrorRPC(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	return nil, testError
 }
