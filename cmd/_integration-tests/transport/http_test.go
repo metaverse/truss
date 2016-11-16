@@ -239,7 +239,7 @@ func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
 	}
 }
 
-func TestErrorRPCReturnsJsonError(t *testing.T) {
+func TestErrorRPCReturnsJSONError(t *testing.T) {
 	req, err := http.NewRequest("GET", httpAddr+"/"+"error", strings.NewReader(""))
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
