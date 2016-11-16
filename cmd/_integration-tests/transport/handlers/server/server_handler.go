@@ -65,6 +65,15 @@ func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb
 	return &resp, nil
 }
 
+//  GetWithCapsPath implements Service
+func (s transportService) GetWithCapsPath(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+	response := pb.GetWithQueryResponse{
+		V: in.A + in.B,
+	}
+
+	return &response, nil
+}
+
 var testError error = errors.New("This error should be json over http transport")
 
 // ErrorRPC implements Service.

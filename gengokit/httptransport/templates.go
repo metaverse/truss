@@ -238,7 +238,7 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 
 	{{range $method := .HTTPHelper.Methods}}
 		{{range $binding := $method.Bindings}}
-			m.Handle("{{ToLower $binding.BasePath}}", httptransport.NewServer(
+			m.Handle("{{$binding.BasePath}}", httptransport.NewServer(
 				ctx,
 				endpoints.{{$method.Name}}Endpoint,
 				HttpDecodeLogger(DecodeHTTP{{$binding.Label}}Request, logger),
@@ -394,7 +394,7 @@ func New(instance string, options ...ClientOption) (pb.{{GoName .Service.Name}}S
 			{
 				{{$binding.Label}}Endpoint = httptransport.NewClient(
 					"{{$binding.Verb}}",
-					copyURL(u, "{{ToLower $binding.BasePath}}"),
+					copyURL(u, "{{$binding.BasePath}}"),
 					svc.EncodeHTTP{{$binding.Label}}Request,
 					svc.DecodeHTTP{{$method.Name}}Response,
 					clientOptions...,

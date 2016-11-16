@@ -42,6 +42,8 @@ func TestGetWithQueryClient(t *testing.T) {
 	}
 }
 
+// A manually-constructed HTTP request test, ensuring that a get with query
+// parameters works even outside the behvior of the client.
 func TestGetWithQueryRequest(t *testing.T) {
 	var resp pb.GetWithQueryResponse
 
@@ -237,6 +239,62 @@ func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
 	if resp.V != value {
 		t.Fatalf("Expect: %q, got %q", value, resp.V)
 	}
+}
+
+// Test that making a get request through the client with capital letters in
+// the path functions correctly.
+func TestGetWithCapsPathClient(t *testing.T) {
+	var req pb.GetWithQueryRequest
+	req.A = 12
+	req.B = 45360
+	want := req.A + req.B
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.GetWithCapsPath(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	if resp.V != want {
+		t.Fatalf("Expect: %d, got %d", want, resp.V)
+	}
+}
+
+// A manually created request verifying the server handles paths with capital
+// letters.
+func TestGetWithCapsPathRequest(t *testing.T) {
+	var resp pb.GetWithQueryResponse
+
+	var A, B int64
+	A = 12
+	B = 45360
+	want := A + B
+
+	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
+		respBytes, err := httpRequestBuilder{
+			method: method,
+			route:  fmt.Sprintf(routeFormat, routeFields...),
+			body:   bodyBytes,
+		}.Test(t)
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
+
+		err = json.Unmarshal(respBytes, &resp)
+		if err != nil {
+			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
+		}
+
+		if resp.V != want {
+			t.Fatalf("Expect: %d, got %d", want, resp.V)
+		}
+	}
+
+	testHTTP(nil, "GET", "get/With/CapsPath?%s=%d&%s=%d", "A", A, "B", B)
 }
 
 func TestErrorRPCReturnsJSONError(t *testing.T) {
