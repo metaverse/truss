@@ -5,7 +5,6 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/Sirupsen/logrus"
 	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
@@ -56,30 +55,4 @@ func NewTemplateExecutor(sd *svcdef.Svcdef, conf Config) (*TemplateExecutor, err
 		HTTPHelper:   httptransport.NewHelper(sd.Service),
 		FuncMap:      funcMap,
 	}, nil
-}
-
-// trimServiceFuncs removes functions in funcsInFile from the
-// templateExecutor and returns a pointer to a new templateExecutor
-func (te TemplateExecutor) TrimServiceFuncs(funcsInFile map[string]bool) *TemplateExecutor {
-	var methodsToTemplate []*svcdef.ServiceMethod
-
-	for _, m := range te.Service.Methods {
-		mName := m.Name
-
-		if funcsInFile[mName] {
-			log.WithField("Method", mName).Info("Handler method already exists")
-			continue
-		}
-		methodsToTemplate = append(methodsToTemplate, m)
-		log.WithField("Method", mName).Info("Rendering template for method")
-	}
-
-	// templateExec's Service is dereference and that new Service's
-	// pointer to its messages is changed to be methodsToTemplate
-	tempService := *te.Service
-	tempService.Methods = methodsToTemplate
-
-	te.Service = &tempService
-
-	return &te
 }

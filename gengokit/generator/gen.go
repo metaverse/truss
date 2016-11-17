@@ -1,3 +1,4 @@
+// Package generator generates a gokit service based on a service definition.
 package generator
 
 import (
@@ -13,8 +14,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/gengokit"
-	"github.com/TuneLab/go-truss/gengokit/astmodifier"
-	templateFileAssets "github.com/TuneLab/go-truss/gengokit/template"
+	"github.com/TuneLab/go-truss/gengokit/handler"
+	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 
 	"github.com/TuneLab/go-truss/svcdef"
 	"github.com/TuneLab/go-truss/truss"
@@ -34,7 +35,7 @@ func init() {
 func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWriter, error) {
 	te, err := gengokit.NewTemplateExecutor(sd, conf)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create template executor")
+		return nil, errors.Wrap(err, "cannot create template executor")
 	}
 
 	fpm := make(map[string]io.Reader, len(conf.PreviousFiles))
@@ -44,10 +45,10 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWr
 
 	var codeGenFiles []truss.NamedReadWriter
 
-	for _, templFP := range templateFileAssets.AssetNames() {
+	for _, templFP := range templFiles.AssetNames() {
 		file, err := generateResponseFile(templFP, te, fpm)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not render template")
+			return nil, errors.Wrap(err, "cannot render template")
 		}
 		if file == nil {
 			continue
@@ -70,32 +71,24 @@ func generateResponseFile(templFP string, te *gengokit.TemplateExecutor, prevGen
 
 	// Get the actual path to the file rather than the template file path
 	actualFP := templatePathToActual(templFP, te.PackageName)
-
-	// Map of template paths to template rendering functions
-	renderTempl := map[string]string{
-		"NAME-service/handlers/server/server_handler.gotemplate": serverMethods,
-	}
-
-	// If we are rendering a template with a renderFunc and the file existed
-	// previously then use that function
-	if templ := renderTempl[templFP]; templ != "" {
+	// If we are rendering the server and or the client
+	if templFP == "NAME-service/handlers/server/server_handler.gotemplate" {
 		file := prevGenMap[actualFP]
-		if file != nil {
-			genCode, err = updateMethods(file, []byte(templ), te)
+		h, err := handler.New(te.Service, file, te.PackageName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot parse previous handler: %q", actualFP)
 		}
-	}
 
-	if err != nil {
-		return nil, errors.Wrap(err, "could not render template")
+		if genCode, err = h.Render(templFP, te); err != nil {
+			return nil, errors.Wrap(err, "cannot render template")
+		}
 	}
 
 	// if no code has been generated just apply the template
 	if genCode == nil {
-		genCode, err = applyTemplateFromPath(templFP, te)
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(err, "could not render template")
+		if genCode, err = applyTemplateFromPath(templFP, te); err != nil {
+			return nil, errors.Wrap(err, "cannot render template")
+		}
 	}
 
 	codeBytes, err := ioutil.ReadAll(genCode)
@@ -111,8 +104,7 @@ func generateResponseFile(templFP string, te *gengokit.TemplateExecutor, prevGen
 
 	// Set the path to the file and write the code to the file
 	resp.Path = actualFP
-	_, err = resp.Write(formattedCode)
-	if err != nil {
+	if _, err = resp.Write(formattedCode); err != nil {
 		return nil, err
 	}
 
@@ -132,47 +124,9 @@ func templatePathToActual(templFilePath, packageName string) string {
 	return actual
 }
 
-func updateMethods(handler io.Reader, templ []byte, te *gengokit.TemplateExecutor) (io.Reader, error) {
-	svcFuncs := serviceFunctionsNames(te.Service.Methods)
-
-	astMod := astmodifier.New(handler)
-
-	astMod.RemoveFunctionsExecpt(svcFuncs)
-
-	// Index handler functions, apply handler template for all function in
-	// service definition that are not defined in handler
-	currentFuncs := astMod.IndexFunctions()
-	code := astMod.Buffer()
-
-	trimmedTe := te.TrimServiceFuncs(currentFuncs)
-
-	newFuncs, err := applyTemplate(templ, "", trimmedTe)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to apply methods template")
-	}
-
-	code.ReadFrom(newFuncs)
-
-	return code, nil
-}
-
-// serviceFunctionNames returns a slice of function names which are in the
-// definition files plus the function "NewService". Used for inserting and
-// removing functions from previously generated handler files
-func serviceFunctionsNames(methods []*svcdef.ServiceMethod) []string {
-	var svcFuncs []string
-	for _, m := range methods {
-		svcFuncs = append(svcFuncs, m.Name)
-	}
-	svcFuncs = append(svcFuncs, "NewService")
-
-	return svcFuncs
-
-}
-
 // applyTemplateFromPath calls applyTemplate with the template at templFilePath
 func applyTemplateFromPath(templFilePath string, executor *gengokit.TemplateExecutor) (io.Reader, error) {
-	templBytes, err := templateFileAssets.Asset(templFilePath)
+	templBytes, err := templFiles.Asset(templFilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to find template file: %v", templFilePath)
 	}
@@ -185,7 +139,7 @@ func applyTemplate(templBytes []byte, templName string, executor *gengokit.Templ
 
 	codeTemplate, err := template.New(templName).Funcs(executor.FuncMap).Parse(templateString)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create template")
+		return nil, errors.Wrap(err, "cannot create template")
 	}
 
 	outputBuffer := bytes.NewBuffer(nil)
@@ -210,21 +164,5 @@ func formatCode(code []byte) []byte {
 	}
 
 	return formatted
-}
 
-var serverMethods string = `
-{{ with $te := .}}
-		{{range $i := $te.Service.Methods}}
-		// {{.GetName}} implements Service.
-		func (s {{$te.PackageName}}Service) {{.GetName}}(ctx context.Context, in *pb.{{GoName .RequestType.GetName}}) (*pb.{{GoName .ResponseType.GetName}}, error){
-			var resp pb.{{GoName .ResponseType.GetName}}
-			resp = pb.{{GoName .ResponseType.GetName}}{
-				{{range $j := $i.ResponseType.Message.Fields -}}
-					// {{GoName $j.GetName}}: 
-				{{end -}}
-			}
-			return &resp, nil
-		}
-		{{end}}
-{{- end}}
-`
+}
