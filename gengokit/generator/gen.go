@@ -1,3 +1,4 @@
+// Package generator generates a gokit service based on a service definition.
 package generator
 
 import (

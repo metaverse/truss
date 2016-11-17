@@ -64,7 +64,9 @@ func DiffStrings(a, b string) string {
 	return text
 }
 
-// DiffGoCode
+// DiffGoCode returns normalized versions of inA and inB using the go formatter
+// so that differences in indentation or trailing spaces are ignored. A diff of
+// inA and inB is also returned.
 func DiffGoCode(inA, inB string) (outA, outB, diff string) {
 	codeFormat := func(in string) string {
 		// Trim starting and ending space so format starts indenting at 0 for

@@ -28,11 +28,10 @@ func init() {
 }
 
 func init() {
-	log.SetLevel(log.FatalLevel)
+	log.SetLevel(log.DebugLevel)
 }
 
 func TestTemplatePathToActual(t *testing.T) {
-
 	pathToWants := map[string]string{
 		"NAME-service/":                "package-service/",
 		"NAME-service/test.gotemplate": "package-service/test.go",

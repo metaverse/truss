@@ -160,7 +160,7 @@ func TestApplyServerTempl(t *testing.T) {
 	}
 }
 
-func TestMRecvTypeString(t *testing.T) {
+func TestRecvTypeToString(t *testing.T) {
 	values := []string{
 		`package p; func NoRecv() {}`, "",
 		`package p; func (s Foo) RecvFoo() {}`, "Foo",
@@ -171,7 +171,7 @@ func TestMRecvTypeString(t *testing.T) {
 
 	for i := 0; i < len(values); i += 2 {
 		fnc := parseFuncFromString(values[i], t)
-		got := mRecvTypeString(fnc.Recv)
+		got := recvTypeToString(fnc.Recv)
 		want := values[i+1]
 		if got != want {
 			t.Errorf("Func Recv got: \"%s\", want: \"%s\": for func: %s", got, want, values[i])

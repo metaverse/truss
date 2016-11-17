@@ -1,5 +1,5 @@
-// package handler parses service handlers and add/removes exported methods to
-// comply with the definition service methods
+// Package handler manages the exported methods in the service handler code
+// adding/removing exported methods to match the service definition.
 package handler
 
 import (
@@ -19,10 +19,6 @@ import (
 	"github.com/TuneLab/go-truss/gengokit"
 	"github.com/TuneLab/go-truss/svcdef"
 )
-
-func init() {
-	log.SetLevel(log.DebugLevel)
-}
 
 // NewService is an exported func that creates a new service
 // it will not be defined in the service definition but is required
@@ -228,7 +224,7 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 		return false
 	}
 
-	rName := mRecvTypeString(f.Recv)
+	rName := recvTypeToString(f.Recv)
 	if rName != pkgName+"Service" {
 		log.WithField("Func", name).WithField("Receiver", rName).
 			Info("Func is exported with improper receiver; removing")
@@ -241,11 +237,10 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	return true
 }
 
-// mRecvTypeString returns accepts and *ast.FuncDecl.Recv recv, and returns the
+// recvTypeToString accepts an *ast.FuncDecl.Recv recv, and returns the
 // string of the recv type.
-// func (s Foo) Test() {} -> "Foo"
-func mRecvTypeString(recv *ast.FieldList) string {
-	// func NoRecv {}
+//	func (s Foo) Test() {} -> "Foo"
+func recvTypeToString(recv *ast.FieldList) string {
 	if recv == nil ||
 		recv.List[0].Type == nil {
 		log.Debug("Function has no reciever")
@@ -258,29 +253,29 @@ func mRecvTypeString(recv *ast.FieldList) string {
 // exprString returns the string representation of
 // ast.Expr for function receivers, parameters, and results.
 func exprString(e ast.Expr) string {
-	var hasPtr string
+	var prefix string
 	// *Foo -> Foo
 	if ptr, _ := e.(*ast.StarExpr); ptr != nil {
-		hasPtr = "*"
+		prefix = "*"
 		e = ptr.X
 	}
 	// *foo.Foo or foo.Foo
 	if sel, _ := e.(*ast.SelectorExpr); sel != nil {
 		// *foo.Foo -> foo.Foo
 		if ptr, _ := e.(*ast.StarExpr); ptr != nil {
-			hasPtr = "*"
+			prefix = "*"
 			e = ptr.X
 		}
 		// foo.Foo
 		if x, _ := sel.X.(*ast.Ident); x != nil {
-			return hasPtr + x.Name + "." + sel.Sel.Name
+			return prefix + x.Name + "." + sel.Sel.Name
 		}
 		return ""
 	}
 
 	// Foo
 	if base, _ := e.(*ast.Ident); base != nil {
-		return hasPtr + base.Name
+		return prefix + base.Name
 	}
 
 	return ""
