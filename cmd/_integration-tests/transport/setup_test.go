@@ -33,6 +33,7 @@ func TestMain(m *testing.M) {
 	getWithRepeatedQueryE := svc.MakeGetWithRepeatedQueryEndpoint(service)
 	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
 	ctxToCtxE := svc.MakeCtxToCtxEndpoint(service)
+	getWithCapsPathE := svc.MakeGetWithCapsPathEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 
 	endpoints := svc.Endpoints{
@@ -40,6 +41,7 @@ func TestMain(m *testing.M) {
 		GetWithRepeatedQueryEndpoint:      getWithRepeatedQueryE,
 		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
 		CtxToCtxEndpoint:                  ctxToCtxE,
+		GetWithCapsPathEndpoint:           getWithCapsPathE,
 		ErrorRPCEndpoint:                  errorRPCE,
 	}
 
