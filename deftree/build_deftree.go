@@ -92,12 +92,12 @@ func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (Deftree, erro
 	return &dt, nil
 }
 
-func NewFromString(def string) (Deftree, error) {
+func NewFromString(def string, gopath []string) (Deftree, error) {
 	const defFileName = "definition.proto"
 
 	protoDir, err := ioutil.TempDir("", "truss-deftree-")
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create temp directory to store proto definition")
+		return nil, errors.Wrap(err, "cannot create temp directory to store proto definition")
 	}
 	defer os.RemoveAll(protoDir)
 
@@ -105,17 +105,17 @@ func NewFromString(def string) (Deftree, error) {
 
 	err = ioutil.WriteFile(defPath, []byte(def), 0666)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not write proto definition to file")
+		return nil, errors.Wrap(err, "cannot write proto definition to file")
 	}
 
-	req, err := execprotoc.CodeGeneratorRequest([]string{defPath})
+	req, err := execprotoc.CodeGeneratorRequest([]string{defPath}, gopath)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to create a proto CodeGeneratorRequest")
+		return nil, errors.Wrap(err, "cannot create a proto CodeGeneratorRequest")
 	}
 
 	deftree, err := New(req, strings.NewReader(def))
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create new deftree from CodeGeneratorRequest and definition")
+		return nil, errors.Wrap(err, "cannot create new deftree from CodeGeneratorRequest and definition")
 	}
 
 	return deftree, nil

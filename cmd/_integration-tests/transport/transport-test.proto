@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package transport;
 
-import "google/api/annotations.proto";
+import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 service TransportPermutations {
   rpc GetWithQuery (GetWithQueryRequest) returns (GetWithQueryResponse) {

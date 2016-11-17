@@ -9,7 +9,6 @@ dependencies:
 # Generate go files containing the all template files in []byte form
 gobindata:
 	go generate github.com/TuneLab/go-truss/gengokit/template
-	go generate github.com/TuneLab/go-truss/truss/template
 
 # Install truss and protoc-gen-truss-protocast
 truss: gobindata

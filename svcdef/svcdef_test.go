@@ -24,8 +24,6 @@ func TestSvcdef(t *testing.T) {
 	if sd == nil {
 		t.Fatal("returned SvcDef is nil!")
 	}
-
-	return
 }
 
 func TestTypeResolution(t *testing.T) {

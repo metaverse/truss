@@ -5,6 +5,7 @@ import (
 	"go/format"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -15,6 +16,12 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 )
+
+var gopath []string
+
+func init() {
+	gopath = filepath.SplitList(os.Getenv("GOPATH"))
+}
 
 func init() {
 	log.SetLevel(log.FatalLevel)
@@ -42,7 +49,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -65,7 +72,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 			}
 		}
 	`
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +113,7 @@ func TestTrimTemplateExecutorServiceFuncs(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -195,7 +202,7 @@ func svcMethodsNames(methods []*svcdef.ServiceMethod) []string {
 }
 
 func stringToTemplateExector(def, importPath string) (*gengokit.TemplateExecutor, error) {
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +228,7 @@ func TestUpdateMethods(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -245,7 +252,7 @@ func TestUpdateMethods(t *testing.T) {
 		}
 	`
 
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,7 +320,7 @@ func TestAllTemplates(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -343,7 +350,7 @@ func TestAllTemplates(t *testing.T) {
 		// General package
 		package general;
 
-		import "google/api/annotations.proto";
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -374,7 +381,7 @@ func TestAllTemplates(t *testing.T) {
 		}
 	`
 
-	sd, err := svcdef.NewFromString(def)
+	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -389,7 +396,7 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sd2, err := svcdef.NewFromString(def)
+	sd2, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
