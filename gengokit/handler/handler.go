@@ -151,13 +151,15 @@ func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 	for _, d := range decls {
 		switch x := d.(type) {
 		case *ast.FuncDecl:
-			// Special case NewService
-			if x.Name.Name == ignoredFunc {
+			name := x.Name.Name
+			// Special case NewService and ignore unexported
+			if name == ignoredFunc || !ast.IsExported(name) {
+				log.WithField("Func", name).
+					Debug("Ignoring")
 				newDecls = append(newDecls, x)
 				continue
 			}
 			if ok := isValidFunc(x, m, pkgName); ok == true {
-				name := x.Name.Name
 				updateParams(x, m[name])
 				updateResults(x, m[name])
 				newDecls = append(newDecls, x)
