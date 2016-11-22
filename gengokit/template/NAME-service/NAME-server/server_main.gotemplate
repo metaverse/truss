@@ -33,6 +33,20 @@ func main() {
 	)
 	flag.Parse()
 
+	// Use environment variables, if set. Flags have priority over Env vars.
+	if os.Getenv("DEBUG_ADDR") != ""  && *debugAddr == "" {
+		*debugAddr = os.Getenv("DEBUG_ADDR")
+	}
+	if os.Getenv("HTTP_ADDR") != ""  && *httpAddr == "" {
+		*httpAddr = os.Getenv("HTTP_ADDR")
+	}
+	if os.Getenv("GRPC_ADDR") != "" && *grpcAddr == "" {
+		*grpcAddr = os.Getenv("GRPC_ADDR")
+	}
+	if os.Getenv("PORT") != "" && *httpAddr == "" {
+		*httpAddr = fmt.Sprintf(":%s", os.Getenv("PORT"))
+	}
+
 	// Logging domain.
 	var logger log.Logger
 	{
