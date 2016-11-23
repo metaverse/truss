@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc"
 
 	// Go Kit
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 
 	// This Service
@@ -65,13 +64,12 @@ func main() {
 	}
 
 	// Endpoint domain.
-	{{range $i := .Service.Methods}}
-	var {{ToLower $i.Name}}Endpoint endpoint.Endpoint
-	{
+	var (
+	{{range $i := .Service.Methods -}}
 		{{ToLower $i.Name}}Endpoint = svc.Make{{$i.Name}}Endpoint(service)
-		// Add endpoint tracing, instrumentation and logging here
-	}
 	{{end}}
+	)
+
 	endpoints := svc.Endpoints{
 	{{range $i := .Service.Methods -}}
 		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
