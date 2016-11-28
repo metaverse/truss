@@ -125,7 +125,7 @@ func TestApplyServerTempl(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	te, err := gengokit.NewExecutor(sd, conf)
 
 	gen, err := applyServerTempl(te)
 	genBytes, err := ioutil.ReadAll(gen)

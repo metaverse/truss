@@ -2,13 +2,10 @@
 package generator
 
 import (
-	"bytes"
 	"go/format"
 	"io"
 	"io/ioutil"
-	"os"
 	"strings"
-	"text/template"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -21,32 +18,26 @@ import (
 	"github.com/TuneLab/go-truss/truss"
 )
 
-func init() {
-	log.SetLevel(log.InfoLevel)
-	log.SetOutput(os.Stderr)
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors: true,
-	})
-}
-
 // GenerateGokit returns a gokit service generated from a service definition (svcdef),
 // the package to the root of the generated service goPackage, the package
 // to the .pb.go service struct files (goPBPackage) and any prevously generated files.
 func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWriter, error) {
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	executor, err := gengokit.NewExecutor(sd, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create template executor")
 	}
 
-	fpm := make(map[string]io.Reader, len(conf.PreviousFiles))
+	prevFiles := make(map[string]io.Reader, len(conf.PreviousFiles))
 	for _, f := range conf.PreviousFiles {
-		fpm[f.Name()] = f
+		prevFiles[f.Name()] = f
 	}
 
 	var codeGenFiles []truss.NamedReadWriter
 
 	for _, templFP := range templFiles.AssetNames() {
-		file, err := generateResponseFile(templFP, te, fpm)
+		actualFP := templatePathToActual(templFP, sd.PkgName)
+		prev := prevFiles[actualFP]
+		file, err := generateResponseFile(executor, prev, templFP)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")
 		}
@@ -62,32 +53,28 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWr
 
 // generateResponseFile contains logic to choose how to render a template file
 // based on path and if that file was generated previously. It accepts a
-// template path to render, a templateExecutor to apply to the template, and a
-// map of paths to files for the previous generation. It returns a
-// truss.NamedReadWriter representing the generated file
-func generateResponseFile(templFP string, te *gengokit.TemplateExecutor, prevGenMap map[string]io.Reader) (truss.NamedReadWriter, error) {
+// template path to render, a executor to apply to the template,
+// and . It returns a truss.NamedReadWriter representing the generated file.
+func generateResponseFile(executor *gengokit.Executor, file io.Reader, templFP string) (truss.NamedReadWriter, error) {
 	var genCode io.Reader
 	var err error
 
 	// Get the actual path to the file rather than the template file path
-	actualFP := templatePathToActual(templFP, te.PackageName)
-	// If we are rendering the server and or the client
-	if templFP == "NAME-service/handlers/server/server_handler.gotemplate" {
-		file := prevGenMap[actualFP]
-		h, err := handler.New(te.Service, file, te.PackageName)
+	actualFP := templatePathToActual(templFP, executor.PackageName)
+
+	switch templFP {
+	case handler.ServerFile:
+		h, err := handler.New(executor.Service, file, executor.PackageName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot parse previous handler: %q", actualFP)
 		}
 
-		if genCode, err = h.Render(templFP, te); err != nil {
-			return nil, errors.Wrap(err, "cannot render template")
+		if genCode, err = h.Render(templFP, executor); err != nil {
+			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
-	}
-
-	// if no code has been generated just apply the template
-	if genCode == nil {
-		if genCode, err = applyTemplateFromPath(templFP, te); err != nil {
-			return nil, errors.Wrap(err, "cannot render template")
+	default:
+		if genCode, err = applyTemplateFromPath(templFP, executor); err != nil {
+			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
 	}
 
@@ -125,30 +112,13 @@ func templatePathToActual(templFilePath, packageName string) string {
 }
 
 // applyTemplateFromPath calls applyTemplate with the template at templFilePath
-func applyTemplateFromPath(templFilePath string, executor *gengokit.TemplateExecutor) (io.Reader, error) {
-	templBytes, err := templFiles.Asset(templFilePath)
+func applyTemplateFromPath(templFP string, executor *gengokit.Executor) (io.Reader, error) {
+	templBytes, err := templFiles.Asset(templFP)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to find template file: %v", templFilePath)
+		return nil, errors.Wrapf(err, "unable to find template file: %v", templFP)
 	}
 
-	return applyTemplate(templBytes, templFilePath, executor)
-}
-
-func applyTemplate(templBytes []byte, templName string, executor *gengokit.TemplateExecutor) (io.Reader, error) {
-	templateString := string(templBytes)
-
-	codeTemplate, err := template.New(templName).Funcs(executor.FuncMap).Parse(templateString)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot create template")
-	}
-
-	outputBuffer := bytes.NewBuffer(nil)
-	err = codeTemplate.Execute(outputBuffer, executor)
-	if err != nil {
-		return nil, errors.Wrap(err, "template error")
-	}
-
-	return outputBuffer, nil
+	return executor.ApplyTemplate(string(templBytes), templFP)
 }
 
 // formatCode takes a string representing golang code and attempts to return a
@@ -164,5 +134,4 @@ func formatCode(code []byte) []byte {
 	}
 
 	return formatted
-
 }

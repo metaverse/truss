@@ -23,7 +23,9 @@ import (
 // NewService is an exported func that creates a new service
 // it will not be defined in the service definition but is required
 const ignoredFunc = "NewService"
-const serverTemplPath = "NAME-service/handlers/server/server_handler.gotemplate"
+
+// ServerFile is the path to the service handelr file that handler will render
+const ServerFile = "NAME-service/handlers/server/server_handler.gotemplate"
 
 // New returns a truss.Renderable capable of updating server handlers.
 // New should be passed the previous version of the server handler to parse.
@@ -74,23 +76,23 @@ type handlerExecutor struct {
 
 // Render returns a go code server handler that has functions for all
 // ServiceMethods in the service definition.
-func (h *handler) Render(f string, te *gengokit.TemplateExecutor) (io.Reader, error) {
-	if f != serverTemplPath {
-		return nil, errors.Errorf("cannot render unknown file: %q", f)
+func (h *handler) Render(alias string, executor *gengokit.Executor) (io.Reader, error) {
+	if alias != ServerFile {
+		return nil, errors.Errorf("cannot render unknown file: %q", alias)
 	}
 	if h.ast == nil {
-		return applyServerTempl(te)
+		return applyServerTempl(executor)
 	}
 
 	// Remove exported methods not defined in service definition
 	// and remove methods defined in the previous file from methodMap
 	log.WithField("Service Methods", len(h.mMap)).Debug("Before prune")
-	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, te.PackageName)
+	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, executor.PackageName)
 	log.WithField("Service Methods", len(h.mMap)).Debug("After prune")
 
 	// create a new executor, and add all methods not defined in the previous file
 	ex := handlerExecutor{
-		PackageName: te.PackageName,
+		PackageName: executor.PackageName,
 	}
 
 	// If there are no methods to template then exit early
@@ -283,30 +285,15 @@ func exprString(e ast.Expr) string {
 	return ""
 }
 
-func applyServerTempl(exec *gengokit.TemplateExecutor) (io.Reader, error) {
+func applyServerTempl(exec *gengokit.Executor) (io.Reader, error) {
 	log.Debug("Rendering handler for the first time")
-	return applyTemplate(serverTempl, "ServerTempl", exec)
+	return exec.ApplyTemplate(serverTempl, "ServerTempl")
 }
 
 func applyServerMethsTempl(exec handlerExecutor) (io.Reader, error) {
-	return applyTemplate(serverMethsTempl, "ServerMethsTempl", exec)
-}
-
-func applyTemplate(templ string, templName string, exec interface{}) (io.Reader, error) {
 	funcMap := template.FuncMap{
 		"ToLower": strings.ToLower,
 		"GoName":  generatego.CamelCase,
 	}
-	codeTemplate, err := template.New(templName).Funcs(funcMap).Parse(templ)
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot create template")
-	}
-
-	outputBuffer := bytes.NewBuffer(nil)
-	err = codeTemplate.Execute(outputBuffer, exec)
-	if err != nil {
-		return nil, errors.Wrap(err, "template error")
-	}
-
-	return outputBuffer, nil
+	return gengokit.ApplyTemplate(serverMethsTempl, "ServerMethsTempl", exec, funcMap)
 }
