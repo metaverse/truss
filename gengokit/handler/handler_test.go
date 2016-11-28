@@ -1,29 +1,33 @@
 package handler
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	log "github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
+
 	"github.com/TuneLab/go-truss/gengokit"
-	thelper "github.com/TuneLab/go-truss/gengokit/gentesthelper"
+	helper "github.com/TuneLab/go-truss/gengokit/gentesthelper"
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
 var gopath []string
+var diff = helper.DiffStrings
+var testFormat = helper.TestFormat
 
 func init() {
 	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
 func init() {
-	_ = thelper.DiffStrings
 	log.SetLevel(log.DebugLevel)
 }
 
@@ -81,7 +85,7 @@ func TestServerMethsTempl(t *testing.T) {
 			return &resp, nil
 		}
 	`
-	a, b, di := thelper.DiffGoCode(string(genBytes), expected)
+	a, b, di := helper.DiffGoCode(string(genBytes), expected)
 	if strings.Compare(a, b) != 0 {
 		t.Fatalf("Server method template output different than expected\n %s", di)
 	}
@@ -154,7 +158,7 @@ func TestApplyServerTempl(t *testing.T) {
 			return &resp, nil
 		}
 	`
-	a, b, di := thelper.DiffGoCode(string(genBytes), expected)
+	a, b, di := helper.DiffGoCode(string(genBytes), expected)
 	if strings.Compare(a, b) != 0 {
 		t.Fatalf("Server template output different than expected\n %s", di)
 	}
@@ -371,6 +375,167 @@ func TestUpdatePBFieldType(t *testing.T) {
 			t.Errorf("Func Recv got: \"%s\", want: \"%s\": for func: %s", got, want, values[i])
 		}
 	}
+}
+
+func TestUpdateMethods(t *testing.T) {
+	const def = `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+
+		// RequestMessage is so foo
+		message RequestMessage {
+			string input = 1;
+		}
+
+		// ResponseMessage is so bar
+		message ResponseMessage {
+			string output = 1;
+		}
+
+		// RequestMessage is so foo
+		message DifferentRequest {
+			float green = 1;
+		}
+
+		message DifferentResponse {
+			int64 blue = 1;
+		}
+
+		// ProtoService is a service
+		service ProtoService {
+			// ProtoMethod is simple. Like a gopher.
+			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route"
+				};
+			}
+			// ProtoMethodAgain is simple. Like a gopher again.
+			rpc ProtoMethodAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route2"
+				};
+			}
+			// ProtoMethodAgainAgain is simple. Like a gopher again again.
+			rpc ProtoMethodAgainAgain (RequestMessage) returns (ResponseMessage) {
+				// No {} in path and no body, everything is in the query
+				option (google.api.http) = {
+					get: "/route2"
+				};
+			}
+		}
+	`
+
+	sd, err := svcdef.NewFromString(def, gopath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	svc := sd.Service
+	allMethods := svc.Methods
+
+	conf := gengokit.Config{
+		GoPackage: "github.com/TuneLab/go-truss/gengokit",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
+
+	te, err := gengokit.NewData(sd, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	svc.Methods = []*svcdef.ServiceMethod{allMethods[0]}
+
+	firstCode, err := renderService(svc, "", te)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	secondCode, err := renderService(svc, firstCode, te)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(firstCode) != len(secondCode) {
+		t.Fatal("Generated service differs after regenerated with same definition\n" +
+			diff(firstCode, secondCode))
+	}
+
+	svc.Methods = append(svc.Methods, allMethods[1])
+
+	thirdCode, err := renderService(svc, secondCode, te)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(thirdCode) <= len(secondCode) {
+		t.Fatal("Generated service not longer after regenerated with additional service method\n" +
+			diff(secondCode, thirdCode))
+	}
+
+	// remove the first one rpc
+	svc.Methods = svc.Methods[1:]
+
+	forthCode, err := renderService(svc, thirdCode, te)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(forthCode) >= len(thirdCode) {
+		t.Fatal("Generated service not shorter after regenerated with fewer service method\n" +
+			diff(thirdCode, forthCode))
+	}
+
+	svc.Methods = allMethods
+
+	fifthCode, err := renderService(svc, forthCode, te)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(fifthCode) <= len(forthCode) {
+		t.Fatal("Generated service not longer after regenerated with additional service method\n" +
+			diff(forthCode, fifthCode))
+	}
+}
+
+// renderService takes in a previous file as a string and returns the generated
+// service file as a string. This helper method exists because the logic for
+// reading the io.Reader to a string is repeated.
+func renderService(svc *svcdef.Service, prev string, data *gengokit.Data) (string, error) {
+	var prevFile io.Reader
+	if prev != "" {
+		prevFile = strings.NewReader(prev)
+	}
+
+	h, err := New(svc, prevFile, data.PackageName)
+	if err != nil {
+		return "", err
+	}
+
+	next, err := h.Render(ServerHandlerPath, data)
+	if err != nil {
+		return "", err
+	}
+
+	nextBytes, err := ioutil.ReadAll(next)
+	if err != nil {
+		return "", err
+	}
+
+	nextCode, err := testFormat(string(nextBytes))
+	if err != nil {
+		return "", errors.Wrap(err, "cannot format")
+	}
+
+	nextCode = strings.TrimSpace(nextCode)
+
+	return nextCode, nil
 }
 
 func parseASTFromString(s string, t *testing.T) *ast.File {
