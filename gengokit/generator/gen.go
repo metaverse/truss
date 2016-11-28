@@ -73,10 +73,6 @@ func generateResponseFile(data *gengokit.Data, prevFile io.Reader, templFP strin
 		if genCode, err = h.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
-	default:
-		if genCode, err = applyTemplateFromPath(templFP, data); err != nil {
-			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
-		}
 	case middlewares.EndpointsPath:
 		m := middlewares.New()
 		m.LoadEndpoints(prevFile)
@@ -87,6 +83,10 @@ func generateResponseFile(data *gengokit.Data, prevFile io.Reader, templFP strin
 		m := middlewares.New()
 		m.LoadService(prevFile)
 		if genCode, err = m.Render(templFP, data); err != nil {
+			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
+		}
+	default:
+		if genCode, err = applyTemplateFromPath(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
 	}
