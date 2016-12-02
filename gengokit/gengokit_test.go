@@ -14,7 +14,7 @@ func init() {
 	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
-func TestNewExecutor(t *testing.T) {
+func TestNewData(t *testing.T) {
 	const def = `
 		syntax = "proto3";
 
@@ -54,7 +54,7 @@ func TestNewExecutor(t *testing.T) {
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := NewExecutor(sd, conf)
+	te, err := NewData(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}

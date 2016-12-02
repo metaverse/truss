@@ -22,9 +22,9 @@ import (
 // the package to the root of the generated service goPackage, the package
 // to the .pb.go service struct files (goPBPackage) and any prevously generated files.
 func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWriter, error) {
-	executor, err := gengokit.NewExecutor(sd, conf)
+	data, err := gengokit.NewData(sd, conf)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot create template executor")
+		return nil, errors.Wrap(err, "cannot create template data")
 	}
 
 	prevFiles := make(map[string]io.Reader, len(conf.PreviousFiles))
@@ -37,7 +37,7 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWr
 	for _, templFP := range templFiles.AssetNames() {
 		actualFP := templatePathToActual(templFP, sd.PkgName)
 		prev := prevFiles[actualFP]
-		file, err := generateResponseFile(executor, prev, templFP)
+		file, err := generateResponseFile(data, prev, templFP)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")
 		}
@@ -53,27 +53,27 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWr
 
 // generateResponseFile contains logic to choose how to render a template file
 // based on path and if that file was generated previously. It accepts a
-// template path to render, a executor to apply to the template,
+// template path to render, a data to apply to the template,
 // and . It returns a truss.NamedReadWriter representing the generated file.
-func generateResponseFile(executor *gengokit.Executor, file io.Reader, templFP string) (truss.NamedReadWriter, error) {
+func generateResponseFile(data *gengokit.Data, prevFile io.Reader, templFP string) (truss.NamedReadWriter, error) {
 	var genCode io.Reader
 	var err error
 
 	// Get the actual path to the file rather than the template file path
-	actualFP := templatePathToActual(templFP, executor.PackageName)
+	actualFP := templatePathToActual(templFP, data.PackageName)
 
 	switch templFP {
-	case handler.ServerFile:
-		h, err := handler.New(executor.Service, file, executor.PackageName)
+	case handler.ServerHandlerPath:
+		h, err := handler.New(data.Service, prevFile, data.PackageName)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot parse previous handler: %q", actualFP)
 		}
 
-		if genCode, err = h.Render(templFP, executor); err != nil {
+		if genCode, err = h.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
 	default:
-		if genCode, err = applyTemplateFromPath(templFP, executor); err != nil {
+		if genCode, err = applyTemplateFromPath(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
 	}
@@ -112,13 +112,13 @@ func templatePathToActual(templFilePath, packageName string) string {
 }
 
 // applyTemplateFromPath calls applyTemplate with the template at templFilePath
-func applyTemplateFromPath(templFP string, executor *gengokit.Executor) (io.Reader, error) {
+func applyTemplateFromPath(templFP string, data *gengokit.Data) (io.Reader, error) {
 	templBytes, err := templFiles.Asset(templFP)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to find template file: %v", templFP)
 	}
 
-	return executor.ApplyTemplate(string(templBytes), templFP)
+	return data.ApplyTemplate(string(templBytes), templFP)
 }
 
 // formatCode takes a string representing golang code and attempts to return a

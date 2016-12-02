@@ -9,11 +9,8 @@ import (
 	"go/printer"
 	"go/token"
 	"io"
-	"strings"
-	"text/template"
 
 	log "github.com/Sirupsen/logrus"
-	generatego "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/go-truss/gengokit"
@@ -24,8 +21,8 @@ import (
 // it will not be defined in the service definition but is required
 const ignoredFunc = "NewService"
 
-// ServerFile is the path to the service handelr file that handler will render
-const ServerFile = "NAME-service/handlers/server/server_handler.gotemplate"
+// ServerHadlerPath is the relative path to the server handler template file
+const ServerHandlerPath = "NAME-service/handlers/server/server_handler.gotemplate"
 
 // New returns a truss.Renderable capable of updating server handlers.
 // New should be passed the previous version of the server handler to parse.
@@ -69,30 +66,30 @@ type handler struct {
 	pkgName string
 }
 
-type handlerExecutor struct {
+type handlerData struct {
 	PackageName string
 	Methods     []*svcdef.ServiceMethod
 }
 
 // Render returns a go code server handler that has functions for all
 // ServiceMethods in the service definition.
-func (h *handler) Render(alias string, executor *gengokit.Executor) (io.Reader, error) {
-	if alias != ServerFile {
+func (h *handler) Render(alias string, data *gengokit.Data) (io.Reader, error) {
+	if alias != ServerHandlerPath {
 		return nil, errors.Errorf("cannot render unknown file: %q", alias)
 	}
 	if h.ast == nil {
-		return applyServerTempl(executor)
+		return applyServerTempl(data)
 	}
 
 	// Remove exported methods not defined in service definition
 	// and remove methods defined in the previous file from methodMap
 	log.WithField("Service Methods", len(h.mMap)).Debug("Before prune")
-	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, executor.PackageName)
+	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, data.PackageName)
 	log.WithField("Service Methods", len(h.mMap)).Debug("After prune")
 
-	// create a new executor, and add all methods not defined in the previous file
-	ex := handlerExecutor{
-		PackageName: executor.PackageName,
+	// create a new handlerData, and add all methods not defined in the previous file
+	ex := handlerData{
+		PackageName: data.PackageName,
 	}
 
 	// If there are no methods to template then exit early
@@ -285,15 +282,11 @@ func exprString(e ast.Expr) string {
 	return ""
 }
 
-func applyServerTempl(exec *gengokit.Executor) (io.Reader, error) {
+func applyServerTempl(exec *gengokit.Data) (io.Reader, error) {
 	log.Debug("Rendering handler for the first time")
 	return exec.ApplyTemplate(serverTempl, "ServerTempl")
 }
 
-func applyServerMethsTempl(exec handlerExecutor) (io.Reader, error) {
-	funcMap := template.FuncMap{
-		"ToLower": strings.ToLower,
-		"GoName":  generatego.CamelCase,
-	}
-	return gengokit.ApplyTemplate(serverMethsTempl, "ServerMethsTempl", exec, funcMap)
+func applyServerMethsTempl(exec handlerData) (io.Reader, error) {
+	return gengokit.ApplyTemplate(serverMethsTempl, "ServerMethsTempl", exec, gengokit.FuncMap)
 }
