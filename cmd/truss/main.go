@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/build"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -56,13 +55,17 @@ func main() {
 	genFiles, err := generateCode(cfg, dt, sd)
 	exitIfError(errors.Wrap(err, "cannot generate service"))
 
-	for _, f := range genFiles {
-		err := writeGenFile(f, cfg.ServicePath)
+	for path, file := range genFiles {
+		err := writeGenFile(file, path, cfg.ServicePath)
 		if err != nil {
 			exitIfError(errors.Wrap(err, "cannot to write output"))
 		}
 	}
 }
+
+// fileSystem is a map of paths relative to truss.Config.ServicePath mapped to
+// io.Reader's as files
+type fileSystem map[string]io.Reader
 
 // parseInput constructs a *truss.Config with all values needed to parse
 // service definition files.
@@ -224,9 +227,9 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	return dt, sd, nil
 }
 
-// generateCode returns a []truss.NamedReadWriter that represents a gokit
+// generateCode returns a fileSystem that represents a gokit
 // service with documentation
-func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) ([]truss.NamedReadWriter, error) {
+func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (fileSystem, error) {
 	conf := ggkconf.Config{
 		PBPackage:     cfg.PBPackage,
 		GoPackage:     cfg.ServicePackage,
@@ -240,33 +243,41 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) ([]t
 
 	genDocFiles := gendoc.GenerateDocs(dt)
 
-	genFiles := append(genGokitFiles, genDocFiles...)
-
-	return genFiles, nil
+	return combineFiles(genGokitFiles, genDocFiles), nil
 }
 
-// writeGenFile writes a truss.NamedReadWriter to the filesystem
-// to be contained within serviceDir
-func writeGenFile(f truss.NamedReadWriter, serviceDir string) error {
+// combineFiles takes any numbers of fileSystems and combines them into one.
+func combineFiles(group ...fileSystem) fileSystem {
+	final := make(fileSystem)
+	for _, g := range group {
+		for path, file := range g {
+			final[path] = file
+		}
+	}
+
+	return final
+}
+
+// writeGenFile writes a file at relPath relative to serviceDir to the filesystem
+func writeGenFile(file io.Reader, relPath, serviceDir string) error {
 	// the serviceDir contains /NAME-service so we want to write to the
 	// directory above
 	outDir := filepath.Dir(serviceDir)
 
 	// i.e. NAME-service/generated/endpoint.go
-	name := f.Name()
 
-	fullPath := filepath.Join(outDir, name)
+	fullPath := filepath.Join(outDir, relPath)
 	err := os.MkdirAll(filepath.Dir(fullPath), 0777)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create(fullPath)
+	outFile, err := os.Create(fullPath)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create file %v", fullPath)
 	}
 
-	_, err = io.Copy(file, f)
+	_, err = io.Copy(outFile, file)
 	if err != nil {
 		return errors.Wrapf(err, "cannot write to %v", fullPath)
 	}
@@ -304,17 +315,16 @@ func exitIfError(err error) {
 	}
 }
 
-// readPreviousGeneration returns a []truss.NamedReadWriter for all files serviceDir
-func readPreviousGeneration(serviceDir string) ([]truss.NamedReadWriter, error) {
+// readPreviousGeneration returns a fileSystem representing the files in serviceDir
+func readPreviousGeneration(serviceDir string) (fileSystem, error) {
 	if fileExists(serviceDir) != true {
 		return nil, nil
 	}
 
-	var files []truss.NamedReadWriter
 	dir, _ := filepath.Split(serviceDir)
 	sfs := simpleFileConstructor{
 		dir:   dir,
-		files: files,
+		files: make(fileSystem),
 	}
 	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
 	if err != nil {
@@ -325,21 +335,21 @@ func readPreviousGeneration(serviceDir string) ([]truss.NamedReadWriter, error) 
 }
 
 // simpleFileConstructor has function makeSimpleFile of type filepath.WalkFunc
-// This allows for filepath.Walk to be called with makeSimpleFile and build a truss.SimpleFile
-// for all files in a direcotry
+// This allows for filepath.Walk to be called with makeSimpleFile and build a fileSystem
+// for all files in a directory
 type simpleFileConstructor struct {
 	dir   string
-	files []truss.NamedReadWriter
+	files map[string]io.Reader
 }
 
 // makeSimpleFile is of type filepath.WalkFunc
-// makeSimpleFile constructs a truss.SimpleFile and stores it in SimpleFileConstructor.files
+// makeSimpleFile adds files as io.Readers to sfs.files by path
 func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, err error) error {
 	if info.IsDir() {
 		return nil
 	}
 
-	byteContent, ioErr := ioutil.ReadFile(path)
+	file, ioErr := os.Open(path)
 
 	if ioErr != nil {
 		return errors.Wrapf(ioErr, "cannot read file: %v", path)
@@ -347,11 +357,8 @@ func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, 
 
 	// trim the prefix of the path to the proto files from the full path to the file
 	name := strings.TrimPrefix(path, sfs.dir)
-	var file truss.SimpleFile
-	file.Path = name
-	file.Write(byteContent)
 
-	sfs.files = append(sfs.files, &file)
+	sfs.files[name] = file
 
 	return nil
 }

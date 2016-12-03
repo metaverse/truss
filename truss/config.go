@@ -1,5 +1,7 @@
 package truss
 
+import "io"
+
 // Config defines the inputs to a truss service generation
 type Config struct {
 	// The first path in $GOPATH
@@ -15,5 +17,5 @@ type Config struct {
 	// The paths to each of the .proto files truss is being run against
 	DefPaths []string
 	// The files of a previously generated service, may be nil
-	PrevGen []NamedReadWriter
+	PrevGen map[string]io.Reader
 }

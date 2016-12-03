@@ -12,7 +12,6 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/clientarggen"
 	"github.com/TuneLab/go-truss/gengokit/httptransport"
 	"github.com/TuneLab/go-truss/svcdef"
-	"github.com/TuneLab/go-truss/truss"
 )
 
 type Renderable interface {
@@ -23,7 +22,7 @@ type Config struct {
 	GoPackage string
 	PBPackage string
 
-	PreviousFiles []truss.NamedReadWriter
+	PreviousFiles map[string]io.Reader
 }
 
 // FuncMap contains a series of utility functions to be passed into

@@ -2,6 +2,7 @@
 package generator
 
 import (
+	"bytes"
 	"go/format"
 	"io"
 	"io/ioutil"
@@ -15,37 +16,27 @@ import (
 	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 
 	"github.com/TuneLab/go-truss/svcdef"
-	"github.com/TuneLab/go-truss/truss"
 )
 
 // GenerateGokit returns a gokit service generated from a service definition (svcdef),
 // the package to the root of the generated service goPackage, the package
 // to the .pb.go service struct files (goPBPackage) and any prevously generated files.
-func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWriter, error) {
+func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) (map[string]io.Reader, error) {
 	data, err := gengokit.NewData(sd, conf)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create template data")
 	}
 
-	prevFiles := make(map[string]io.Reader, len(conf.PreviousFiles))
-	for _, f := range conf.PreviousFiles {
-		prevFiles[f.Name()] = f
-	}
+	codeGenFiles := make(map[string]io.Reader)
 
-	var codeGenFiles []truss.NamedReadWriter
-
-	for _, templFP := range templFiles.AssetNames() {
-		actualFP := templatePathToActual(templFP, sd.PkgName)
-		prev := prevFiles[actualFP]
-		file, err := generateResponseFile(data, prev, templFP)
+	for _, templPath := range templFiles.AssetNames() {
+		actualPath := templatePathToActual(templPath, sd.PkgName)
+		file, err := generateResponseFile(templPath, data, conf.PreviousFiles[actualPath])
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")
 		}
-		if file == nil {
-			continue
-		}
 
-		codeGenFiles = append(codeGenFiles, file)
+		codeGenFiles[actualPath] = file
 	}
 
 	return codeGenFiles, nil
@@ -53,9 +44,10 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) ([]truss.NamedReadWr
 
 // generateResponseFile contains logic to choose how to render a template file
 // based on path and if that file was generated previously. It accepts a
-// template path to render, a data to apply to the template,
-// and . It returns a truss.NamedReadWriter representing the generated file.
-func generateResponseFile(data *gengokit.Data, prevFile io.Reader, templFP string) (truss.NamedReadWriter, error) {
+// template path to render, a templateExecutor to apply to the template, and a
+// map of paths to files for the previous generation. It returns a
+// io.Reader representing the generated file
+func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reader) (io.Reader, error) {
 	var genCode io.Reader
 	var err error
 
@@ -87,15 +79,7 @@ func generateResponseFile(data *gengokit.Data, prevFile io.Reader, templFP strin
 	// writing to disk
 	formattedCode := formatCode(codeBytes)
 
-	var resp truss.SimpleFile
-
-	// Set the path to the file and write the code to the file
-	resp.Path = actualFP
-	if _, err = resp.Write(formattedCode); err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
+	return bytes.NewReader(formattedCode), nil
 }
 
 // templatePathToActual accepts a templateFilePath and the packageName of the
