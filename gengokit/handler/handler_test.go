@@ -62,7 +62,7 @@ func TestServerMethsTempl(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var he handlerExecutor
+	var he handlerData
 	he.Methods = sd.Service.Methods
 	he.PackageName = sd.PkgName
 
@@ -125,7 +125,7 @@ func TestApplyServerTempl(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	te, err := gengokit.NewData(sd, conf)
 
 	gen, err := applyServerTempl(te)
 	genBytes, err := ioutil.ReadAll(gen)

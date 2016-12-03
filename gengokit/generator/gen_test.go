@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"bytes"
 	"go/format"
 	"io"
 	"io/ioutil"
@@ -85,7 +84,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	te, err := gengokit.NewData(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,11 +99,10 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = testFormat(endCode)
+	_, err = testFormat(string(endCode))
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }
 
 func svcMethodsNames(methods []*svcdef.ServiceMethod) []string {
@@ -116,7 +114,7 @@ func svcMethodsNames(methods []*svcdef.ServiceMethod) []string {
 	return mNames
 }
 
-func stringToTemplateExector(def, importPath string) (*gengokit.TemplateExecutor, error) {
+func stringToTemplateExector(def, importPath string) (*gengokit.Data, error) {
 	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		return nil, err
@@ -127,13 +125,12 @@ func stringToTemplateExector(def, importPath string) (*gengokit.TemplateExecutor
 		PBPackage: importPath,
 	}
 
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	te, err := gengokit.NewData(sd, conf)
 	if err != nil {
 		return nil, err
 	}
 
 	return te, nil
-
 }
 
 func TestAllTemplates(t *testing.T) {
@@ -207,17 +204,7 @@ func TestAllTemplates(t *testing.T) {
 		}
 	`
 
-	sd, err := svcdef.NewFromString(def, gopath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	conf := gengokit.Config{
-		GoPackage: "github.com/TuneLab/go-truss/gengokit",
-		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
-	}
-
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	sd1, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,54 +214,60 @@ func TestAllTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	te2, err := gengokit.NewTemplateExecutor(sd2, conf)
+	conf := gengokit.Config{
+		GoPackage: "github.com/TuneLab/go-truss/gengokit",
+		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+	}
+
+	data1, err := gengokit.NewData(sd1, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data2, err := gengokit.NewData(sd2, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for _, templFP := range templateFileAssets.AssetNames() {
-		// skip the partial templates
-		if filepath.Ext(templFP) != ".gotemplate" {
-			continue
-		}
-		prevGenMap := make(map[string]io.Reader)
+		var prev io.Reader
 
-		firstCode, err := testGenerateResponseFile(templFP, te, prevGenMap)
+		firstCode, err := testGenerateResponseFile(data1, prev, templFP)
 		if err != nil {
-			t.Fatalf("%v failed to format on first generation\n\nERROR:\n\n%v\n\nCODE:\n\n%v", templFP, err.Error(), string(firstCode))
+			t.Fatalf("%s failed to format on first generation\n\nERROR:\n\n%s\n\nCODE:\n\n%s", templFP, err, firstCode)
 		}
 
-		// store the file to act to pass back to testGenerateResponseFile for second generation
-		prevGenMap[templatePathToActual(templFP, te.PackageName)] = bytes.NewReader(firstCode)
+		// store the file to pass back to testGenerateResponseFile for second generation
+		prev = strings.NewReader(firstCode)
 
-		secondCode, err := testGenerateResponseFile(templFP, te, prevGenMap)
+		secondCode, err := testGenerateResponseFile(data1, prev, templFP)
 		if err != nil {
-			t.Fatalf("%v failed to format on second identical generation\n\nERROR: %v\nCODE:\n\n%v",
-				templFP, err.Error(), string(secondCode))
+			t.Fatalf("%s failed to format on second identical generation\n\nERROR: %s\nCODE:\n\n%s",
+				templFP, err, secondCode)
 		}
 
-		if bytes.Compare(firstCode, secondCode) != 0 {
-			t.Fatal("Generated code differs after regeneration with same definition\n" + gentesthelper.DiffStrings(string(firstCode), string(secondCode)))
+		if len(firstCode) != len(secondCode) {
+			t.Fatal("Generated code differs after regeneration with same definition\n" + diff(firstCode, secondCode))
 		}
 
-		// store the file to act to pass back to testGenerateResponseFile for third generation
-		prevGenMap[templatePathToActual(templFP, te.PackageName)] = bytes.NewReader(secondCode)
+		// store the file to pass back to testGenerateResponseFile for third generation
+		prev = strings.NewReader(secondCode)
 
-		// pass in templateExecutor created from def2
-		addRPCCode, err := testGenerateResponseFile(templFP, te2, prevGenMap)
+		// pass in data2 created from def2
+		addRPCCode, err := testGenerateResponseFile(data2, prev, templFP)
 		if err != nil {
-			t.Fatalf("%v failed to format on third generation with 1 rpc added\n\nERROR: %v\nCODE:\n\n%v",
-				templFP, err.Error(), string(addRPCCode))
+			t.Fatalf("%s failed to format on third generation with 1 rpc added\n\nERROR: %s\nCODE:\n\n%s",
+				templFP, err, addRPCCode)
 		}
 
-		// store the file to act to pass back to testGenerateResponseFile for forth generation
-		prevGenMap[templatePathToActual(templFP, te.PackageName)] = bytes.NewReader(addRPCCode)
+		// store the file to pass back to testGenerateResponseFile for fourth generation
+		prev = strings.NewReader(addRPCCode)
 
-		// pass in templateExecutor create from def1
-		_, err = testGenerateResponseFile(templFP, te, prevGenMap)
+		// pass in data1  create from def1
+		_, err = testGenerateResponseFile(data1, prev, templFP)
 		if err != nil {
-			t.Fatalf("%v failed to format on forth generation with 1 rpc removed\n\nERROR: %v\nCODE:\n\n%v",
-				templFP, err.Error(), string(addRPCCode))
+			t.Fatalf("%s failed to format on fourth generation with 1 rpc removed\n\nERROR: %s\nCODE:\n\n%s",
+				templFP, err, addRPCCode)
 		}
 	}
 }
@@ -346,82 +339,79 @@ func TestUpdateMethods(t *testing.T) {
 		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
 	}
 
-	te, err := gengokit.NewTemplateExecutor(sd, conf)
+	te, err := gengokit.NewData(sd, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	testHandlerGeneration := func(templPath string) {
-		svc.Methods = []*svcdef.ServiceMethod{allMethods[0]}
-		firstBytes, err := testGenerateResponseFile(templPath, te, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		firstCode := strings.TrimSpace(string(firstBytes))
+	templPath := handler.ServerHandlerPath
 
-		secondCode, err := renderService(svc, firstCode, te, templPath)
-		if err != nil {
-			t.Fatal(err)
-		}
+	svc.Methods = []*svcdef.ServiceMethod{allMethods[0]}
 
-		if strings.Compare(firstCode, secondCode) != 0 {
-			t.Fatal("Generated code differs after regenerated with same definition\n" +
-				templPath + "\n" +
-				diff(firstCode, secondCode))
-		}
-
-		svc.Methods = append(svc.Methods, allMethods[1])
-
-		thirdCode, err := renderService(svc, secondCode, te, templPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if strings.Compare(secondCode, thirdCode) != -1 {
-			t.Fatal("Generated code not longer after regenerated with additional service method\n" +
-				templPath + "\n" +
-				diff(secondCode, thirdCode))
-		}
-
-		// remove the first one rpc
-		svc.Methods = svc.Methods[1:]
-
-		forthCode, err := renderService(svc, thirdCode, te, templPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if strings.Compare(thirdCode, forthCode) != 1 {
-			t.Fatal("Generated code not shorter after regenerated with fewer service method\n" +
-				templPath + "\n" +
-				diff(secondCode, thirdCode))
-		}
-
-		svc.Methods = allMethods
-
-		fifthCode, err := renderService(svc, forthCode, te, templPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if strings.Compare(forthCode, fifthCode) != -1 {
-			t.Fatal("Generated code not longer after regenerated with additional service method\n" +
-				templPath + "\n" +
-				diff(secondCode, thirdCode))
-		}
+	firstCode, err := renderService(svc, "", te, templPath)
+	if err != nil {
+		t.Fatal(err)
 	}
-	testHandlerGeneration("NAME-service/handlers/server/server_handler.gotemplate")
+
+	secondCode, err := renderService(svc, firstCode, te, templPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(firstCode) != len(secondCode) {
+		t.Fatal("Generated code differs after regenerated with same definition\n" +
+			templPath + "\n" +
+			diff(firstCode, secondCode))
+	}
+
+	svc.Methods = append(svc.Methods, allMethods[1])
+
+	thirdCode, err := renderService(svc, secondCode, te, templPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(thirdCode) <= len(secondCode) {
+		t.Fatal("Generated code not longer after regenerated with additional service method\n" +
+			templPath + "\n" +
+			diff(secondCode, thirdCode))
+	}
+
+	// remove the first one rpc
+	svc.Methods = svc.Methods[1:]
+
+	fourthCode, err := renderService(svc, thirdCode, te, templPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(fourthCode) >= len(thirdCode) {
+		t.Fatal("Generated code not shorter after regenerated with fewer service method\n" +
+			templPath + "\n" +
+			diff(thirdCode, fourthCode))
+	}
+
+	svc.Methods = allMethods
+
+	fifthCode, err := renderService(svc, fourthCode, te, templPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(fifthCode) <= len(fourthCode) {
+		t.Fatal("Generated code not longer after regenerated with additional service method\n" +
+			templPath + "\n" +
+			diff(fourthCode, fifthCode))
+	}
 }
 
-func diff(a, b string) string {
-	return gentesthelper.DiffStrings(
-		a,
-		b,
-	)
-}
+func renderService(svc *svcdef.Service, prevFileAsString string, te *gengokit.Data, templPath string) (string, error) {
+	var prevFile io.Reader
+	if prevFileAsString != "" {
+		prevFile = strings.NewReader(prevFileAsString)
+	}
 
-func renderService(svc *svcdef.Service, prev string, te *gengokit.TemplateExecutor, templPath string) (string, error) {
-	h, err := handler.New(svc, strings.NewReader(prev), te.PackageName)
+	h, err := handler.New(svc, prevFile, te.PackageName)
 	if err != nil {
 		return "", err
 	}
@@ -436,33 +426,43 @@ func renderService(svc *svcdef.Service, prev string, te *gengokit.TemplateExecut
 		return "", err
 	}
 
-	nextBytes, err = testFormat(nextBytes)
+	nextCode, err := testFormat(string(nextBytes))
 	if err != nil {
 		return "", errors.Wrap(err, "cannot format")
 	}
 
-	nextCode := strings.TrimSpace(string(nextBytes))
+	nextCode = strings.TrimSpace(nextCode)
 
 	return nextCode, nil
 }
 
-func testGenerateResponseFile(templFP string, te *gengokit.TemplateExecutor, prevGenMap map[string]io.Reader) ([]byte, error) {
-	// apply server_handler.go template
-	code, err := generateResponseFile(templFP, te, prevGenMap)
+func diff(a, b string) string {
+	return gentesthelper.DiffStrings(
+		a,
+		b,
+	)
+}
+
+// testGenerateResponseFile reads the output of generateResponseFile into a
+// string which it returns as this logic needs to be repeated in tests. In
+// addition this function will return an error if the code fails to format,
+// while generateResponseFile will not.
+func testGenerateResponseFile(data *gengokit.Data, prev io.Reader, templFP string) (string, error) {
+	code, err := generateResponseFile(data, prev, templFP)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// read the code off the io.Reader
 	codeBytes, err := ioutil.ReadAll(code)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// format the code
-	formatted, err := testFormat(codeBytes)
+	formatted, err := testFormat(string(codeBytes))
 	if err != nil {
-		return codeBytes, err
+		return string(codeBytes), err
 	}
 
 	return formatted, nil
@@ -470,12 +470,12 @@ func testGenerateResponseFile(templFP string, te *gengokit.TemplateExecutor, pre
 
 // testFormat takes a string representing golang code and attempts to return a
 // formated copy of that code.
-func testFormat(code []byte) ([]byte, error) {
-	formatted, err := format.Source(code)
+func testFormat(code string) (string, error) {
+	formatted, err := format.Source([]byte(code))
 
 	if err != nil {
 		return code, err
 	}
 
-	return formatted, nil
+	return string(formatted), nil
 }
