@@ -46,8 +46,8 @@ func (m *Middlewares) LoadService(prev io.Reader) {
 // Render can render either EndpointsPath or ServicePath. With no previous
 // version it renders the templates, if there was a previous version loaded in,
 // it passes that through
-func (m *Middlewares) Render(alias string, data *gengokit.Data) (io.Reader, error) {
-	switch alias {
+func (m *Middlewares) Render(path string, data *gengokit.Data) (io.Reader, error) {
+	switch path {
 	case EndpointsPath:
 		if m.prevEndpoints != nil {
 			return m.prevEndpoints, nil
@@ -59,5 +59,5 @@ func (m *Middlewares) Render(alias string, data *gengokit.Data) (io.Reader, erro
 		}
 		return data.ApplyTemplate(templates.ServiceBase, "Service")
 	}
-	return nil, errors.Errorf("cannot render unknown file: %q", alias)
+	return nil, errors.Errorf("cannot render unknown file: %q", path)
 }

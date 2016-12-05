@@ -106,7 +106,7 @@ func TestRenderPrevService(t *testing.T) {
 	`
 	_, data, err := generalService()
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	middleware := New()
@@ -115,12 +115,12 @@ func TestRenderPrevService(t *testing.T) {
 
 	service, err := middleware.Render(ServicePath, data)
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	serviceBytes, err := ioutil.ReadAll(service)
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	wantFormatted, serviceFormatted, diff := thelper.DiffGoCode(wantService, string(serviceBytes))
@@ -151,7 +151,7 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 	_, data, err := generalService()
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	middleware := New()
@@ -160,12 +160,12 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 	endpoints, err := middleware.Render(EndpointsPath, data)
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	endpointsBytes, err := ioutil.ReadAll(endpoints)
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	wantFormatted, endpointFormatted, diff := thelper.DiffGoCode(wantEndpoints, string(endpointsBytes))
@@ -177,14 +177,14 @@ func TestRenderPrevEndpoints(t *testing.T) {
 func TestRenderUnknownFile(t *testing.T) {
 	_, data, err := generalService()
 	if err != nil {
-		t.Fail()
+		t.Fatal(err)
 	}
 
 	middleware := New()
 
 	_, err = middleware.Render("not/valid/file.go", data)
 	if err == nil {
-		t.Fatalf("Tried to render unknown file")
+		t.Fatalf("This should have produced an error, but didn't")
 	}
 }
 

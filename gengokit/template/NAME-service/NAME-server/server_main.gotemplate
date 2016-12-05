@@ -67,7 +67,7 @@ func main() {
 	// Endpoint domain.
 	var (
 	{{range $i := .Service.Methods -}}
-			{{ToLower $i.Name}}Endpoint = svc.Make{{$i.Name}}Endpoint(service)
+		{{ToLower $i.Name}}Endpoint = svc.Make{{$i.Name}}Endpoint(service)
 	{{end}}
 	)
 
