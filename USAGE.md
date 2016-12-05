@@ -36,13 +36,13 @@ Your directory structure will look like this:
 │   ├── handlers
 │   │   └── server
 │   │       └── server_handler.go
+│   ├── middlewares
+│   │   └── ...
 │   ├── NAME-cli-client
 │   │   └── client_main.go
 │   ├── NAME-server
 │   │   └── server_main.go
-│   ├── svc.pb.go
-│   └── third_party
-│       └── ...
+│   └── svc.pb.go
 ├── svc.proto
 ```
 
