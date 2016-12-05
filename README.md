@@ -64,7 +64,7 @@ Try Truss for yourself on Echo Service to see the service that is generated:
 truss example/echo.proto
 ```
 
-See [USAGE.md](./USAGE.md) for more details.
+See [USAGE.md](./USAGE.md) and [TUTORIAL.md](./TUTORIAL.md) for more details.
 
 ## Developing
 
