@@ -63,10 +63,6 @@ func main() {
 	}
 }
 
-// fileSystem is a map of paths relative to truss.Config.ServicePath mapped to
-// io.Reader's as files
-type fileSystem map[string]io.Reader
-
 // parseInput constructs a *truss.Config with all values needed to parse
 // service definition files.
 func parseInput() (*truss.Config, error) {
@@ -227,9 +223,9 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	return dt, sd, nil
 }
 
-// generateCode returns a fileSystem that represents a gokit
+// generateCode returns a map[string]io.Reader that represents a gokit
 // service with documentation
-func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (fileSystem, error) {
+func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map[string]io.Reader, error) {
 	conf := ggkconf.Config{
 		PBPackage:     cfg.PBPackage,
 		GoPackage:     cfg.ServicePackage,
@@ -246,11 +242,15 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (fil
 	return combineFiles(genGokitFiles, genDocFiles), nil
 }
 
-// combineFiles takes any numbers of fileSystems and combines them into one.
-func combineFiles(group ...fileSystem) fileSystem {
-	final := make(fileSystem)
+// combineFiles takes any numbers of map[string]io.Reader and combines them into one.
+func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
+	final := make(map[string]io.Reader)
 	for _, g := range group {
 		for path, file := range g {
+			if final[path] != nil {
+				log.WithField("path", path).
+					Warn("truss generated two files with same path, outputting final one specified")
+			}
 			final[path] = file
 		}
 	}
@@ -315,8 +315,8 @@ func exitIfError(err error) {
 	}
 }
 
-// readPreviousGeneration returns a fileSystem representing the files in serviceDir
-func readPreviousGeneration(serviceDir string) (fileSystem, error) {
+// readPreviousGeneration returns a map[string]io.Reader representing the files in serviceDir
+func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 	if fileExists(serviceDir) != true {
 		return nil, nil
 	}
@@ -324,7 +324,7 @@ func readPreviousGeneration(serviceDir string) (fileSystem, error) {
 	dir, _ := filepath.Split(serviceDir)
 	sfs := simpleFileConstructor{
 		dir:   dir,
-		files: make(fileSystem),
+		files: make(map[string]io.Reader),
 	}
 	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
 	if err != nil {
@@ -335,8 +335,8 @@ func readPreviousGeneration(serviceDir string) (fileSystem, error) {
 }
 
 // simpleFileConstructor has function makeSimpleFile of type filepath.WalkFunc
-// This allows for filepath.Walk to be called with makeSimpleFile and build a fileSystem
-// for all files in a directory
+// This allows for filepath.Walk to be called with makeSimpleFile and build a
+// map[string]io.Reader for all files in a directory
 type simpleFileConstructor struct {
 	dir   string
 	files map[string]io.Reader

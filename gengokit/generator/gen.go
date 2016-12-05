@@ -46,7 +46,7 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) (map[string]io.Reade
 // based on path and if that file was generated previously. It accepts a
 // template path to render, a templateExecutor to apply to the template, and a
 // map of paths to files for the previous generation. It returns a
-// io.Reader representing the generated file
+// io.Reader representing the generated file.
 func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reader) (io.Reader, error) {
 	var genCode io.Reader
 	var err error
