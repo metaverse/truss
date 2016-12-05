@@ -12,6 +12,7 @@ import (
 
 	"github.com/TuneLab/go-truss/gengokit"
 	"github.com/TuneLab/go-truss/gengokit/handler"
+	"github.com/TuneLab/go-truss/gengokit/middlewares"
 	templFiles "github.com/TuneLab/go-truss/gengokit/template"
 
 	"github.com/TuneLab/go-truss/svcdef"
@@ -70,6 +71,18 @@ func generateResponseFile(data *gengokit.Data, prevFile io.Reader, templFP strin
 		}
 
 		if genCode, err = h.Render(templFP, data); err != nil {
+			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
+		}
+	case middlewares.EndpointsPath:
+		m := middlewares.New()
+		m.LoadEndpoints(prevFile)
+		if genCode, err = m.Render(templFP, data); err != nil {
+			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
+		}
+	case middlewares.ServicePath:
+		m := middlewares.New()
+		m.LoadService(prevFile)
+		if genCode, err = m.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
 	default:
