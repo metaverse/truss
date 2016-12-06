@@ -152,7 +152,7 @@ To shutdown the server, press Ctrl+C in the server terminal
 ## Implement more things!
 
 The following is left as an exersise to the reader:
-  - Implement the Loudness logic
+  - Implement logic for the Louder call
     - code the logic inside the stub
     - now separate this logic into an unexported helper function
   - Define a new RPC call in echo.proto
@@ -163,8 +163,8 @@ The following is left as an exersise to the reader:
   - Remove an RPC call definition from echo.proto
   	- regenerate service with truss, verify that the call no longer exists
   - Break things
-  - Launch the server on a different port, or different machine (and talk to it)
-  - Try running multiple servers at once (hint: run `./server_main -h`)
+  - Launch the server on a different port, or different machine, and talk to it (hint: run `./server_main -h`)
+  - Try running multiple servers at once 
 
 # Additional features
 
