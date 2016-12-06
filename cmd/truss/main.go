@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go/build"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +27,7 @@ import (
 var (
 	pbPackageFlag  = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
 	svcPackageFlag = flag.String("svcout", "", "The go package path where the generated service directory will be written.")
+	verboseFlag    = flag.Bool("v", false, "Verbose output with stack traces for errors.")
 )
 
 const (
@@ -41,8 +41,6 @@ var (
 )
 
 func init() {
-	log.SetLevel(log.InfoLevel)
-
 	buildinfo := new(bytes.Buffer)
 	if Version != "" && Version != noVersion {
 		buildinfo.WriteString("version: ")
@@ -69,6 +67,11 @@ func init() {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	log.SetLevel(log.InfoLevel)
+	if *verboseFlag {
+		log.SetLevel(log.DebugLevel)
+	}
 }
 
 func main() {
@@ -81,8 +84,8 @@ func main() {
 	genFiles, err := generateCode(cfg, dt, sd)
 	exitIfError(errors.Wrap(err, "cannot generate service"))
 
-	for _, f := range genFiles {
-		err := writeGenFile(f, cfg.ServicePath)
+	for path, file := range genFiles {
+		err := writeGenFile(file, path, cfg.ServicePath)
 		if err != nil {
 			exitIfError(errors.Wrap(err, "cannot to write output"))
 		}
@@ -249,9 +252,9 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	return dt, sd, nil
 }
 
-// generateCode returns a []truss.NamedReadWriter that represents a gokit
+// generateCode returns a map[string]io.Reader that represents a gokit
 // service with documentation
-func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) ([]truss.NamedReadWriter, error) {
+func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map[string]io.Reader, error) {
 	conf := ggkconf.Config{
 		PBPackage:     cfg.PBPackage,
 		GoPackage:     cfg.ServicePackage,
@@ -265,33 +268,45 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) ([]t
 
 	genDocFiles := gendoc.GenerateDocs(dt)
 
-	genFiles := append(genGokitFiles, genDocFiles...)
-
-	return genFiles, nil
+	return combineFiles(genGokitFiles, genDocFiles), nil
 }
 
-// writeGenFile writes a truss.NamedReadWriter to the filesystem
-// to be contained within serviceDir
-func writeGenFile(f truss.NamedReadWriter, serviceDir string) error {
+// combineFiles takes any number of map[string]io.Reader and combines them into one.
+func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
+	final := make(map[string]io.Reader)
+	for _, g := range group {
+		for path, file := range g {
+			if final[path] != nil {
+				log.WithField("path", path).
+					Warn("truss generated two files with same path, outputting final one specified")
+			}
+			final[path] = file
+		}
+	}
+
+	return final
+}
+
+// writeGenFile writes a file at relPath relative to serviceDir to the filesystem
+func writeGenFile(file io.Reader, relPath, serviceDir string) error {
 	// the serviceDir contains /NAME-service so we want to write to the
 	// directory above
 	outDir := filepath.Dir(serviceDir)
 
 	// i.e. NAME-service/generated/endpoint.go
-	name := f.Name()
 
-	fullPath := filepath.Join(outDir, name)
+	fullPath := filepath.Join(outDir, relPath)
 	err := os.MkdirAll(filepath.Dir(fullPath), 0777)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create(fullPath)
+	outFile, err := os.Create(fullPath)
 	if err != nil {
 		return errors.Wrapf(err, "cannot create file %v", fullPath)
 	}
 
-	_, err = io.Copy(file, f)
+	_, err = io.Copy(outFile, file)
 	if err != nil {
 		return errors.Wrapf(err, "cannot write to %v", fullPath)
 	}
@@ -325,60 +340,51 @@ func cleanProtofilePath(rawPaths []string) ([]string, error) {
 func exitIfError(err error) {
 	if errors.Cause(err) != nil {
 		defer os.Exit(1)
+		if *verboseFlag {
+			fmt.Printf("%+v\n", err)
+			return
+		}
 		fmt.Printf("%v\n", err)
 	}
 }
 
-// readPreviousGeneration returns a []truss.NamedReadWriter for all files serviceDir
-func readPreviousGeneration(serviceDir string) ([]truss.NamedReadWriter, error) {
+// readPreviousGeneration returns a map[string]io.Reader representing the files in serviceDir
+func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 	if fileExists(serviceDir) != true {
 		return nil, nil
 	}
 
-	var files []truss.NamedReadWriter
 	dir, _ := filepath.Split(serviceDir)
-	sfs := simpleFileConstructor{
-		dir:   dir,
-		files: files,
-	}
-	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot fully walk directory %v", sfs.dir)
-	}
+	files := make(map[string]io.Reader)
 
-	return sfs.files, nil
-}
+	addFileToFiles := func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
 
-// simpleFileConstructor has function makeSimpleFile of type filepath.WalkFunc
-// This allows for filepath.Walk to be called with makeSimpleFile and build a truss.SimpleFile
-// for all files in a direcotry
-type simpleFileConstructor struct {
-	dir   string
-	files []truss.NamedReadWriter
-}
+		file, ioErr := os.Open(path)
 
-// makeSimpleFile is of type filepath.WalkFunc
-// makeSimpleFile constructs a truss.SimpleFile and stores it in SimpleFileConstructor.files
-func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, err error) error {
-	if info.IsDir() {
+		if ioErr != nil {
+			return errors.Wrapf(ioErr, "cannot read file: %v", path)
+		}
+
+		// trim the prefix of the path to the proto files from the full path to the file
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		files[relPath] = file
+
 		return nil
 	}
 
-	byteContent, ioErr := ioutil.ReadFile(path)
-
-	if ioErr != nil {
-		return errors.Wrapf(ioErr, "cannot read file: %v", path)
+	err := filepath.Walk(serviceDir, addFileToFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot fully walk directory %v", dir)
 	}
 
-	// trim the prefix of the path to the proto files from the full path to the file
-	name := strings.TrimPrefix(path, sfs.dir)
-	var file truss.SimpleFile
-	file.Path = name
-	file.Write(byteContent)
-
-	sfs.files = append(sfs.files, &file)
-
-	return nil
+	return files, nil
 }
 
 // fileExists checks if a file at the given path exists. Returns true if the
