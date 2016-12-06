@@ -242,7 +242,7 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map
 	return combineFiles(genGokitFiles, genDocFiles), nil
 }
 
-// combineFiles takes any numbers of map[string]io.Reader and combines them into one.
+// combineFiles takes any number of map[string]io.Reader and combines them into one.
 func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
 	final := make(map[string]io.Reader)
 	for _, g := range group {
@@ -322,45 +322,36 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 	}
 
 	dir, _ := filepath.Split(serviceDir)
-	sfs := simpleFileConstructor{
-		dir:   dir,
-		files: make(map[string]io.Reader),
-	}
-	err := filepath.Walk(serviceDir, sfs.makeSimpleFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot fully walk directory %v", sfs.dir)
-	}
+	files := make(map[string]io.Reader)
 
-	return sfs.files, nil
-}
+	addFileToFiles := func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
 
-// simpleFileConstructor has function makeSimpleFile of type filepath.WalkFunc
-// This allows for filepath.Walk to be called with makeSimpleFile and build a
-// map[string]io.Reader for all files in a directory
-type simpleFileConstructor struct {
-	dir   string
-	files map[string]io.Reader
-}
+		file, ioErr := os.Open(path)
 
-// makeSimpleFile is of type filepath.WalkFunc
-// makeSimpleFile adds files as io.Readers to sfs.files by path
-func (sfs *simpleFileConstructor) makeSimpleFile(path string, info os.FileInfo, err error) error {
-	if info.IsDir() {
+		if ioErr != nil {
+			return errors.Wrapf(ioErr, "cannot read file: %v", path)
+		}
+
+		// trim the prefix of the path to the proto files from the full path to the file
+		relPath, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+
+		files[relPath] = file
+
 		return nil
 	}
 
-	file, ioErr := os.Open(path)
-
-	if ioErr != nil {
-		return errors.Wrapf(ioErr, "cannot read file: %v", path)
+	err := filepath.Walk(serviceDir, addFileToFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot fully walk directory %v", dir)
 	}
 
-	// trim the prefix of the path to the proto files from the full path to the file
-	name := strings.TrimPrefix(path, sfs.dir)
-
-	sfs.files[name] = file
-
-	return nil
+	return files, nil
 }
 
 // fileExists checks if a file at the given path exists. Returns true if the
