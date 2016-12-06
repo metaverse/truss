@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"go/build"
@@ -29,10 +30,34 @@ var (
 	svcPackageFlag = flag.String("svcout", "", "The go package path where the generated service directory will be written.")
 )
 
+const (
+	noVersion   string = "<no-version>"
+	noBuildDate string = "<no-build-date>"
+)
+
+var (
+	Version   string = noVersion
+	BuildDate string = noBuildDate
+)
+
 func init() {
 	log.SetLevel(log.InfoLevel)
 
+	buildinfo := new(bytes.Buffer)
+	if Version != "" && Version != noVersion {
+		buildinfo.WriteString("version: ")
+		buildinfo.WriteString(Version)
+		buildinfo.WriteByte(' ')
+	}
+	if BuildDate != "" && BuildDate != noBuildDate {
+		buildinfo.WriteString("built: ")
+		buildinfo.WriteString(strings.Replace(BuildDate, "_", " ", -1))
+	}
+
 	flag.Usage = func() {
+		if buildinfo.Len() > 0 {
+			fmt.Fprintf(os.Stderr, "Truss (%s)\n", strings.TrimSpace(buildinfo.String()))
+		}
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
 	}
@@ -41,7 +66,7 @@ func init() {
 
 	if len(flag.Args()) == 0 {
 		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", filepath.Base(os.Args[0]))
-		fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", filepath.Base(os.Args[0]))
+		flag.Usage()
 		os.Exit(1)
 	}
 }
@@ -114,7 +139,7 @@ func parseInput() (*truss.Config, error) {
 			return nil, err
 		}
 		if p.Root == "" {
-			return nil, errors.New("svcout not in gopath GOPATH")
+			return nil, errors.New("svcout not in GOPATH")
 		}
 		if !fileExists(p.Dir) {
 			return nil, errors.Errorf("specified package path for service output directory does not exist: %q", p.Dir)
