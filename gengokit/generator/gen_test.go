@@ -230,7 +230,7 @@ func TestAllTemplates(t *testing.T) {
 	for _, templFP := range templateFileAssets.AssetNames() {
 		var prev io.Reader
 
-		firstCode, err := testGenerateResponseFile(data1, prev, templFP)
+		firstCode, err := testGenerateResponseFile(templFP, data1, prev)
 		if err != nil {
 			t.Fatalf("%s failed to format on first generation\n\nERROR:\n\n%s\n\nCODE:\n\n%s", templFP, err, firstCode)
 		}
@@ -238,7 +238,7 @@ func TestAllTemplates(t *testing.T) {
 		// store the file to pass back to testGenerateResponseFile for second generation
 		prev = strings.NewReader(firstCode)
 
-		secondCode, err := testGenerateResponseFile(data1, prev, templFP)
+		secondCode, err := testGenerateResponseFile(templFP, data1, prev)
 		if err != nil {
 			t.Fatalf("%s failed to format on second identical generation\n\nERROR: %s\nCODE:\n\n%s",
 				templFP, err, secondCode)
@@ -252,7 +252,7 @@ func TestAllTemplates(t *testing.T) {
 		prev = strings.NewReader(secondCode)
 
 		// pass in data2 created from def2
-		addRPCCode, err := testGenerateResponseFile(data2, prev, templFP)
+		addRPCCode, err := testGenerateResponseFile(templFP, data2, prev)
 		if err != nil {
 			t.Fatalf("%s failed to format on third generation with 1 rpc added\n\nERROR: %s\nCODE:\n\n%s",
 				templFP, err, addRPCCode)
@@ -262,7 +262,7 @@ func TestAllTemplates(t *testing.T) {
 		prev = strings.NewReader(addRPCCode)
 
 		// pass in data1  create from def1
-		_, err = testGenerateResponseFile(data1, prev, templFP)
+		_, err = testGenerateResponseFile(templFP, data1, prev)
 		if err != nil {
 			t.Fatalf("%s failed to format on fourth generation with 1 rpc removed\n\nERROR: %s\nCODE:\n\n%s",
 				templFP, err, addRPCCode)
@@ -281,8 +281,8 @@ func diff(a, b string) string {
 // string which it returns as this logic needs to be repeated in tests. In
 // addition this function will return an error if the code fails to format,
 // while generateResponseFile will not.
-func testGenerateResponseFile(data *gengokit.Data, prev io.Reader, templFP string) (string, error) {
-	code, err := generateResponseFile(data, prev, templFP)
+func testGenerateResponseFile(templPath string, data *gengokit.Data, prev io.Reader) (string, error) {
+	code, err := generateResponseFile(templPath, data, prev)
 	if err != nil {
 		return "", err
 	}

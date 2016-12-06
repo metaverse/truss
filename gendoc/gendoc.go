@@ -3,14 +3,16 @@
 package gendoc
 
 import (
+	"io"
+	"strings"
+
 	"github.com/TuneLab/go-truss/deftree"
-	"github.com/TuneLab/go-truss/truss"
 )
 
 // GenerateDocs accepts a deftree that represents an ast of a group of
-// protofiles and returns a []truss.SimpleFile that represents a relative
+// protofiles and returns map[string]io.Reader that represents a relative
 // filestructure of generated docs
-func GenerateDocs(dt deftree.Deftree) []truss.NamedReadWriter {
+func GenerateDocs(dt deftree.Deftree) map[string]io.Reader {
 	response := ""
 
 	microDef, ok := dt.(*deftree.MicroserviceDefinition)
@@ -20,13 +22,8 @@ func GenerateDocs(dt deftree.Deftree) []truss.NamedReadWriter {
 		response = "Error, could not cast Deftree to MicroserviceDefinition"
 	}
 
-	var file truss.SimpleFile
-
-	file.Path = dt.GetName() + "-service/docs/docs.md"
-	file.Write([]byte(response))
-
-	var files []truss.NamedReadWriter
-	files = append(files, &file)
+	files := make(map[string]io.Reader)
+	files[dt.GetName()+"-service/docs/docs.md"] = strings.NewReader(response)
 
 	return files
 }
