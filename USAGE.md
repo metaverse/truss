@@ -3,7 +3,7 @@
 ## File structure
 
 Start with your service definition file, let's name it `svc.proto`. 
-For a more detailed example of a simple service definition see `go-truss/example/echo.proto`,
+For a more detailed example of a simple service definition see [echo.proto](./_example/echo.proto),
 but for now we only care about the following structure:
 ```
 // The package name determines the name of the directories that truss creates
