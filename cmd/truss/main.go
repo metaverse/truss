@@ -26,11 +26,10 @@ import (
 var (
 	pbPackageFlag  = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
 	svcPackageFlag = flag.String("svcout", "", "The go package path where the generated service directory will be written.")
+	verboseFlag    = flag.Bool("v", false, "Verbose output with stack traces for errors.")
 )
 
 func init() {
-	log.SetLevel(log.InfoLevel)
-
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
@@ -42,6 +41,11 @@ func init() {
 		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", filepath.Base(os.Args[0]))
 		fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", filepath.Base(os.Args[0]))
 		os.Exit(1)
+	}
+
+	log.SetLevel(log.InfoLevel)
+	if *verboseFlag {
+		log.SetLevel(log.DebugLevel)
 	}
 }
 
@@ -311,6 +315,10 @@ func cleanProtofilePath(rawPaths []string) ([]string, error) {
 func exitIfError(err error) {
 	if errors.Cause(err) != nil {
 		defer os.Exit(1)
+		if *verboseFlag {
+			fmt.Printf("%+v\n", err)
+			return
+		}
 		fmt.Printf("%v\n", err)
 	}
 }
