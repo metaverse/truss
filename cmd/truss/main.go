@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"go/build"
@@ -41,20 +40,17 @@ var (
 )
 
 func init() {
-	buildinfo := new(bytes.Buffer)
+	var buildinfo string
 	if Version != "" && Version != noVersion {
-		buildinfo.WriteString("version: ")
-		buildinfo.WriteString(Version)
-		buildinfo.WriteByte(' ')
+		buildinfo = fmt.Sprintf("version: %s", Version)
 	}
 	if BuildDate != "" && BuildDate != noBuildDate {
-		buildinfo.WriteString("built: ")
-		buildinfo.WriteString(strings.Replace(BuildDate, "_", " ", -1))
+		buildinfo = fmt.Sprintf("%s built: %s", buildinfo, strings.Replace(BuildDate, "_", " ", -1))
 	}
 
 	flag.Usage = func() {
-		if buildinfo.Len() > 0 {
-			fmt.Fprintf(os.Stderr, "Truss (%s)\n", strings.TrimSpace(buildinfo.String()))
+		if buildinfo != "" {
+			fmt.Fprintf(os.Stderr, "Truss (%s)\n", strings.TrimSpace(buildinfo))
 		}
 		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", filepath.Base(os.Args[0]))
 		flag.PrintDefaults()
