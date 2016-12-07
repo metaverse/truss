@@ -7,7 +7,14 @@ SHA := $(shell git rev-parse --short=10 HEAD)
 default: truss
 
 dependencies:
-	go install github.com/golang/protobuf/protoc-gen-go
+	go get github.com/go-kit/kit
+	go get google.golang.org/genproto
+	go get github.com/golang/protobuf/{proto,protoc-gen-go}
+
+update-dependencies:
+	go get -u github.com/go-kit/kit
+	go get -u google.golang.org/genproto
+	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 
 # Generate go files containing the all template files in []byte form
 gobindata:
@@ -30,3 +37,5 @@ test-integration:
 # Removes generated code from tests
 testclean:
 	$(MAKE) -C cmd/_integration-tests clean
+
+.PHONY: testclean test-integration test-go test truss gobindata dependencies

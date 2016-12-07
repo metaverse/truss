@@ -17,28 +17,21 @@ source.
 
 To install this software, you must:
 
-1. Install protocol buffers version 3 or greater. The easiest way is to
-download a release from the [github releases](https://github.com/google/protobuf/releases)
-and add the binary to your `$PATH`. 
-Otherwise [install from source.](https://github.com/google/protobuf/releases)
-2. Of course, install the Go compiler and tools from https://golang.org/.
-See https://golang.org/doc/install for details.
-3. Install the `protoc-gen-go` and `proto` packages for Go. The simplest 
-way is to run 
+1. Install protoc 3 or newer. The easiest way is to
+download a release from [github](https://github.com/google/protobuf/releases)
+and add to `$PATH`.
+Otherwise [install from source.](https://github.com/google/protobuf)
+1. Install the `proto` and `protoc-gen-go` packages. (`protoc-gen-go` must be in `$PATH`)
 
 	```
 	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 	```
-
-	The compiler plugin, protoc-gen-go, will be installed in `$GOPATH/bin`. 
-It must be in your `$PATH` for the protocol compiler, `protoc`, to find it.
-4. Install google's protobuf/grpc http annotations option. `protoc` will use 
-these to compile http annotations. To install run:
+1. Install HTTP Annotations
 
 	```
-	go get -u google.golang.org/genproto	
+	go get -u google.golang.org/genproto
 	```
-5. Install Truss with 
+1. Install Truss with
 
 	```
 	go get -u github.com/TuneLab/go-truss/...
@@ -46,14 +39,14 @@ these to compile http annotations. To install run:
 
 ## Usage
 
-Using Truss is easy. You define your service with [gRPC](http://www.grpc.io/) 
-and [protoc buffers](https://developers.google.com/protocol-buffers/docs/proto3), 
-and Truss uses that definition to create an entire service. You can even 
+Using Truss is easy. You define your service with [gRPC](http://www.grpc.io/)
+and [protoc buffers](https://developers.google.com/protocol-buffers/docs/proto3),
+and Truss uses that definition to create an entire service. You can even
 add [http annotations](
-https://github.com/googleapis/googleapis/blob/928a151b2f871b4239b7707e1bb59258df3fe10a/google/api/http.proto#L36) 
+https://github.com/googleapis/googleapis/blob/928a151b2f871b4239b7707e1bb59258df3fe10a/google/api/http.proto#L36)
 for HTTP 1.1/JSON transport!
 
-Then you open the `handlers/server/server_handler.go`, 
+Then you open the `handlers/server/server_handler.go`,
 add you business logic, and you're good to go.
 
 Here is an example service definition: [Echo Service](./_example/echo.proto)
