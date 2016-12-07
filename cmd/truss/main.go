@@ -24,22 +24,45 @@ import (
 )
 
 var (
-	pbPackageFlag  = flag.String("pbout", "", "The go package path where the protoc-gen-go .pb.go structs will be written.")
-	svcPackageFlag = flag.String("svcout", "", "The go package path where the generated service directory will be written.")
-	verboseFlag    = flag.Bool("v", false, "Verbose output with stack traces for errors.")
+	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
+	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written")
+	verboseFlag    = flag.Bool("v", false, "verbose output")
+)
+
+var binName = filepath.Base(os.Args[0])
+
+const (
+	noVersion   string = "<no-version>"
+	noBuildDate string = "<no-build-date>"
+)
+
+var (
+	Version   string = noVersion
+	BuildDate string = noBuildDate
 )
 
 func init() {
+	var buildinfo string
+	if Version != "" && Version != noVersion {
+		buildinfo = fmt.Sprintf("version: %s", Version)
+	}
+	if BuildDate != "" && BuildDate != noBuildDate {
+		buildinfo = fmt.Sprintf("%s built: %s", buildinfo, strings.Replace(BuildDate, "_", " ", -1))
+	}
+
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [OPTION]... [*.proto]...\n", filepath.Base(os.Args[0]))
+		if buildinfo != "" {
+			fmt.Fprintf(os.Stderr, "%s (%s)\n", binName, strings.TrimSpace(buildinfo))
+		}
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] protofile [protofile2...protofileN]\n", binName)
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", filepath.Base(os.Args[0]))
-		fmt.Fprintf(os.Stderr, "Try '%s --help' for more information.\n", filepath.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", binName)
+		flag.Usage()
 		os.Exit(1)
 	}
 
@@ -117,7 +140,7 @@ func parseInput() (*truss.Config, error) {
 			return nil, err
 		}
 		if p.Root == "" {
-			return nil, errors.New("svcout not in gopath GOPATH")
+			return nil, errors.New("svcout not in GOPATH")
 		}
 		if !fileExists(p.Dir) {
 			return nil, errors.Errorf("specified package path for service output directory does not exist: %q", p.Dir)
