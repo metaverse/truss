@@ -54,7 +54,7 @@ func init() {
 		if buildinfo != "" {
 			fmt.Fprintf(os.Stderr, "%s (%s)\n", binName, strings.TrimSpace(buildinfo))
 		}
-		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] protofile [protofile2...protofileN]\n", binName)
+        fmt.Fprintf(os.Stderr, "Usage: %s [options] <protofile>...\n", binName)
 		flag.PrintDefaults()
 	}
 
