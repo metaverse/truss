@@ -57,7 +57,9 @@ func init() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <protofile>...\n", binName)
 		flag.PrintDefaults()
 	}
+}
 
+func main() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
@@ -70,9 +72,7 @@ func init() {
 	if *verboseFlag {
 		log.SetLevel(log.DebugLevel)
 	}
-}
 
-func main() {
 	cfg, err := parseInput()
 	exitIfError(errors.Wrap(err, "cannot parse input"))
 
