@@ -16,6 +16,7 @@ import (
 )
 
 // New returns an service backed by a gRPC client connection. It is the
+// responsibility of the caller to dial, and later close, the connection.
 func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{GoName .Service.Name}}Server, error) {
 	var cc clientConfig
 
