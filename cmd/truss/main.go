@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"go/build"
 	"io"
@@ -11,6 +10,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
+	flag "github.com/spf13/pflag"
 
 	"github.com/TuneLab/go-truss/truss"
 	"github.com/TuneLab/go-truss/truss/execprotoc"
@@ -26,7 +26,7 @@ import (
 var (
 	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
 	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written")
-	verboseFlag    = flag.Bool("v", false, "verbose output")
+	verboseFlag    = flag.BoolP("verbose", "v", false, "verbose output")
 )
 
 var binName = filepath.Base(os.Args[0])
@@ -54,10 +54,12 @@ func init() {
 		if buildinfo != "" {
 			fmt.Fprintf(os.Stderr, "%s (%s)\n", binName, strings.TrimSpace(buildinfo))
 		}
-        fmt.Fprintf(os.Stderr, "Usage: %s [options] <protofile>...\n", binName)
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <protofile>...\n", binName)
 		flag.PrintDefaults()
 	}
+}
 
+func main() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
@@ -70,9 +72,7 @@ func init() {
 	if *verboseFlag {
 		log.SetLevel(log.DebugLevel)
 	}
-}
 
-func main() {
 	cfg, err := parseInput()
 	exitIfError(errors.Wrap(err, "cannot parse input"))
 

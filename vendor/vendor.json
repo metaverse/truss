@@ -1,6 +1,6 @@
 {
 	"comment": "",
-	"ignore": "test, solaris",
+	"ignore": "test solaris",
 	"package": [
 		{
 			"checksumSHA1": "2avCvSn0XonfApKKuTMyiQmk7s0=",
@@ -49,6 +49,12 @@
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
 			"revisionTime": "2016-01-10T10:55:54Z"
+		},
+		{
+			"checksumSHA1": "GxPD7A0NjMDom1xte0mghkpzr0E=",
+			"path": "github.com/spf13/pflag",
+			"revision": "5ccb023bc27df288a957c5e994cd44fd19619465",
+			"revisionTime": "2016-10-24T13:13:51Z"
 		}
 	],
 	"rootPath": "github.com/TuneLab/go-truss"
