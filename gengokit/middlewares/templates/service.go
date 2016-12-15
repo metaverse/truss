@@ -7,7 +7,7 @@ import (
 	pb "{{.PBImportPath -}}"
 )
 
-func InjectServiceMiddlewares(in pb.{{.Service.Name}}Server) pb.{{.Service.Name}}Server {
+func WrapService(in pb.{{.Service.Name}}Server) pb.{{.Service.Name}}Server {
 	return in
 }
 `

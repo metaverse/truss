@@ -60,8 +60,8 @@ func main() {
 	var service pb.{{GoName .Service.Name}}Server
 	{
 		service = handler.NewService()
-		// Inject Service middlewares. See ../middlewares/service.go
-		service = middlewares.InjectServiceMiddlewares(service)
+		// Wrap Service with middlewares. See ../middlewares/service.go
+		service = middlewares.WrapService(service)
 	}
 
 	// Endpoint domain.
@@ -71,12 +71,15 @@ func main() {
 	{{end}}
 	)
 
-	// Inject Endpoint middlewares. See ../middlewares/endpoints.go
+	// Wrap Endpoints with middlewares. See ../middlewares/endpoints.go
 	endpoints := svc.Endpoints{
 	{{range $i := .Service.Methods -}}
-		{{$i.Name}}Endpoint:    middlewares.InjectEndpointMiddlewares({{ToLower $i.Name}}Endpoint),
+		{{$i.Name}}Endpoint:    middlewares.WrapEndpoint({{ToLower $i.Name}}Endpoint),
 	{{end}}
 	}
+
+	// Wrap selected Endpoints with middlewares. See ../middlewares/endpoints.go
+	endpoints = middlewares.WrapEndpoints(endpoints)
 
 	// Mechanical domain.
 	errc := make(chan error)
