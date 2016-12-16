@@ -17,7 +17,7 @@ func TestSvcdef(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	sd, err := New([]io.Reader{gf}, []io.Reader{pf})
+	sd, err := New(map[string]io.Reader{"./test-go.txt": gf}, map[string]io.Reader{"./test-proto.txt": pf})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ type NestedTypeRequest struct {
 	B []*NestedMessageB
 	C EnumType
 }`
-	sd, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
+	sd, err := New(map[string]io.Reader{"/tmp/notreal": strings.NewReader(caseCode)}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ type MsgWithMap struct {
 	Beta map[int64]*NestedMessageC
 }
 `
-	sd, err := New([]io.Reader{strings.NewReader(caseCode)}, nil)
+	sd, err := New(map[string]io.Reader{"/tmp/notreal": strings.NewReader(caseCode)}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

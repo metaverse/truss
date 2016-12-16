@@ -84,7 +84,7 @@ service Map {
   }
 }`
 	// From code, build our SvcDef
-	sd, err := New([]io.Reader{strings.NewReader(goCode)}, []io.Reader{strings.NewReader(protoCode)})
+	sd, err := New(map[string]io.Reader{"/tmp/notreal": strings.NewReader(goCode)}, map[string]io.Reader{"/tmp/alsonotreal": strings.NewReader(protoCode)})
 	if err != nil {
 		t.Fatal(err)
 	}

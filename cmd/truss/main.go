@@ -227,7 +227,7 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	// Create the svcdef
 	sd, err := svcdef.New(pbgoFiles, pbFiles)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create service definition")
+		return nil, nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
 	// Create the Deftree
