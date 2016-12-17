@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package TEST;
 
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 service Basic {
   rpc GetBasic (BasicTypeRequest) returns (BasicTypeResponse) {

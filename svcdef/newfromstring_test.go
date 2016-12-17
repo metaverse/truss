@@ -23,7 +23,7 @@ func basicFromString(t *testing.T) *Svcdef {
 		// General package
 		package general;
 
-		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;
@@ -158,7 +158,7 @@ func TestNoHTTPBinding(t *testing.T) {
 		// General package
 		package general;
 
-		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;

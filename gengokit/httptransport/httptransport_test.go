@@ -28,7 +28,7 @@ func TestNewMethod(t *testing.T) {
 		// General package
 		package general;
 
-		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;

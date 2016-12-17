@@ -8,12 +8,12 @@ default: truss
 
 dependencies:
 	go get github.com/go-kit/kit
-	go get google.golang.org/genproto
+	go get github.com/TuneLab/go-genproto
 	go get github.com/golang/protobuf/{proto,protoc-gen-go}
 
 update-dependencies:
 	go get -u github.com/go-kit/kit
-	go get -u google.golang.org/genproto
+	go get -u github.com/TuneLab/go-genproto
 	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
 
 # Generate go files containing the all template files in []byte form
