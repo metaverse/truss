@@ -21,15 +21,15 @@ To install this software, you must:
 download a release from [github](https://github.com/google/protobuf/releases)
 and add to `$PATH`.
 Otherwise [install from source.](https://github.com/google/protobuf)
-1. Install the `proto` and `protoc-gen-go` packages. (`protoc-gen-go` must be in `$PATH`)
+1. Install the `protoc-gen-go` package (must be in `$PATH`).
 
 	```
-	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+	go get -u github.com/golang/protobuf/protoc-gen-go
 	```
 1. Install HTTP Annotations
 
 	```
-	go get -u google.golang.org/genproto
+	go get -u github.com/TuneLab/go-genproto
 	```
 1. Install Truss with
 

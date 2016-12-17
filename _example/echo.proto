@@ -8,7 +8,7 @@ syntax = "proto3";
 // for `package echo;` truss will create the directory "echo-service".
 package echo;
 
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 service Echo {
   // Echo "echos" the incoming string

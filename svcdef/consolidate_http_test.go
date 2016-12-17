@@ -56,7 +56,7 @@ type MapServer interface {
 	protoCode := `
 syntax = "proto3";
 package TEST;
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 enum EnumType {
   A = 0;

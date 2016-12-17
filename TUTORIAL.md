@@ -34,8 +34,9 @@ message LouderRequest {
 }
 ```
 The RPC calls can be annotated with HTTP transport option (endpoint name and type of request). For this we must import the google annotations library.
+
 ```
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 service Echo {
 ...

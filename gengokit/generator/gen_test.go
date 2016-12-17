@@ -49,7 +49,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		// General package
 		package general;
 
-		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -141,7 +141,7 @@ func TestAllTemplates(t *testing.T) {
 		// General package
 		package general;
 
-		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -171,7 +171,7 @@ func TestAllTemplates(t *testing.T) {
 		// General package
 		package general;
 
-		import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
