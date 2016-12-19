@@ -195,16 +195,15 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 		return nil, nil, errors.Wrap(err, "cannot create .pb.go files")
 	}
 
-	// Open all .pb.go files and store in slice to be passed to svcdef.New()
-	//var openFiles func([]string) ([]io.Reader, error)
-	openFiles := func(paths []string) ([]io.Reader, error) {
-		rv := []io.Reader{}
+	// Open all .pb.go files and store in map to be passed to svcdef.New()
+	openFiles := func(paths []string) (map[string]io.Reader, error) {
+		rv := map[string]io.Reader{}
 		for _, p := range paths {
 			reader, err := os.Open(p)
 			if err != nil {
 				return nil, errors.Wrapf(err, "cannot open file %q", p)
 			}
-			rv = append(rv, reader)
+			rv[p] = reader
 		}
 		return rv, nil
 	}
@@ -228,7 +227,7 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	// Create the svcdef
 	sd, err := svcdef.New(pbgoFiles, pbFiles)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot create svcdef")
+		return nil, nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
 	// Create the Deftree

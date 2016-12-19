@@ -17,6 +17,7 @@ the path of an HTTP annotation.
 package svcdef
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -135,16 +136,65 @@ func retrieveTypeSpecs(f *ast.File) ([]*ast.TypeSpec, error) {
 	return rv, nil
 }
 
+// DebugInfo contains context necessary for many functions to provide useful
+// debugging output when encountering errors. All DebugInfo methods are
+// implemented such that calling them with `nil` recievers means they'll return
+// empty values. And since DebugInfo is used PURELY for creating nice error
+// messages and no actual business logic depends on them, this means you can
+// safely pass 'nil' DebugInfo structs to functions and you'll just get
+// unhelpful error messages out, it won't break things. This is done to make
+// the code more testable.
+type DebugInfo struct {
+	Fset *token.FileSet
+	Path string
+}
+
+func (di *DebugInfo) Position(pos token.Pos) string {
+	if di == nil {
+		return ""
+	} else {
+		return fmt.Sprintf("%s", di.Fset.Position(pos))
+	}
+}
+
+// LocationError is a special kind of error, carrying special information about
+// where the error was encountered within a file.
+type LocationError struct {
+	Path     string
+	Position string
+	Err      string
+}
+
+func NewLocationError(err string, path string, pos string) LocationError {
+	return LocationError{
+		Path:     path,
+		Position: pos,
+		Err:      err,
+	}
+}
+
+func (le LocationError) Error() string {
+	return fmt.Sprintf("%s in file %q at line %s", le.Err, le.Path, le.Position)
+}
+
+func (le LocationError) Location() string {
+	return le.Position
+}
+
 // New creates a Svcdef by parsing the provided Go and Protobuf source files to
 // derive type information, gRPC service data, and HTTP annotations.
-func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
+func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef, error) {
 	rv := Svcdef{}
 
-	for _, gofile := range goFiles {
+	for path, gofile := range goFiles {
 		fset := token.NewFileSet()
 		fileAst, err := parser.ParseFile(fset, "", gofile, parser.ParseComments)
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't parse go file to create Svcdef")
+			return nil, errors.Wrapf(err, "couldn't parse go file %q to create Svcdef", path)
+		}
+		debugInfo := &DebugInfo{
+			Path: path,
+			Fset: fset,
 		}
 		rv.PkgName = fileAst.Name.Name
 
@@ -180,7 +230,7 @@ func New(goFiles []io.Reader, protoFiles []io.Reader) (*Svcdef, error) {
 				if strings.HasSuffix("Client", t.Name.Name) {
 					break
 				}
-				nsvc, err := NewService(t)
+				nsvc, err := NewService(t, debugInfo)
 				if err != nil {
 					return nil, errors.Wrapf(err, "error parsing service %q", t.Name.Name)
 				}
@@ -263,13 +313,13 @@ func NewMap(m ast.Expr) (*Map, error) {
 
 // NewService returns a new Service struct derived from an *ast.TypeSpec with a
 // Type of *ast.InterfaceType representing an "{SVCNAME}Server" interface.
-func NewService(s *ast.TypeSpec) (*Service, error) {
+func NewService(s *ast.TypeSpec, info *DebugInfo) (*Service, error) {
 	rv := &Service{
 		Name: strings.TrimSuffix(s.Name.Name, "Server"),
 	}
 	asvc := s.Type.(*ast.InterfaceType)
 	for _, m := range asvc.Methods.List {
-		nmeth, err := NewServiceMethod(m)
+		nmeth, err := NewServiceMethod(m, info)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Couldn't create service method %q of service %q", m.Names[0].Name, rv.Name)
 		}
@@ -281,13 +331,15 @@ func NewService(s *ast.TypeSpec) (*Service, error) {
 // NewServiceMethod returns a new ServiceMethod derived from a method of a
 // Service interface. This is accepted in the form of an *ast.Field which
 // contains the name of the method.
-func NewServiceMethod(m *ast.Field) (*ServiceMethod, error) {
+func NewServiceMethod(m *ast.Field, info *DebugInfo) (*ServiceMethod, error) {
 	rv := &ServiceMethod{
 		Name: m.Names[0].Name,
 	}
 	ft, ok := m.Type.(*ast.FuncType)
 	if !ok {
-		return nil, errors.New("Provided *ast.Field.Type is not of type *ast.FuncType; cannot proceed")
+		return nil, NewLocationError("Provided *ast.Field.Type is not of type "+
+			"*ast.FuncType; cannot proceed",
+			info.Path, info.Position(m.Pos()))
 	}
 
 	input := ft.Params.List
@@ -308,11 +360,15 @@ func NewServiceMethod(m *ast.Field) (*ServiceMethod, error) {
 	makeFieldType := func(in *ast.Field) (*FieldType, error) {
 		star, ok := in.Type.(*ast.StarExpr)
 		if !ok {
-			return nil, errors.New("could not create FieldType, in.Type is not *ast.StarExpr")
+			return nil, NewLocationError("could not create FieldType, in.Type "+
+				"is not *ast.StarExpr",
+				info.Path, info.Position(in.Pos()))
 		}
 		ident, ok := star.X.(*ast.Ident)
 		if !ok {
-			return nil, errors.New("could not create FieldType, star.Type is not *ast.Ident")
+			return nil, NewLocationError("could not create FieldType, "+
+				"star.Type is not *ast.Ident",
+				info.Path, info.Position(star.Pos()))
 		}
 		return &FieldType{
 			Name:     ident.Name,

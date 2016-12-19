@@ -44,7 +44,13 @@ func NewFromString(def string, gopath []string) (*Svcdef, error) {
 	}
 	pbgo := string(buf)
 
-	sd, err := New([]io.Reader{strings.NewReader(pbgo)}, []io.Reader{strings.NewReader(def)})
+	pbgoMap := map[string]io.Reader{
+		"/tmp/doesntexist.pb.go": strings.NewReader(pbgo),
+	}
+	pFileMap := map[string]io.Reader{
+		"/tmp/doesntexist.proto": strings.NewReader(def),
+	}
+	sd, err := New(pbgoMap, pFileMap)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create new svcdef from pb.go and definition")
 	}

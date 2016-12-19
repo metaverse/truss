@@ -36,7 +36,7 @@ func isEOF(err error) bool {
 // each `HTTPBinding` will have a populated list of all the http parameters
 // that that binding requires, where that parameter should be located, and the
 // type of each parameter.
-func consolidateHTTP(sd *Svcdef, protoFiles []io.Reader) error {
+func consolidateHTTP(sd *Svcdef, protoFiles map[string]io.Reader) error {
 	for _, pfile := range protoFiles {
 		lex := svcparse.NewSvcLexer(pfile)
 		protosvc, err := svcparse.ParseService(lex)
