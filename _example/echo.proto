@@ -10,7 +10,7 @@ package echo;
 
 import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
-service BounceEcho {
+service Echo {
   // Echo "echos" the incoming string
   rpc Echo (EchoRequest) returns (EchoResponse) {
     option (google.api.http) = {

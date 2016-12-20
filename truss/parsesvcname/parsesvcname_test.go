@@ -87,7 +87,8 @@ func TestFromReader(t *testing.T) {
 	}
 }
 
-// Ensure that passing a protobuf file that's not importing google annotations will function properly.
+// Ensure that passing a protobuf file that's not importing google annotations
+// will function properly.
 func TestNoAnnotations(t *testing.T) {
 	protoStr := `
 	syntax = "proto3";
@@ -109,6 +110,60 @@ func TestNoAnnotations(t *testing.T) {
 	}
 
 	if got, want := svcname, "BounceEcho"; got != want {
+		t.Fatalf("got != want; got = %q, want = %q", got, want)
+	}
+}
+
+// Test that having a service name which includes an underscore doesn't cause
+// problems.
+func TestUnderscoreService(t *testing.T) {
+	protoStr := `
+	syntax = "proto3";
+	package echo;
+
+	service foo_bar_test {
+	  rpc Echo (EchoRequest) returns (EchoResponse) {}
+	}
+	message EchoRequest {
+	  string In = 1;
+	}
+	message EchoResponse {
+	  string Out = 1;
+	}
+	`
+	svcname, err := FromReaders([]string{os.Getenv("GOPATH")}, []io.Reader{strings.NewReader(protoStr)})
+	if err != nil {
+		t.Fatal("failed to get service name from path: ", err)
+	}
+
+	if got, want := svcname, "FooBarTest"; got != want {
+		t.Fatalf("got != want; got = %q, want = %q", got, want)
+	}
+}
+
+// Test that having a service name which starts with an underscore doesn't
+// cause problems.
+func TestLeadingUnderscoreService(t *testing.T) {
+	protoStr := `
+	syntax = "proto3";
+	package echo;
+
+	service _Foo_Bar {
+	  rpc Echo (EchoRequest) returns (EchoResponse) {}
+	}
+	message EchoRequest {
+	  string In = 1;
+	}
+	message EchoResponse {
+	  string Out = 1;
+	}
+	`
+	svcname, err := FromReaders([]string{os.Getenv("GOPATH")}, []io.Reader{strings.NewReader(protoStr)})
+	if err != nil {
+		t.Fatal("failed to get service name from path: ", err)
+	}
+
+	if got, want := svcname, "XFoo_Bar"; got != want {
 		t.Fatalf("got != want; got = %q, want = %q", got, want)
 	}
 }
