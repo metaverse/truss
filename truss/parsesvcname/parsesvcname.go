@@ -14,13 +14,13 @@ import (
 
 // FromPaths accepts the paths of protobuf definition files and returns the
 // name of the service in that protobuf definition file.
-func FromPaths(gopath string, protoDefPaths []string) (string, error) {
+func FromPaths(gopath []string, protoDefPaths []string) (string, error) {
 	td, err := ioutil.TempDir("", "parsesvcname")
 	defer os.RemoveAll(td)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create temporary directory for .pb.go files")
 	}
-	err = execprotoc.GeneratePBDotGo(protoDefPaths, []string{gopath}, td)
+	err = execprotoc.GeneratePBDotGo(protoDefPaths, gopath, td)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to generate .pb.go files from protobuf definition files")
 	}
@@ -63,7 +63,7 @@ func FromPaths(gopath string, protoDefPaths []string) (string, error) {
 	return sd.Service.Name, nil
 }
 
-func FromReaders(gopath string, protoDefReaders []io.Reader) (string, error) {
+func FromReaders(gopath []string, protoDefReaders []io.Reader) (string, error) {
 	protoDir, err := ioutil.TempDir("", "parsesvcname-fromreaders")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to create temporary directory for protobuf files")

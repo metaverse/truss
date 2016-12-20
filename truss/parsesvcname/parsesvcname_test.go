@@ -44,7 +44,7 @@ func TestFromPaths(t *testing.T) {
 	path := f.Name()
 	f.Close()
 
-	svcname, err := FromPaths(os.Getenv("GOPATH"), []string{path})
+	svcname, err := FromPaths([]string{os.Getenv("GOPATH")}, []string{path})
 	if err != nil {
 		t.Fatal("failed to get service name from path: ", err)
 	}
@@ -77,7 +77,7 @@ func TestFromReader(t *testing.T) {
 	  string Out = 1;
 	}
 	`
-	svcname, err := FromReaders(os.Getenv("GOPATH"), []io.Reader{strings.NewReader(protoStr)})
+	svcname, err := FromReaders([]string{os.Getenv("GOPATH")}, []io.Reader{strings.NewReader(protoStr)})
 	if err != nil {
 		t.Fatal("failed to get service name from path: ", err)
 	}
@@ -103,7 +103,7 @@ func TestNoAnnotations(t *testing.T) {
 	  string Out = 1;
 	}
 	`
-	svcname, err := FromReaders(os.Getenv("GOPATH"), []io.Reader{strings.NewReader(protoStr)})
+	svcname, err := FromReaders([]string{os.Getenv("GOPATH")}, []io.Reader{strings.NewReader(protoStr)})
 	if err != nil {
 		t.Fatal("failed to get service name from path: ", err)
 	}
