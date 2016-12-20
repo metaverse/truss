@@ -14,8 +14,8 @@ in a sane way, even for requests not made with the generated HTTP client.
 
 The test harness works as follows:
 
-- Runs truss against `transport/transport-test.proto`, which generates `transport/TransportPermutations-service`
-- Copy `transport/handlers` into `transport/TransportPermutations-service`
+- Runs truss against `transport/transport-test.proto`, which generates `transport/transportpermutations-service`
+- Copy `transport/handlers` into `transport/transportpermutations-service`
 - Run `go test -v`
 - Runs truss again against `transport/transport-test.proto` (for regeneration tests)
 - Run `go test -v`

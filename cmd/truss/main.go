@@ -172,8 +172,6 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
-	log.Debug(fmt.Sprintf("%#v", cfg))
-
 	return &cfg, nil
 }
 

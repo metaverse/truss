@@ -13,8 +13,8 @@ import (
 	// 3d Party
 	"golang.org/x/net/context"
 	// This Service
-	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/TransportPermutations-service"
-	httpclient "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/TransportPermutations-service/generated/client/http"
+	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service"
+	httpclient "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service/generated/client/http"
 
 	"github.com/pkg/errors"
 )

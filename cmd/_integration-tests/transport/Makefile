@@ -14,7 +14,7 @@ all: test
 test:
 	@echo -e '$(TRUSS_MSG)'
 	truss transport-test.proto
-	cp -r handlers TransportPermutations-service
+	cp -r handlers transportpermutations-service
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
@@ -24,4 +24,4 @@ test:
 	$(MAKE) clean
 
 clean:
-	rm -rf TransportPermutations-service
+	rm -rf transportpermutations-service
