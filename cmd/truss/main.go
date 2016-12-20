@@ -14,7 +14,7 @@ import (
 
 	"github.com/TuneLab/go-truss/truss"
 	"github.com/TuneLab/go-truss/truss/execprotoc"
-	"github.com/TuneLab/go-truss/truss/parsepkgname"
+	"github.com/TuneLab/go-truss/truss/parsesvcname"
 
 	"github.com/TuneLab/go-truss/deftree"
 	"github.com/TuneLab/go-truss/gendoc"
@@ -111,13 +111,10 @@ func parseInput() (*truss.Config, error) {
 	}
 
 	// Service Path
-	defFile, err := os.Open(cfg.DefPaths[0])
+	svcName, err := parsesvcname.FromPaths(cfg.GoPath, cfg.DefPaths)
+	svcName = strings.ToLower(svcName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot open package file %q", cfg.DefPaths[0])
-	}
-	svcName, err := parsepkgname.FromReader(defFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot parse package name from file %q", cfg.DefPaths[0])
+		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
 	svcFolderName := svcName + "-service"
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package TEST;
+package multifile;
 
 import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 

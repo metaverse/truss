@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package TEST;
+package map;
 
 import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
-service Map {
+service TEST {
   rpc GetMap (MapTypeRequest) returns (MapTypeResponse) {
     option (google.api.http) = {
       get: "/1"

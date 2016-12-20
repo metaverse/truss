@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"io"
 	"io/ioutil"
+	"path"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -30,8 +31,12 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) (map[string]io.Reade
 
 	codeGenFiles := make(map[string]io.Reader)
 
+	// Remove the suffix "-service" since it's added back in by templatePathToActual
+	svcname := strings.TrimSuffix(path.Base(conf.GoPackage), "-service")
 	for _, templPath := range templFiles.AssetNames() {
-		actualPath := templatePathToActual(templPath, sd.PkgName)
+		// Re-derive the actual path for this file based on the service output
+		// path provided by the truss main.go
+		actualPath := templatePathToActual(templPath, svcname)
 		file, err := generateResponseFile(templPath, data, conf.PreviousFiles[actualPath])
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")
