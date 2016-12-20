@@ -31,7 +31,7 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) (map[string]io.Reade
 	codeGenFiles := make(map[string]io.Reader)
 
 	for _, templPath := range templFiles.AssetNames() {
-		actualPath := templatePathToActual(templPath, sd.PkgName)
+		actualPath := templatePathToActual(templPath, strings.ToLower(sd.Service.Name))
 		file, err := generateResponseFile(templPath, data, conf.PreviousFiles[actualPath])
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")

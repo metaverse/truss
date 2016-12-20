@@ -112,6 +112,7 @@ func parseInput() (*truss.Config, error) {
 
 	// Service Path
 	svcName, err := parsesvcname.FromPaths(cfg.GoPath, cfg.DefPaths)
+	svcName = strings.ToLower(svcName)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
@@ -170,6 +171,8 @@ func parseInput() (*truss.Config, error) {
 	}
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
+
+	log.Debug(fmt.Sprintf("%#v", cfg))
 
 	return &cfg, nil
 }

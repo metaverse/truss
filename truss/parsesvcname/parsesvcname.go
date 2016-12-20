@@ -1,3 +1,4 @@
+// Package parsesvcname will parse the service name of a protobuf package. The name returned will always be camelcased.
 package parsesvcname
 
 import (
