@@ -7,7 +7,18 @@ import (
 	"strings"
 
 	"github.com/TuneLab/go-truss/deftree"
+	"github.com/golang/protobuf/protoc-gen-go/generator"
 )
+
+func findServiceName(md *deftree.MicroserviceDefinition) string {
+	rv := "default"
+	for _, f := range md.Files {
+		for _, svc := range f.Services {
+			rv = svc.GetName()
+		}
+	}
+	return rv
+}
 
 // GenerateDocs accepts a deftree that represents an ast of a group of
 // protofiles and returns map[string]io.Reader that represents a relative
@@ -23,7 +34,10 @@ func GenerateDocs(dt deftree.Deftree) map[string]io.Reader {
 	}
 
 	files := make(map[string]io.Reader)
-	files[dt.GetName()+"-service/docs/docs.md"] = strings.NewReader(response)
+	md := dt.(*deftree.MicroserviceDefinition)
+	// Normalize the service to prevent diversion from convention
+	svcname := strings.ToLower(generator.CamelCase(findServiceName(md)))
+	files[svcname+"-service/docs/docs.md"] = strings.NewReader(response)
 
 	return files
 }

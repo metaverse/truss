@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package TEST;
+package multifile;
 
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 import "imported.proto";
 
-service Basic {
+service TEST {
   rpc GetBasic (BasicTypeRequest) returns (BasicTypeResponse) {
     option (google.api.http) = {
       get: "/1"

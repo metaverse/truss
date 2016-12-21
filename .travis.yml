@@ -18,9 +18,10 @@ before_install:
   - export PATH=$HOME/bin/:$PATH
 
     # golang/protobuf contains protoc-gen-go which generates the .pb.go files
-  - go get -v github.com/golang/protobuf/...
+  #- go get -v github.com/golang/protobuf/... || true
+  - go get -v github.com/golang/protobuf/protoc-gen-go
     # For http annotation support 
-  - go get -v google.golang.org/genproto/...
+  - go get -v github.com/TuneLab/go-genproto/... || true
     # go-bindata is used to create binary data from template files
   - go get -v github.com/jteeuwen/go-bindata/...
 

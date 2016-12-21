@@ -135,7 +135,7 @@ func truss(path string, options ...string) (string, error) {
 	return string(out), err
 }
 
-// buildTestService builds a truss service with the package TEST
+// buildTestService builds a truss service with the package "test"
 // into the `serviceDir`/bin directory
 func buildTestService(serviceDir string) (err error) {
 
@@ -156,14 +156,14 @@ func buildTestService(serviceDir string) (err error) {
 		return err
 	}
 
-	const serverPath = "/TEST-service/TEST-server"
-	const clientPath = "/TEST-service/TEST-cli-client"
+	const serverPath = "/test-service/test-server"
+	const clientPath = "/test-service/test-cli-client"
 
 	// Build server and client
 	errChan := make(chan error)
 
-	go goBuild("TEST-server", binDir, filepath.Join(relDir, serverPath), errChan)
-	go goBuild("TEST-cli-client", binDir, filepath.Join(relDir, clientPath), errChan)
+	go goBuild("test-server", binDir, filepath.Join(relDir, serverPath), errChan)
+	go goBuild("test-cli-client", binDir, filepath.Join(relDir, clientPath), errChan)
 
 	err = <-errChan
 	if err != nil {
@@ -218,12 +218,12 @@ func goBuild(name, outputPath, relCodePath string, errChan chan error) {
 	errChan <- nil
 }
 
-// runServerAndClient execs a TEST-server and TEST-client and puts a
+// runServerAndClient execs a test-server and test-client and puts a
 // runReference to their interaction on the runRefs channel
 func runServerAndClient(path string, port int, debugPort int) runReference {
 	// From within a folder with a truss `service`
 	// These are the paths to the compiled binaries
-	const relativeServerPath = "/bin/TEST-server"
+	const relativeServerPath = "/bin/test-server"
 
 	// Output buffer for the server Stdout and Stderr
 	serverOut := bytes.NewBuffer(nil)
@@ -299,7 +299,7 @@ func runServerAndClient(path string, port int, debugPort int) runReference {
 }
 
 func runClient(path string, trans string, port int) ([]byte, bool) {
-	const relativeClientPath = "/bin/TEST-cli-client"
+	const relativeClientPath = "/bin/test-cli-client"
 
 	var client *exec.Cmd
 	switch trans {
@@ -354,7 +354,7 @@ func cleanTests(servicesDir string) {
 // removeTestFiles removes all files created by running truss and building the
 // service from a single definition directory
 func removeTestFiles(defDir string) {
-	os.RemoveAll(filepath.Join(defDir, "TEST-service"))
+	os.RemoveAll(filepath.Join(defDir, "test-service"))
 	os.RemoveAll(filepath.Join(defDir, "bin"))
 	os.RemoveAll(filepath.Join(defDir, "pbout"))
 	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)

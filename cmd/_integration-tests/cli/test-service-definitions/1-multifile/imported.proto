@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package TEST;
+package multifile;
 
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 message BasicTypeRequest {
   double A = 1;

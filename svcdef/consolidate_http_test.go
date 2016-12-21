@@ -56,7 +56,7 @@ type MapServer interface {
 	protoCode := `
 syntax = "proto3";
 package TEST;
-import "google.golang.org/genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
 
 enum EnumType {
   A = 0;
@@ -84,7 +84,7 @@ service Map {
   }
 }`
 	// From code, build our SvcDef
-	sd, err := New([]io.Reader{strings.NewReader(goCode)}, []io.Reader{strings.NewReader(protoCode)})
+	sd, err := New(map[string]io.Reader{"/tmp/notreal": strings.NewReader(goCode)}, map[string]io.Reader{"/tmp/alsonotreal": strings.NewReader(protoCode)})
 	if err != nil {
 		t.Fatal(err)
 	}

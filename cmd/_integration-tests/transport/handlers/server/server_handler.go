@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service"
+	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service"
 )
 
 // NewService returns a naïve, stateless implementation of Service.

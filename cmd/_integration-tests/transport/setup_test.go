@@ -14,9 +14,9 @@ import (
 	// Go Kit
 	"github.com/go-kit/kit/log"
 
-	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service"
-	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service/generated"
-	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transport-service/handlers/server"
+	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service"
+	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service/generated"
+	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service/handlers/server"
 )
 
 func TestMain(m *testing.M) {
