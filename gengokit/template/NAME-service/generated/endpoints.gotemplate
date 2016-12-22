@@ -59,3 +59,18 @@ type Endpoints struct {
 		}
 	{{end}}
 {{end}}
+
+// WrapAll wraps each Endpoint field of struct Endpoints with a
+// go-kit/kit/endpoint.Middleware.
+// Use this for applying a set of middlewares to every endpoint in the service.
+// The middlewares will be applied in the order passed, with the first
+// middleware being the outermost middleware.
+func (e *Endpoints) WrapAll(middlewares ...endpoint.Middleware) {
+	if len(middlewares) == 0 {
+		return
+	}
+	m := endpoint.Chain(middlewares[0], middlewares[1:]...)
+	{{range $i := .Service.Methods}}
+		e.{{$i.Name}}Endpoint = m(e.{{$i.Name}}Endpoint)
+	{{- end}}
+}
