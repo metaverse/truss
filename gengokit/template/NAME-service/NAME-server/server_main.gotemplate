@@ -74,7 +74,7 @@ func main() {
 	// Wrap Endpoints with middlewares. See ../middlewares/endpoints.go
 	endpoints := svc.Endpoints{
 	{{range $i := .Service.Methods -}}
-		{{$i.Name}}Endpoint:    middlewares.WrapEndpoint({{ToLower $i.Name}}Endpoint),
+		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
 	{{end}}
 	}
 

@@ -59,3 +59,13 @@ type Endpoints struct {
 		}
 	{{end}}
 {{end}}
+
+// WrapAll wraps each Endpoint field of struct Endpoints with a
+// go-kit/kit/endpoint.Middleware
+func (e *Endpoints) WrapAll(middlewares ...endpoint.Middleware) {
+	for _, m := range middlewares {
+		{{- range $i := .Service.Methods}}
+			e.{{$i.Name}}Endpoint = m(e.{{$i.Name}}Endpoint)
+		{{- end}}
+	}
+}

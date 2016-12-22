@@ -58,21 +58,21 @@ func TestNewEndpointMiddleware(t *testing.T) {
 		package middlewares
 
 		import (
-			"github.com/go-kit/kit/endpoint"
 			svc "github.com/TuneLab/go-truss/gengokit/general-service/generated"
 		)
-
-		// WrapEndpoint will be called individually for all endpoints defined in
-		// the service. Implement this with the middlewares you want applied to
-		// every endpoint.
-		func WrapEndpoint(in endpoint.Endpoint) endpoint.Endpoint {
-			return in
-		}
 
 		// WrapEndpoints takes the service's entire collection of endpoints. This
 		// function can be used to apply middlewares selectively to some endpoints,
 		// but not others, like protecting some endpoints with authentication.
 		func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
+
+			// Apply a middleware selectively
+			// in.Echo = endpoint.Middleware(in.Echo)
+
+
+			// Pass in the middlewares you want applied to every endpoint.
+			in.WrapAll(/* ...endpoint.Middleware */)
+
 			return in
 		}
 	`
