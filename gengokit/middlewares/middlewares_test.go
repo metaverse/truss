@@ -61,17 +61,17 @@ func TestNewEndpointMiddleware(t *testing.T) {
 			svc "github.com/TuneLab/go-truss/gengokit/general-service/generated"
 		)
 
-		// WrapEndpoints takes the service's entire collection of endpoints. This
-		// function can be used to apply middlewares selectively to some endpoints,
-		// but not others, like protecting some endpoints with authentication.
+		// WrapEndpoints accepts the service's entire collection of endpoints, so that a
+		// set of middlewares can be wrapped around every middleware (e.g., access
+		// logging and instrumentation), and others wrapped selectively around some
+		// endpoints and not others (e.g., endpoints requiring authenticated access).
 		func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
-
-			// Apply a middleware selectively
-			// in.Echo = endpoint.Middleware(in.Echo)
-
 
 			// Pass in the middlewares you want applied to every endpoint.
 			in.WrapAll(/* ...endpoint.Middleware */)
+
+			// How to apply a middleware selectively.
+			// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)
 
 			return in
 		}
