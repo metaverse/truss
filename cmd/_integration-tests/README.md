@@ -33,15 +33,15 @@ add to the expected output value(s).
 
 # ./cli
 
-The truss cli integration runner does the following tasks:
+The truss CLI integration runner does the following tasks:
 
 - Runs truss on each service definition in `cli/test_service_definitions`
-- Builds the server and cliclient for each service
+- Builds the server and CLI client for each service
 - Runs the generated server
-- Runs the generated cliclient against the generated server
-- Passes if the server and cliclient were able to communicate. Fails if there
+- Runs the generated CLI client against the generated server
+- Passes if the server and CLI client were able to communicate. Fails if there
   were errors of any kind.
 
-Note also that any additional cli integration tests must have a package name
+Note also that any additional CLI integration tests must have a package name
 `TEST`, all letters uppercase.
 

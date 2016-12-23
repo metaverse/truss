@@ -26,7 +26,7 @@ func TestNewServiceMiddleware(t *testing.T) {
 		pb "github.com/TuneLab/go-truss/gengokit/general-service"
 		)
 
-		func InjectServiceMiddlewares(in pb.ProtoServiceServer) pb.ProtoServiceServer {
+		func WrapService(in pb.ProtoServiceServer) pb.ProtoServiceServer {
 			return in
 		}
 	`
@@ -58,10 +58,21 @@ func TestNewEndpointMiddleware(t *testing.T) {
 		package middlewares
 
 		import (
-			"github.com/go-kit/kit/endpoint"
+			svc "github.com/TuneLab/go-truss/gengokit/general-service/generated"
 		)
 
-		func InjectEndpointMiddlewares(in endpoint.Endpoint) endpoint.Endpoint {
+		// WrapEndpoints accepts the service's entire collection of endpoints, so that a
+		// set of middlewares can be wrapped around every middleware (e.g., access
+		// logging and instrumentation), and others wrapped selectively around some
+		// endpoints and not others (e.g., endpoints requiring authenticated access).
+		func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
+
+			// Pass in the middlewares you want applied to every endpoint.
+			in.WrapAll(/* ...endpoint.Middleware */)
+
+			// How to apply a middleware selectively.
+			// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)
+
 			return in
 		}
 	`
@@ -93,10 +104,10 @@ func TestRenderPrevService(t *testing.T) {
 		package middlewares
 
 		import (
-		pb "github.com/TuneLab/go-truss/gengokit/general-service"
+			pb "github.com/TuneLab/go-truss/gengokit/general-service"
 		)
 
-		func InjectServiceMiddlewares(in pb.ProtoServiceServer) pb.ProtoServiceServer {
+		func WrapService(in pb.ProtoServiceServer) pb.ProtoServiceServer {
 			return in
 		}
 
@@ -135,9 +146,20 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 		import (
 			"github.com/go-kit/kit/endpoint"
+			svc "github.com/TuneLab/go-truss/gengokit/general-service/generated"
 		)
 
-		func InjectEndpointMiddlewares(in endpoint.Endpoint) endpoint.Endpoint {
+		// WrapEndpoint will be called individually for all endpoints defined in
+		// the service. Implement this with the middlewares you want applied to
+		// every endpoint.
+		func WrapEndpoint(in endpoint.Endpoint) endpoint.Endpoint {
+			return in
+		}
+
+		// WrapEndpoints takes the service's entire collection of endpoints. This
+		// function can be used to apply middlewares selectively to some endpoints,
+		// but not others, like protecting some endpoints with authentication.
+		func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 			return in
 		}
 
