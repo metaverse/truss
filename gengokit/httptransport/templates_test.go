@@ -7,6 +7,11 @@ import (
 	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
 )
 
+// Test that rendering certain templates will ouput the code we expect. The
+// code we expect is either the source code literal defined in each test, or
+// it's the source code of certain actual functions within this package (see
+// embeddable-funcs.go for more info).
+
 func TestGenClientEncode(t *testing.T) {
 	binding := &Binding{
 		Label:        "SumZero",
@@ -201,8 +206,12 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 	}
 }
 
+// Test that all the templated source code is identical to the source code
+// found within the file 'embeddable_funcs.go'.
 func TestHTTPAssistFuncs(t *testing.T) {
 	tmplfncs := FormatCode(HTTPAssistFuncs)
+	// Get the source code for all the functions in the same source file as
+	// the BuildParamMap function
 	source, err := AllFuncSourceCode(BuildParamMap)
 	if err != nil {
 		t.Fatalf("Couldn't get source code of functions: %v", err)
