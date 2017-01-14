@@ -66,12 +66,20 @@ func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb
 	return &resp, nil
 }
 
-//  GetWithCapsPath implements Service
+// GetWithCapsPath implements Service.
 func (s transportService) GetWithCapsPath(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
 
+	return &response, nil
+}
+
+// GetWithPathParams implements Service.
+func (s transportService) GetWithPathParams(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+	response := pb.GetWithQueryResponse{
+		V: in.A + in.B,
+	}
 	return &response, nil
 }
 

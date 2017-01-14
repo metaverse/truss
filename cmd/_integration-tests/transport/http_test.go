@@ -1,6 +1,7 @@
 package test
 
 import (
+	"reflect"
 	"testing"
 
 	"bytes"
@@ -295,6 +296,64 @@ func TestGetWithCapsPathRequest(t *testing.T) {
 	}
 
 	testHTTP(nil, "GET", "get/With/CapsPath?%s=%d&%s=%d", "A", A, "B", B)
+}
+
+// Test that we can manually insert parameters into the path and recieve a
+// correct response.
+func TestGetWithPathParams(t *testing.T) {
+	var resp pb.GetWithQueryResponse
+	var A, B int64
+	A = 12
+	B = 45360
+	want := A + B
+
+	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
+		respBytes, err := httpRequestBuilder{
+			method: method,
+			route:  fmt.Sprintf(routeFormat, routeFields...),
+			body:   bodyBytes,
+		}.Test(t)
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
+
+		err = json.Unmarshal(respBytes, &resp)
+		if err != nil {
+			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
+		}
+
+		if resp.V != want {
+			t.Fatalf("Expect: %d, got %d", want, resp.V)
+		}
+	}
+	testHTTP(nil, "GET", "path/%d/%d", A, B)
+}
+
+// A manually created request verifying that the server properly responds with
+// an error if a request is made with incomplete path parameters.
+func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
+	var A int64
+	A = 12
+	path := fmt.Sprintf("/path/%d/", A)
+
+	httpReq, err := http.NewRequest("GET", httpAddr+path, strings.NewReader(""))
+	if err != nil {
+		t.Errorf("couldn't create request", err)
+	}
+	respBytes, err := testHTTPRequest(httpReq)
+
+	var resp map[string]string
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatalf("couldn't unmarshal bytes: %v", err)
+	}
+
+	want := map[string]string{
+		"error": "couldn't unmarshal path parameters: Expected a path containing 4 parts, provided path contains 3 parts",
+	}
+	if !reflect.DeepEqual(resp, want) {
+		t.Fatalf("Expect: %v, got %v", want, resp)
+	}
 }
 
 func TestErrorRPCReturnsJSONError(t *testing.T) {
