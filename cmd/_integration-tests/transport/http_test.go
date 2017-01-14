@@ -51,29 +51,11 @@ func TestGetWithQueryRequest(t *testing.T) {
 	var A, B int64
 	A = 12
 	B = 45360
-	want := A + B
-
-	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
-		respBytes, err := httpRequestBuilder{
-			method: method,
-			route:  fmt.Sprintf(routeFormat, routeFields...),
-			body:   bodyBytes,
-		}.Test(t)
-		if err != nil {
-			t.Fatal(errors.Wrap(err, "cannot make http request"))
-		}
-
-		err = json.Unmarshal(respBytes, &resp)
-		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
-		}
-
-		if resp.V != want {
-			t.Fatalf("Expect: %d, got %d", want, resp.V)
-		}
+	expects := pb.GetWithQueryResponse{
+		V: A + B,
 	}
 
-	testHTTP(nil, "GET", "getwithquery?%s=%d&%s=%d", "A", A, "B", B)
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithquery?%s=%d&%s=%d", "A", A, "B", B)
 }
 
 func TestGetWithRepeatedQueryClient(t *testing.T) {
@@ -97,33 +79,15 @@ func TestGetWithRepeatedQueryClient(t *testing.T) {
 }
 
 func TestGetWithRepeatedQueryRequest(t *testing.T) {
-	var resp pb.GetWithRepeatedQueryResponse
+	resp := pb.GetWithRepeatedQueryResponse{}
 
 	var A []int64
 	A = []int64{12, 45360}
-	want := A[0] + A[1]
-
-	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
-		respBytes, err := httpRequestBuilder{
-			method: method,
-			route:  fmt.Sprintf(routeFormat, routeFields...),
-			body:   bodyBytes,
-		}.Test(t)
-		if err != nil {
-			t.Fatal(errors.Wrap(err, "cannot make http request"))
-		}
-
-		err = json.Unmarshal(respBytes, &resp)
-		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
-		}
-
-		if resp.V != want {
-			t.Fatalf("Expect: %d, got %d", want, resp.V)
-		}
+	expects := pb.GetWithRepeatedQueryResponse{
+		V: A[0] + A[1],
 	}
 
-	testHTTP(nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
 	// csv style
 	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
 	// multi / golang style
@@ -160,31 +124,12 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 	var A, B int64
 	A = 12
 	B = 45360
-	want := A + B
-
-	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
-		respBytes, err := httpRequestBuilder{
-			method: method,
-			route:  fmt.Sprintf(routeFormat, routeFields...),
-			body:   bodyBytes,
-		}.Test(t)
-		if err != nil {
-			t.Fatal(errors.Wrap(err, "cannot make http request"))
-		}
-
-		err = json.Unmarshal(respBytes, &resp)
-		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
-		}
-
-		if resp.V != want {
-			t.Fatalf("Expect: %d, got %d", want, resp.V)
-		}
+	expects := pb.PostWithNestedMessageBodyResponse{
+		V: A + B,
 	}
-
 	jsonStr := fmt.Sprintf(`{ "NM": { "A": %d, "B": %d}}`, A, B)
 
-	testHTTP([]byte(jsonStr), "POST", "postwithnestedmessagebody")
+	testHTTP(t, &resp, &expects, []byte(jsonStr), "POST", "postwithnestedmessagebody")
 }
 
 func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
@@ -273,29 +218,11 @@ func TestGetWithCapsPathRequest(t *testing.T) {
 	var A, B int64
 	A = 12
 	B = 45360
-	want := A + B
-
-	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
-		respBytes, err := httpRequestBuilder{
-			method: method,
-			route:  fmt.Sprintf(routeFormat, routeFields...),
-			body:   bodyBytes,
-		}.Test(t)
-		if err != nil {
-			t.Fatal(errors.Wrap(err, "cannot make http request"))
-		}
-
-		err = json.Unmarshal(respBytes, &resp)
-		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
-		}
-
-		if resp.V != want {
-			t.Fatalf("Expect: %d, got %d", want, resp.V)
-		}
+	expects := pb.GetWithQueryResponse{
+		V: A + B,
 	}
 
-	testHTTP(nil, "GET", "get/With/CapsPath?%s=%d&%s=%d", "A", A, "B", B)
+	testHTTP(t, &resp, &expects, nil, "GET", "get/With/CapsPath?%s=%d&%s=%d", "A", A, "B", B)
 }
 
 // Test that we can manually insert parameters into the path and recieve a
@@ -305,28 +232,11 @@ func TestGetWithPathParams(t *testing.T) {
 	var A, B int64
 	A = 12
 	B = 45360
-	want := A + B
-
-	testHTTP := func(bodyBytes []byte, method, routeFormat string, routeFields ...interface{}) {
-		respBytes, err := httpRequestBuilder{
-			method: method,
-			route:  fmt.Sprintf(routeFormat, routeFields...),
-			body:   bodyBytes,
-		}.Test(t)
-		if err != nil {
-			t.Fatal(errors.Wrap(err, "cannot make http request"))
-		}
-
-		err = json.Unmarshal(respBytes, &resp)
-		if err != nil {
-			t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
-		}
-
-		if resp.V != want {
-			t.Fatalf("Expect: %d, got %d", want, resp.V)
-		}
+	expects := pb.GetWithQueryResponse{
+		V: A + B,
 	}
-	testHTTP(nil, "GET", "path/%d/%d", A, B)
+
+	testHTTP(t, &resp, &expects, nil, "GET", "path/%d/%d", A, B)
 }
 
 // A manually created request verifying that the server properly responds with
@@ -379,6 +289,39 @@ func TestErrorRPCReturnsJSONError(t *testing.T) {
 }
 
 // Helpers
+
+// Generic way to test that making an HTTP request returns the expected data,
+// where the response is a JSON object of some kind.
+//
+// The resp parameter must be a pointer to an uninitialized struct of some
+// kind, while the expects parameter must be of the same struct type as resp,
+// but is initialized with the data that should be returned from the HTTP
+// request. Note as well: Due to quirks in how json.Unmarshal works, both resp
+// and expects must be pointers to structs.
+func testHTTP(
+	t *testing.T,
+	resp, expects interface{},
+	bodyBytes []byte,
+	method, routeFormat string,
+	routeFields ...interface{}) {
+	respBytes, err := httpRequestBuilder{
+		method: method,
+		route:  fmt.Sprintf(routeFormat, routeFields...),
+		body:   bodyBytes,
+	}.Test(t)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
+	}
+
+	if !reflect.DeepEqual(resp, expects) {
+		t.Fatalf("Expect: %+v, got %+v", expects, resp)
+	}
+}
 
 type httpRequestBuilder struct {
 	method string
