@@ -1,7 +1,6 @@
 package httptransport
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -24,13 +23,10 @@ func PathParams(url string, urlTmpl string) (map[string]string, error) {
 	rv := map[string]string{}
 	pmp := BuildParamMap(urlTmpl)
 
-	tmplLen := len(strings.Split(strings.TrimRight(urlTmpl, "/"), "/"))
-	partsLen := len(strings.Split(strings.TrimRight(url, "/"), "/"))
-	if tmplLen != partsLen {
-		expected := tmplLen
-		found := partsLen
-		msg := fmt.Sprintf("Expected a path containing %v parts, provided path contains %v parts", expected, found)
-		return nil, errors.New(msg)
+	expectedLen := len(strings.Split(strings.TrimRight(urlTmpl, "/"), "/"))
+	recievedLen := len(strings.Split(strings.TrimRight(url, "/"), "/"))
+	if expectedLen != recievedLen {
+		return nil, fmt.Errorf("Expected a path containing %d parts, provided path contains %d parts", expectedLen, recievedLen)
 	}
 
 	parts := strings.Split(url, "/")
