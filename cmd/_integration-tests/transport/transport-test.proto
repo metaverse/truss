@@ -34,7 +34,7 @@ service TransportPermutations {
   }
   rpc GetWithPathParams(GetWithQueryRequest) returns (GetWithQueryResponse) {
     option (google.api.http) = {
-    get: "/path/{A}/{B}"
+      get: "/path/{A}/{B}"
     };
   }
   rpc ErrorRPC (Empty) returns (Empty) {
