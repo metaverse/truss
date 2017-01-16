@@ -34,6 +34,7 @@ func TestMain(m *testing.M) {
 	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
 	ctxToCtxE := svc.MakeCtxToCtxEndpoint(service)
 	getWithCapsPathE := svc.MakeGetWithCapsPathEndpoint(service)
+	getWithPathParamsE := svc.MakeGetWithPathParamsEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 
 	endpoints := svc.Endpoints{
@@ -42,6 +43,7 @@ func TestMain(m *testing.M) {
 		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
 		CtxToCtxEndpoint:                  ctxToCtxE,
 		GetWithCapsPathEndpoint:           getWithCapsPathE,
+		GetWithPathParamsEndpoint:         getWithPathParamsE,
 		ErrorRPCEndpoint:                  errorRPCE,
 	}
 

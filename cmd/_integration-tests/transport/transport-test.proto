@@ -32,6 +32,11 @@ service TransportPermutations {
       get: "/get/With/CapsPath"
     };
   }
+  rpc GetWithPathParams(GetWithQueryRequest) returns (GetWithQueryResponse) {
+    option (google.api.http) = {
+      get: "/path/{A}/{B}"
+    };
+  }
   rpc ErrorRPC (Empty) returns (Empty) {
     option (google.api.http) = {
       get: "/error"

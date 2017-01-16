@@ -118,6 +118,12 @@ func PathParams(url string, urlTmpl string) (map[string]string, error) {
 	rv := map[string]string{}
 	pmp := BuildParamMap(urlTmpl)
 
+	expectedLen := len(strings.Split(strings.TrimRight(urlTmpl, "/"), "/"))
+	recievedLen := len(strings.Split(strings.TrimRight(url, "/"), "/"))
+	if expectedLen != recievedLen {
+		return nil, fmt.Errorf("Expected a path containing %d parts, provided path contains %d parts", expectedLen, recievedLen)
+	}
+
 	parts := strings.Split(url, "/")
 	for k, v := range pmp {
 		rv[k] = parts[v]
@@ -318,7 +324,7 @@ func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, respons
 	return json.NewEncoder(w).Encode(response)
 }
 
-// Helper functions 
+// Helper functions
 
 {{.HTTPHelper.PathParamsBuilder}}
 
