@@ -95,6 +95,11 @@ func main() {
 func parseInput() (*truss.Config, error) {
 	var cfg truss.Config
 	wd, err := os.Getwd()
+	if err != nil {
+		log.Warn(errors.Wrap(err, "cannot get working directory"))
+		log.Warn("Flags will only work with non relative directories")
+		wd = ""
+	}
 
 	// GOPATH
 	cfg.GoPath = filepath.SplitList(os.Getenv("GOPATH"))
