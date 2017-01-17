@@ -94,6 +94,12 @@ func main() {
 // service definition files.
 func parseInput() (*truss.Config, error) {
 	var cfg truss.Config
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Warn(errors.Wrap(err, "cannot get working directory"))
+		log.Warn("Flags will only work with non relative directories")
+		wd = ""
+	}
 
 	// GOPATH
 	cfg.GoPath = filepath.SplitList(os.Getenv("GOPATH"))
@@ -103,7 +109,6 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("GOPATH", cfg.GoPath).Debug()
 
 	// DefPaths
-	var err error
 	rawDefinitionPaths := flag.Args()
 	cfg.DefPaths, err = cleanProtofilePath(rawDefinitionPaths)
 	if err != nil {
@@ -132,7 +137,7 @@ func parseInput() (*truss.Config, error) {
 		cfg.ServicePath = p.Dir
 	} else {
 		baseSVCPackage := *svcPackageFlag
-		p, err := build.Default.Import(baseSVCPackage, "", build.FindOnly)
+		p, err := build.Default.Import(baseSVCPackage, wd, build.FindOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +165,7 @@ func parseInput() (*truss.Config, error) {
 		cfg.PBPath = cfg.ServicePath
 	} else {
 		cfg.PBPackage = *pbPackageFlag
-		p, err := build.Default.Import(cfg.PBPackage, "", build.FindOnly)
+		p, err := build.Default.Import(cfg.PBPackage, wd, build.FindOnly)
 		if err != nil {
 			return nil, err
 		}
