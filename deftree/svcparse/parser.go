@@ -229,6 +229,10 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	if err != nil {
 		return nil, err
 	}
+	// End of RPC (no httpoptions)
+	if bindings == nil {
+		return nil, nil
+	}
 	toret.HTTPBindings = bindings
 
 	// There should be a semi-colon immediately following all 'option'
@@ -322,11 +326,14 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 			return nil, err
 		}
 		return append(rv, new_opt), nil
+	case val == "}":
+		// End of RPC
+		return nil, nil
 	}
 
-	opt := optionalParseErr("'option' or 'additional_bindings' while parsing options", lex.GetLineNumber(), val)
+	optErr := optionalParseErr("'}', 'option' or 'additional_bindings' while parsing options", lex.GetLineNumber(), val)
 
-	return nil, opt
+	return nil, optErr
 }
 
 func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
