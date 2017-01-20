@@ -13,19 +13,23 @@ all: test
 
 test: clean test-transport test-cli
 
-local-tools:
-	go build -o protoc-gen-truss-protocast github.com/TuneLab/go-truss/cmd/protoc-gen-truss-protocast
+truss:
 	go build -o truss github.com/TuneLab/go-truss/cmd/truss
 
-test-transport: local-tools
+protoc-gen-truss-protocast:
+	go build -o protoc-gen-truss-protocast github.com/TuneLab/go-truss/cmd/protoc-gen-truss-protocast
+
+test-transport: protoc-gen-truss-protocast truss
 	@which truss
 	@printf '$(TRANSPORT_TEST_MSG)'
 	$(MAKE) -C transport
+	rm -f ./truss ./protoc-gen-truss-protocast
 
-test-cli: local-tools
+test-cli: protoc-gen-truss-protocast truss
 	@which truss
 	@printf '$(CLI_TEST_MSG)'
 	go test -v ./cli
+	rm -f ./truss ./protoc-gen-truss-protocast
 
 clean:
 	rm -f ./truss ./protoc-gen-truss-protocast
