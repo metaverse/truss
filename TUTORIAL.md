@@ -14,10 +14,10 @@ We will build a simple service based on [echo.proto](./_example/echo.proto)
 
 # Writing your first service
 
-Define the communication interface for your service in the *.proto file(s). 
+Define the communication interface for your service in the *.proto file(s).
 Let's start with [echo.proto](./_example/echo.proto) and read the helpful comments.
 
-## What is in the *.proto file definitions? 
+## What is in the *.proto file definitions?
 
 The name of the generated service will be based on the package name. (Readability-wise, it is good practice to use the same name for the service definition.)
 ```
@@ -28,7 +28,7 @@ service Echo{...}
 The service API is defined through RPC calls and a set of corresponding request and response messages.
 The fields in the message definition are enumerated - this is a requirement for protobuf to serialize the data.
 ```
-message LouderRequest { 
+message LouderRequest {
   string In = 1;          // In is the string to echo back
   int32  Loudness = 2;    // Loudness is the number of exclamations marks to add to the echoed string
 }
@@ -36,7 +36,7 @@ message LouderRequest {
 The RPC calls can be annotated with HTTP transport option (endpoint name and type of request). For this we must import the google annotations library.
 
 ```
-import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 service Echo {
 ...
@@ -46,7 +46,7 @@ service Echo {
         get: "/echo"
       };
   }
-...  
+...
 }
 ```
 Most of the time a `get` request is sufficient. If you wish to transmit parameters via the body, use `post`.
@@ -85,16 +85,16 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 │   └── echo.pb.go
 ├── echo.proto
 ```
-From the top down, within echo-service/: 
+From the top down, within echo-service/:
   - docs/ contains the generated documentation of the service API
   - generated/ contains the wiring and encoding protocols necessary for service communication
   - handlers/server/server_handler.go is populated with stubs where you will add the business logic
-  - middlewares/ is where you can put the middlewares (NOP by default) 
+  - middlewares/ is where you can put the middlewares (NOP by default)
   - echo-cli-client/ contains the client side CLI (useful for testing)
   - echo-server/ contains the service main, which you will build and run shortly
   - echo.pb.go contains the RPC interface definitions and supporting structures that have been translated from echo.proto to golang
 
-If you try to build and run your service now, it will respond with empty messages. There is no business logic yet! We shall add it in the next step. 
+If you try to build and run your service now, it will respond with empty messages. There is no business logic yet! We shall add it in the next step.
 
 You can safely modify only the files in handlers/ and middlewares/. Changes to any other files will be lost the next time you re-generate the service with truss.
 
@@ -139,11 +139,11 @@ ts=2016-12-06T23:25:14Z caller=server_main.go:124 transport=gRPC addr=:5040
 
 ```
 The server is now waiting for incoming messages.
-At this point we can send a request to the server via networking tools (telnet, curl) and construct message directly, or we can use the client CLI. 
+At this point we can send a request to the server via networking tools (telnet, curl) and construct message directly, or we can use the client CLI.
 
-Let's do the latter, in your first terminal. To learn how to launch client with proper parameters run `./client_main -help`. The printout will tell you what methods the service supports (-method flag options) and all the additional flags that must be set to call a certain method (flags of format -method_name.parameter_name). 
+Let's do the latter, in your first terminal. To learn how to launch client with proper parameters run `./client_main -help`. The printout will tell you what methods the service supports (-method flag options) and all the additional flags that must be set to call a certain method (flags of format -method_name.parameter_name).
 
-Now run `./client_main -method echo -echo.in “hello microservices”` 
+Now run `./client_main -method echo -echo.in “hello microservices”`
 The client terminal will display messages that were sent and received.
 
 You can also specify the address to send messages to via -grpc.addr or -http.addr flags (e.g. `-grpc.addr localhost:5040`), should you want to change the port the server runs on, or test it out on separate machines.
@@ -165,7 +165,7 @@ The following is left as an exersise to the reader:
   	- regenerate service with truss, verify that the call no longer exists
   - Break things
   - Launch the server on a different port, or different machine, and talk to it (hint: run `./server_main -h`)
-  - Try running multiple servers at once 
+  - Try running multiple servers at once
 
 # Additional features
 
@@ -177,7 +177,7 @@ You can control the location of the output folders for your service by specifyin
   -pbout {go-style-package-path to where you want the *.pb.go interface definitions to be}
 ```
 
-Note: “go-style-package-path” means exactly the style you use in your golang import statements, relative to your $GOPATH. This is not your system file path, nor it is relative to location of the *.proto file; the start of the path must be accessible from your $GOPATH. Also no “/” at the end. 
+Note: “go-style-package-path” means exactly the style you use in your golang import statements, relative to your $GOPATH. This is not your system file path, nor it is relative to location of the *.proto file; the start of the path must be accessible from your $GOPATH. Also no “/” at the end.
 For example:
 ```
 truss -pbout truss-demo/interface-defs -svcout truss-demo/service echo.proto
@@ -185,5 +185,5 @@ truss -pbout truss-demo/interface-defs -svcout truss-demo/service echo.proto
 Executing this command will place the *.pb.go files into `$GOPATH/truss-demo/interface-defs/`, and the entire echo-service directory (excepting the *.pb.go files) to `$GOPATH/truss-demo/service/`.
 
 ## Middlewares
- 
+
  TODO
