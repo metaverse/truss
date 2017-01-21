@@ -38,7 +38,7 @@ func TestServerMethsTempl(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -98,7 +98,7 @@ func TestApplyServerTempl(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -190,7 +190,7 @@ func TestIsValidFunc(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -257,7 +257,7 @@ func TestPruneDecls(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -384,7 +384,7 @@ func TestUpdateMethods(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {

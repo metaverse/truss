@@ -28,7 +28,7 @@ func TestNewFromString(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-genproto/googleapis/api/serviceconfig/annotations.proto";
+		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
