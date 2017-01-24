@@ -147,7 +147,7 @@ func parseInput() (*truss.Config, error) {
 		if !fileExists(p.Dir) {
 			return nil, errors.Errorf("specified package path for service output directory does not exist: %q", p.Dir)
 		}
-		cfg.ServicePackage = filepath.Join(baseSVCPackage, svcFolderName)
+		cfg.ServicePackage = filepath.Join(p.ImportPath, svcFolderName)
 		cfg.ServicePath = filepath.Join(p.Dir, svcFolderName)
 	}
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
@@ -164,14 +164,14 @@ func parseInput() (*truss.Config, error) {
 		cfg.PBPackage = cfg.ServicePackage
 		cfg.PBPath = cfg.ServicePath
 	} else {
-		cfg.PBPackage = *pbPackageFlag
-		p, err := build.Default.Import(cfg.PBPackage, wd, build.FindOnly)
+		p, err := build.Default.Import(*pbPackageFlag, wd, build.FindOnly)
 		if err != nil {
 			return nil, err
 		}
 		if !fileExists(p.Dir) {
 			return nil, errors.Errorf("specified package path for .pb.go output directory does not exist: %q", p.Dir)
 		}
+		cfg.PBPackage = p.ImportPath
 		cfg.PBPath = p.Dir
 	}
 	log.WithField("PB Package", cfg.PBPackage).Debug()
