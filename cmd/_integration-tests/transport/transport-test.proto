@@ -37,6 +37,13 @@ service TransportPermutations {
       get: "/path/{A}/{B}"
     };
   }
+  rpc EchoOddNames (OddFieldNames) returns (OddFieldNames) {
+  /* Ensure that strange field names survive the encode/decode phases */
+    option (google.api.http) = {
+      post: "/echooddnames"
+      body: "*"
+    };
+  }
   rpc ErrorRPC (Empty) returns (Empty) {
     option (google.api.http) = {
       get: "/error"
@@ -82,4 +89,10 @@ message MetaRequest{
 
 message MetaResponse {
   string V = 1;
+}
+
+message OddFieldNames {
+  int64 snake_case = 1;
+  int64 camelCase = 2;
+  int64 __why__so__many__underscores = 3;
 }

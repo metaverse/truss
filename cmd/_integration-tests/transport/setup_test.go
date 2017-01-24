@@ -35,6 +35,7 @@ func TestMain(m *testing.M) {
 	ctxToCtxE := svc.MakeCtxToCtxEndpoint(service)
 	getWithCapsPathE := svc.MakeGetWithCapsPathEndpoint(service)
 	getWithPathParamsE := svc.MakeGetWithPathParamsEndpoint(service)
+	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 
 	endpoints := svc.Endpoints{
@@ -44,6 +45,7 @@ func TestMain(m *testing.M) {
 		CtxToCtxEndpoint:                  ctxToCtxE,
 		GetWithCapsPathEndpoint:           getWithCapsPathE,
 		GetWithPathParamsEndpoint:         getWithPathParamsE,
+		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
 	}
 

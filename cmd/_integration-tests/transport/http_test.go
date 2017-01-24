@@ -158,6 +158,26 @@ func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
 	}
 }
 
+func TestEchoOddNamesClient(t *testing.T) {
+	var req pb.OddFieldNames
+	req.CamelCase = 12
+	req.SnakeCase = 24
+	req.XWhy_So_Many_Underscores = 36
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.EchoOddNames(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+	if !reflect.DeepEqual(resp, &req) {
+		t.Fatalf("Expected req and resp to be identical, instead: \n%+v\n%+v", req, *resp)
+	}
+}
+
 func TestCtxToCtxViaHTTPHeaderRequest(t *testing.T) {
 	var resp pb.MetaResponse
 	var key, value = "Truss-Auth-Header", "SECRET"
