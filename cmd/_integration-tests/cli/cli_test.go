@@ -41,6 +41,18 @@ func TestBasicTypesWithPBOutFlag(t *testing.T) {
 		"github.com/TuneLab/go-truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
 }
 
+func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
+	testEndToEnd("1-basic", t,
+		"--pbout",
+		"./pbout")
+}
+
+func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
+	testEndToEnd("1-basic", t,
+		"--svcout",
+		".")
+}
+
 func TestMultipleFiles(t *testing.T) {
 	testEndToEnd("1-multifile", t)
 }
