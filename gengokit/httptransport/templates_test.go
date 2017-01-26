@@ -89,7 +89,7 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 
 	// Set the body parameters
 	var buf bytes.Buffer
-	toRet := map[string]interface{}{}
+	toRet := request.(*pb.SumRequest)
 	if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
 		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 	}

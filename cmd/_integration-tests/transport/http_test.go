@@ -158,11 +158,14 @@ func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
 	}
 }
 
+// Test different kinds of message field names from protobuf definition.
+// e.g. "CamelCase", "snake_case", "__why_so_many_underscores"
 func TestEchoOddNamesClient(t *testing.T) {
-	var req pb.OddFieldNames
-	req.CamelCase = 12
-	req.SnakeCase = 24
-	req.XWhy_So_Many_Underscores = 36
+	req := pb.OddFieldNames{
+		CamelCase:                12,
+		SnakeCase:                24,
+		XWhy_So_Many_Underscores: 36,
+	}
 
 	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {

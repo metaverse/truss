@@ -84,13 +84,14 @@ var ClientEncodeTemplate = `
 
 		// Set the body parameters
 		var buf bytes.Buffer
-		toRet := map[string]interface{}{
+		toRet := request.(*pb.{{GoName $binding.Parent.RequestType}})
 		{{- range $field := $binding.Fields -}}
 			{{if eq $field.Location "body"}}
-				"{{$field.CamelName}}" : req.{{$field.CamelName}},
+				{{/* Only set the fields which should be in the body, so all
+				others will be omitted due to emptiness */}}
+				toRet.{{$field.CamelName}} = req.{{$field.CamelName}}
 			{{end}}
-		{{- end -}}
-		}
+		{{- end }}
 		if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
 			return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 		}

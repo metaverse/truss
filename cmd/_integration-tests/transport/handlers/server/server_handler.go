@@ -83,7 +83,7 @@ func (s transportService) GetWithPathParams(ctx context.Context, in *pb.GetWithQ
 	return &response, nil
 }
 
-// EchoOddNames implements Service. Why do we always put this comment here?
+// EchoOddNames implements Service.
 func (s transportService) EchoOddNames(ctx context.Context, in *pb.OddFieldNames) (*pb.OddFieldNames, error) {
 	return in, nil
 }
