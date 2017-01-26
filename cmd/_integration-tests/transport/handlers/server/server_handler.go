@@ -83,6 +83,11 @@ func (s transportService) GetWithPathParams(ctx context.Context, in *pb.GetWithQ
 	return &response, nil
 }
 
+// EchoOddNames implements Service.
+func (s transportService) EchoOddNames(ctx context.Context, in *pb.OddFieldNames) (*pb.OddFieldNames, error) {
+	return in, nil
+}
+
 var testError error = errors.New("This error should be json over http transport")
 
 // ErrorRPC implements Service.
