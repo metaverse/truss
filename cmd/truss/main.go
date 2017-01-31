@@ -37,8 +37,12 @@ const (
 )
 
 var (
-	Version   string = noVersion
-	BuildDate string = noBuildDate
+	// Version is compiled into truss with the flag
+	// go install -ldflags "-X main.Version=$SHA"
+	Version = noVersion
+	// BuildDate is compiled into truss with the flag
+	// go install -ldflags "-X main.BuildDate=$BUILD_DATE"
+	BuildDate = noBuildDate
 )
 
 func init() {
@@ -349,7 +353,7 @@ func exitIfError(err error) {
 
 // readPreviousGeneration returns a map[string]io.Reader representing the files in serviceDir
 func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
-	if fileExists(serviceDir) != true {
+	if !fileExists(serviceDir) {
 		return nil, nil
 	}
 
