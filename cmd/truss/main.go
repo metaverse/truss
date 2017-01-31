@@ -26,7 +26,8 @@ import (
 var (
 	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
 	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written")
-	verboseFlag    = flag.BoolP("verbose", "v", false, "verbose output")
+	verboseFlag    = flag.BoolP("verbose", "v", false, "Verbose output")
+	helpFlag       = flag.BoolP("help", "h", false, "Print usage")
 )
 
 var binName = filepath.Base(os.Args[0])
@@ -51,16 +52,23 @@ func init() {
 	}
 
 	flag.Usage = func() {
-		if buildinfo != "" {
+		if buildinfo != "" && (*verboseFlag || *helpFlag) {
 			fmt.Fprintf(os.Stderr, "%s (%s)\n", binName, strings.TrimSpace(buildinfo))
 		}
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] <protofile>...\n", binName)
+		fmt.Fprintf(os.Stderr, "\nUsage: %s [options] <protofile>...\n", binName)
+		fmt.Fprintf(os.Stderr, "\nGenerates go-kit services using proto3 and gRPC definitions.\n")
+		fmt.Fprintln(os.Stderr, "\nOptions:")
 		flag.PrintDefaults()
 	}
 }
 
 func main() {
 	flag.Parse()
+
+	if *helpFlag {
+		flag.Usage()
+		os.Exit(0)
+	}
 
 	if len(flag.Args()) == 0 {
 		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", binName)
