@@ -76,13 +76,6 @@ var ClientEncodeTemplate = `
 						return errors.Wrap(err, "failed to marshal req.{{$field.CamelName}}")
 					}
 					strval = string(tmp)
-					{{/* Remove square brackets on the beginning end of basic
-					repeated types after json encoding; allows for CSV-style
-					arguments.*/}}
-					{{if and (and $field.IsBaseType $field.Repeated) (not (Contains $field.GoType "[]byte"))}}
-					strval = strings.TrimSuffix(strval, "]")
-					strval = strings.TrimPrefix(strval, "[")
-					{{- end}}
 					values.Add("{{$field.Name}}", strval)
 				{{else}}
 					values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
