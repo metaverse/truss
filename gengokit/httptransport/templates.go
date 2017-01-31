@@ -46,6 +46,8 @@ var ClientEncodeTemplate = `
 	// the http request (path, query, and body).
 	func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, request interface{}) error {
 		fmt.Printf("Encoding request %v\n", request)
+		strval := ""
+		_ = strval
 		req := request.(*pb.{{GoName $binding.Parent.RequestType}})
 		_ = req
 
@@ -73,7 +75,8 @@ var ClientEncodeTemplate = `
 					if err != nil {
 						return errors.Wrap(err, "failed to marshal req.{{$field.CamelName}}")
 					}
-					values.Add("{{$field.Name}}", string(tmp))
+					strval = string(tmp)
+					values.Add("{{$field.Name}}", strval)
 				{{else}}
 					values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
 				{{- end }}

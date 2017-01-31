@@ -260,9 +260,19 @@ err = json.Unmarshal([]byte({{.LocalName}}Str), {{.LocalName}})`
 		// All repeated args of any type are represented as slices, and bare
 		// assignments to a slice accept a slice as the rvalue. As a result,
 		// LocalName will be declared as a slice, and json.Unmarshal handles
-		// everything else for us.
+		// everything else for us. Addititionally, if a type is a Base type and
+		// is repeated, we first attempt to unmarshal the string we're
+		// provided, and if that fails, we try to unmarshal the string
+		// surrounded by square brackets. If THAT fails, then the string does
+		// not represent a valid JSON string and an error is returned.
 		repeatedUnmarshalTmpl := `
 var {{.LocalName}} {{.GoType}}
+{{- if and (and .IsBaseType .Repeated) (not (Contains .GoType "[]byte"))}}
+err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})
+if err != nil {
+	{{.LocalName}}Str = "[" + {{.LocalName}}Str + "]"
+}
+{{- end}}
 err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})`
 		errorCheckingTmpl := `
 if err != nil {
@@ -276,7 +286,7 @@ if err != nil {
 			preamble = repeatedUnmarshalTmpl
 		}
 		jsonConvTmpl := preamble + errorCheckingTmpl
-		code, err := ApplyTemplate("UnmarshalNonBaseType", jsonConvTmpl, f, nil)
+		code, err := ApplyTemplate("UnmarshalNonBaseType", jsonConvTmpl, f, TemplateFuncs)
 		if err != nil {
 			panic(fmt.Sprintf("Couldn't apply template: %v", err))
 		}
@@ -365,9 +375,10 @@ func LowCamelName(s string) string {
 // TemplateFuncs contains a series of utility functions to be passed into
 // templates and used within those templates.
 var TemplateFuncs = template.FuncMap{
-	"ToLower": strings.ToLower,
-	"Title":   strings.Title,
-	"GoName":  gogen.CamelCase,
+	"ToLower":  strings.ToLower,
+	"Title":    strings.Title,
+	"GoName":   gogen.CamelCase,
+	"Contains": strings.Contains,
 }
 
 // ApplyTemplate applies a template with a given name, executor context, and

@@ -89,7 +89,7 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 
 	testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
 	// csv style
-	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
 	// multi / golang style
 	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d]", "A", A[0], "A", A[1])
 }
