@@ -294,7 +294,7 @@ func (self *MessageField) SetDescription(d string) {
 	self.Description = scrubComments(d)
 }
 
-func (self *MessageField) GetByName(s string) Describable {
+func (_ *MessageField) GetByName(s string) Describable {
 	return nil
 }
 
@@ -313,30 +313,39 @@ type ProtoEnum struct {
 	Values      []*EnumValue
 }
 
-func (self *ProtoEnum) GetName() string {
-	return self.Name
+func (pe *ProtoEnum) GetName() string {
+	return pe.Name
 }
 
-func (self *ProtoEnum) SetName(s string) {
-	self.Name = s
+func (pe *ProtoEnum) SetName(s string) {
+	pe.Name = s
 }
 
-func (self *ProtoEnum) GetDescription() string {
-	return self.Description
+func (pe *ProtoEnum) GetDescription() string {
+	return pe.Description
 }
 
-func (self *ProtoEnum) SetDescription(d string) {
+func (pe *ProtoEnum) SetDescription(d string) {
 	// When setting a description, clean it up
-	self.Description = scrubComments(d)
+	pe.Description = scrubComments(d)
 }
 
-func (self *ProtoEnum) Describe(depth int) string {
-	rv := genericDescribe(self, depth)
-	for idx, val := range self.Values {
+func (pe *ProtoEnum) Describe(depth int) string {
+	rv := genericDescribe(pe, depth)
+	for idx, val := range pe.Values {
 		rv += prindent(depth, "Value %v:\n", idx)
 		rv += val.Describe(depth + 1)
 	}
 	return rv
+}
+
+func (pe *ProtoEnum) GetByName(name string) Describable {
+	for _, ev := range pe.Values {
+		if ev.Name == name {
+			return ev
+		}
+	}
+	return nil
 }
 
 type EnumValue struct {
@@ -369,6 +378,10 @@ func (self *EnumValue) Describe(depth int) string {
 	return rv
 }
 
+func (_ *EnumValue) GetByName(s string) Describable {
+	return nil
+}
+
 type FieldType struct {
 	Describable
 	Name        string
@@ -397,7 +410,7 @@ func (self *FieldType) Describe(depth int) string {
 	return genericDescribe(self, depth)
 }
 
-func (self *FieldType) GetByName(s string) Describable {
+func (_ *FieldType) GetByName(s string) Describable {
 	return nil
 }
 
@@ -561,7 +574,7 @@ func (self *BindingField) SetDescription(d string) {
 	self.Description = scrubComments(d)
 }
 
-func (self *BindingField) GetByName(s string) Describable {
+func (_ *BindingField) GetByName(s string) Describable {
 	return nil
 }
 
@@ -602,7 +615,7 @@ func (self *HttpParameter) SetDescription(d string) {
 	self.Description = scrubComments(d)
 }
 
-func (self *HttpParameter) GetByName(s string) Describable {
+func (_ *HttpParameter) GetByName(s string) Describable {
 	return nil
 }
 

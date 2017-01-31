@@ -85,8 +85,8 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 // Converts a SourceLocation path into a "NamePath", an array of names of
 // objects, each nested within the last. Does this by walking backward through
 // the integer path in increments of two integers. The integer path almost
-// always follows a pattern of the first refering to a number in a field, and
-// the second refering to an index-th entry in the array that that field
+// always follows a pattern of the first referring to a number in a field, and
+// the second referring to an index-th entry in the array that that field
 // represents. buildNamePath walks the integer path, finding the names of these
 // entries and adding those names to the end of "NamePath". The returned slice
 // of strings thus represents the names of objects and their implicit parents,
@@ -94,7 +94,7 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 // path.
 //
 // For example, there may be SourceLocation with a comment "spam eggs" and a
-// path like [ 4 2 6 0 ]. To find the actual unit of code refered to by this
+// path like [ 4 2 6 0 ]. To find the actual unit of code referred to by this
 // SourceLocation we must walk its path. Walking the path goes like so:
 //
 //     From the root file, go to the 4th field
@@ -131,9 +131,9 @@ func getCollectionIndex(node reflect.Value, index int) reflect.Value {
 // This idea that there are just simple objects or nodes that contain child
 // objects with some name is exactly how a Deftree is constructed and
 // navigated. Every node within the Deftree implements the "Describable"
-// interface, garunteeing that it has a Name, a Description (comments about the
-// node), and a GetByName method which allows you to query that node for any
-// child nodes with the name you specify.
+// interface, guaranteeing that it has a Name, a Description (comments about
+// the node), and a GetByName method which allows you to query that node for
+// any child nodes with the name you specify.
 func buildNamePath(path []int32, node reflect.Value) ([]string, error) {
 	log.WithFields(log.Fields{
 		"path": path,
@@ -226,6 +226,8 @@ func scrubComments(comment string) string {
 	return comment
 }
 
+// AssociateComments walks the provided CodeGeneratorRequest finding comments
+// and then copying them into their corresponding location within the deftree.
 func AssociateComments(dt Deftree, req *plugin.CodeGeneratorRequest) {
 	for _, file := range req.GetProtoFile() {
 		// Skip comments for files outside the main one being considered
