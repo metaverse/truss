@@ -74,11 +74,12 @@ func defaultDescribeMarkdown(d deftree.Describable, depth int) string {
 }
 
 func MdMicroserviceDefinition(m *deftree.MicroserviceDefinition, depth int) string {
-	rv := doc_css
-	rv += defaultDescribeMarkdown(m, depth)
+	rv := defaultDescribeMarkdown(m, depth)
 	for _, file := range m.Files {
 		rv += MdFile(file, depth+1)
 	}
+
+	rv += doc_css
 	return rv
 }
 

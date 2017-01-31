@@ -33,18 +33,6 @@ func initGenGo(req *plugin.CodeGeneratorRequest) {
 	gengo.GenerateAllFiles()
 }
 
-func init() {
-	// Output to stderr instead of stdout, could also be a file.
-	log.SetOutput(os.Stderr)
-	// Force colors in logs to be on
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors: true,
-	})
-
-	// Only log the warning severity or above.
-	log.SetLevel(log.InfoLevel)
-}
-
 // New accepts a Protobuf plugin.CodeGeneratorRequest and the contents of the
 // file containing the service declaration and returns a Deftree struct
 func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (Deftree, error) {
@@ -92,6 +80,8 @@ func New(req *plugin.CodeGeneratorRequest, serviceFile io.Reader) (Deftree, erro
 	return &dt, nil
 }
 
+// NewFromString creates a Deftree from a string of a valid protobuf
+// definition. A very useful function within tests.
 func NewFromString(def string, gopath []string) (Deftree, error) {
 	const defFileName = "definition.proto"
 
