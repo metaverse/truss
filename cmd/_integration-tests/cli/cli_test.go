@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -73,7 +74,6 @@ func _TestMapTypes(t *testing.T) {
 }
 
 func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
-	port := 45360
 	wd, _ := os.Getwd()
 
 	path := filepath.Join(wd, definitionDirectory, defDir)
@@ -94,16 +94,20 @@ func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 		t.Fatalf("Could not build service. Error: %v", err)
 	}
 
+	grpcPort := strconv.Itoa(FindFreePort())
+	httpPort := strconv.Itoa(FindFreePort())
+	debugPort := strconv.Itoa(FindFreePort())
+
 	// launch long running server
 	server, srvrOut, errc := runServer(path,
-		"-grpc.addr", ":"+strconv.Itoa(port),
-		"-http.addr", ":"+strconv.Itoa(port-70),
-		"-debug.addr", ":"+strconv.Itoa(port+1000))
+		"-grpc.addr", ":"+grpcPort,
+		"-http.addr", ":"+httpPort,
+		"-debug.addr", ":"+debugPort)
 
 	// run client with grpc transport
-	clientGRPC, errGRPC := runClient(path, "-grpc.addr", ":"+strconv.Itoa(port))
+	clientGRPC, errGRPC := runClient(path, "-grpc.addr", ":"+grpcPort)
 	// run client with http transport
-	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+strconv.Itoa(port-70))
+	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort)
 
 	var errSRVR error
 	select {
@@ -329,4 +333,20 @@ func removeTestFiles(defDir string) {
 	os.RemoveAll(filepath.Join(defDir, "bin"))
 	os.RemoveAll(filepath.Join(defDir, "pbout"))
 	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)
+}
+
+// FindFreePort returns an open TCP port. That port could be taken in the time
+// between this function returning and you opening it again.
+func FindFreePort() int {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
 }
