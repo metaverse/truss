@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -72,28 +73,15 @@ func _TestMapTypes(t *testing.T) {
 	testEndToEnd("4-maps", t)
 }
 
-// runReference stores data about a client-server interaction
-// This data is then used to display output
-type runReference struct {
-	name             string
-	clientErr        bool
-	clientHTTPErr    bool
-	serverErr        bool
-	clientOutput     string
-	clientHTTPOutput string
-	serverOutput     string
-}
-
 func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
-	port := 45360
 	wd, _ := os.Getwd()
 
-	fullpath := filepath.Join(wd, definitionDirectory, defDir)
+	path := filepath.Join(wd, definitionDirectory, defDir)
 
 	// Remove tests if they exists
-	removeTestFiles(fullpath)
+	removeTestFiles(path)
 
-	trussOut, err := truss(fullpath, trussOptions...)
+	trussOut, err := truss(path, trussOptions...)
 
 	// If truss fails, test error and skip communication
 	if err != nil {
@@ -101,23 +89,46 @@ func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 	}
 
 	// Build the service to be tested
-	err = buildTestService(fullpath)
+	err = buildTestService(path)
 	if err != nil {
 		t.Fatalf("Could not build service. Error: %v", err)
 	}
 
-	// Run them save a reference to each run
-	ref := runServerAndClient(fullpath, port, port+1000)
-	if ref.clientErr || ref.clientHTTPErr || ref.serverErr {
-		t.Logf("Communication test FAILED - %v", ref.name)
-		t.Logf("Client Output\n%v", ref.clientOutput)
-		t.Logf("Client HTTP Output\n%v", ref.clientHTTPOutput)
-		t.Logf("Server Output\n%v", ref.serverOutput)
+	grpcPort := strconv.Itoa(FindFreePort())
+	httpPort := strconv.Itoa(FindFreePort())
+	debugPort := strconv.Itoa(FindFreePort())
+
+	// launch long running server
+	server, srvrOut, errc := runServer(path,
+		"-grpc.addr", ":"+grpcPort,
+		"-http.addr", ":"+httpPort,
+		"-debug.addr", ":"+debugPort)
+
+	// run client with grpc transport
+	clientGRPC, errGRPC := runClient(path, "-grpc.addr", ":"+grpcPort)
+	// run client with http transport
+	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort)
+
+	var errSRVR error
+	select {
+	// Case server errored and exited
+	case err := <-errc:
+		errSRVR = err
+	default:
+		errSRVR = reapServer(server)
+	}
+	// check server for errors and kill if needed
+
+	if errGRPC != nil || errHTTP != nil || errSRVR != nil {
+		t.Logf("Communication test FAILED - %v", filepath.Base(path))
+		t.Logf("Client gRPC Output\n%v", string(clientGRPC))
+		t.Logf("Client HTTP Output\n%v", string(clientHTTP))
+		t.Logf("Server Output\n%v", srvrOut.String())
 		t.FailNow()
 	}
 
 	// If nothing failed, delete the generated files
-	removeTestFiles(fullpath)
+	removeTestFiles(path)
 }
 
 // truss calls truss on *.proto in path
@@ -135,7 +146,6 @@ func truss(path string, options ...string) (string, error) {
 	}
 
 	args := append(options, protofiles...)
-
 	trussExec := exec.Command(
 		"truss",
 		args...,
@@ -230,35 +240,28 @@ func goBuild(name, outputPath, relCodePath string, errChan chan error) {
 	errChan <- nil
 }
 
-// runServerAndClient execs a test-server and test-client and puts a
-// runReference to their interaction on the runRefs channel
-func runServerAndClient(path string, port int, debugPort int) runReference {
+func runServer(path string, flags ...string) (*exec.Cmd, *bytes.Buffer, chan error) {
 	// From within a folder with a truss `service`
 	// These are the paths to the compiled binaries
 	const relativeServerPath = "/bin/test-server"
 
 	// Output buffer for the server Stdout and Stderr
-	serverOut := bytes.NewBuffer(nil)
+	srvrOut := bytes.NewBuffer(nil)
 	// Get the server command ready with the port
 	server := exec.Command(
 		path+relativeServerPath,
-		"-grpc.addr",
-		":"+strconv.Itoa(port),
-		"-http.addr",
-		":"+strconv.Itoa(port-70),
-		"-debug.addr",
-		":"+strconv.Itoa(debugPort),
+		flags...,
 	)
 
-	// Put serverOut to be the writer of data from Stdout and Stderr
-	server.Stdout = serverOut
-	server.Stderr = serverOut
+	// Put srvrOut to be the writer of data from Stdout and Stderr
+	server.Stdout = srvrOut
+	server.Stderr = srvrOut
 
 	// Start the server
-	serverErrChan := make(chan error)
+	errc := make(chan error)
 	go func() {
 		err := server.Run()
-		serverErrChan <- err
+		errc <- err
 		defer server.Process.Kill()
 	}()
 
@@ -271,74 +274,34 @@ func runServerAndClient(path string, port int, debugPort int) runReference {
 	}
 	<-t.C
 
-	cOut, cErr := runClient(path, "grpc", port)
-	cHTTPOut, cHTTPErr := runClient(path, "http", port-70)
-
-	var sErr bool
-
-	// If the server ever stopped then it errored
-	// If it did not stop, kill it and see if that errors
-	select {
-	case <-serverErrChan:
-		sErr = true
-	default:
-		if server.Process == nil {
-			// This likely means the server never started
-			sErr = true
-		} else {
-			// If the Process is not nil, kill it, clean up our mess
-			err := server.Process.Kill()
-			if err != nil {
-				sErr = true
-			} else {
-				sErr = false
-			}
-		}
-	}
-
-	// Construct a reference to what happened here
-	ref := runReference{
-		name:             filepath.Base(path),
-		clientErr:        cErr,
-		clientHTTPErr:    cHTTPErr,
-		serverErr:        sErr,
-		clientOutput:     string(cOut),
-		clientHTTPOutput: string(cHTTPOut),
-		serverOutput:     serverOut.String(),
-	}
-
-	return ref
+	return server, srvrOut, errc
 }
 
-func runClient(path string, trans string, port int) ([]byte, bool) {
+func reapServer(server *exec.Cmd) error {
+	// If the server ever stopped then it errored
+	// If it did not stop, kill it and see if that errors
+	if server.Process == nil {
+		// This likely means the server never started
+		return errors.New("server cannot be reaped; server not running")
+	}
+	// If the Process is not nil, kill it, clean up our mess
+	err := server.Process.Kill()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func runClient(path string, flags ...string) ([]byte, error) {
 	const relativeClientPath = "/bin/test-cli-client"
 
-	var client *exec.Cmd
-	switch trans {
-	case "http":
-		client = exec.Command(
-			path+relativeClientPath,
-			"-http.addr",
-			":"+strconv.Itoa(port),
-		)
-	case "grpc":
-		client = exec.Command(
-			path+relativeClientPath,
-			"-grpc.addr",
-			":"+strconv.Itoa(port),
-		)
-	}
+	client := exec.Command(
+		path+relativeClientPath,
+		flags...,
+	)
 
-	cOut, err := client.CombinedOutput()
-
-	var cErr bool
-	if err != nil {
-		cErr = true
-	} else {
-		cErr = false
-	}
-
-	return cOut, cErr
+	return client.CombinedOutput()
 }
 
 // fileExists checks if a file at the given path exists. Returns true if the
@@ -370,4 +333,20 @@ func removeTestFiles(defDir string) {
 	os.RemoveAll(filepath.Join(defDir, "bin"))
 	os.RemoveAll(filepath.Join(defDir, "pbout"))
 	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)
+}
+
+// FindFreePort returns an open TCP port. That port could be taken in the time
+// between this function returning and you opening it again.
+func FindFreePort() int {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		panic(err)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port
 }
