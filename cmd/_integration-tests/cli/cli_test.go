@@ -19,17 +19,22 @@ import (
 
 const definitionDirectory = "test-service-definitions"
 
+var basePath string
+
 func init() {
+	wd, err := os.Getwd()
+	if err != nil {
+		os.Exit(1)
+	}
 	clean := flag.Bool("clean", false, "Remove all generated test files and do nothing else")
 	flag.Parse()
 	if *clean {
-		wd, err := os.Getwd()
-		if err != nil {
-			os.Exit(1)
-		}
 		cleanTests(filepath.Join(wd, definitionDirectory))
 		os.Exit(0)
 	}
+
+	basePath = filepath.Join(wd, definitionDirectory)
+
 }
 
 func TestBasicTypes(t *testing.T) {
@@ -74,25 +79,8 @@ func _TestMapTypes(t *testing.T) {
 }
 
 func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
-	wd, _ := os.Getwd()
-
-	path := filepath.Join(wd, definitionDirectory, defDir)
-
-	// Remove tests if they exists
-	removeTestFiles(path)
-
-	trussOut, err := truss(path, trussOptions...)
-
-	// If truss fails, test error and skip communication
-	if err != nil {
-		t.Fatalf("Truss generation FAILED - %v\nTruss Output:\n%v", defDir, trussOut)
-	}
-
-	// Build the service to be tested
-	err = buildTestService(path)
-	if err != nil {
-		t.Fatalf("Could not build service. Error: %v", err)
-	}
+	path := filepath.Join(basePath, defDir)
+	createTrussService(path)
 
 	grpcPort := strconv.Itoa(FindFreePort())
 	httpPort := strconv.Itoa(FindFreePort())
@@ -129,6 +117,25 @@ func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 
 	// If nothing failed, delete the generated files
 	removeTestFiles(path)
+}
+
+func createTrussService(path string, trussFlags ...string) error {
+	// Remove tests if they exists
+	removeTestFiles(path)
+
+	trussOut, err := truss(path, trussFlags...)
+
+	// If truss fails, test error and skip communication
+	if err != nil {
+		return errors.Errorf("Truss generation FAILED - %v\nTruss Output:\n%v", path, trussOut)
+	}
+
+	// Build the service to be tested
+	err = buildTestService(path)
+	if err != nil {
+		return errors.Errorf("Could not build service. Error: %v", err)
+	}
+	return nil
 }
 
 // truss calls truss on *.proto in path
