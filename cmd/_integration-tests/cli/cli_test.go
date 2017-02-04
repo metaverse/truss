@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -21,20 +22,53 @@ const definitionDirectory = "test-service-definitions"
 
 var basePath string
 
-func init() {
+func TestMain(m *testing.M) {
 	wd, err := os.Getwd()
 	if err != nil {
 		os.Exit(1)
 	}
-	clean := flag.Bool("clean", false, "Remove all generated test files and do nothing else")
-	flag.Parse()
-	if *clean {
-		cleanTests(filepath.Join(wd, definitionDirectory))
-		os.Exit(0)
-	}
 
 	basePath = filepath.Join(wd, definitionDirectory)
 
+	clean := flag.Bool("clean", false, "Remove all generated test files and do nothing else")
+	flag.Parse()
+	if *clean {
+		cleanTests(basePath)
+		os.Exit(0)
+	}
+
+	// Create a standalone copy of the 'basic' service binary that persists
+	// through all the tests. This binary to be used to test things like flags
+	// and flag-groups.
+	exitCode := 0
+
+	// Copy "1-basic" into a special "0-basic" which is removed
+	copy := exec.Command(
+		"cp",
+		"-r",
+		filepath.Join(basePath, "1-basic"),
+		filepath.Join(basePath, "0-basic"),
+	)
+	copy.Stdout = os.Stdout
+	copy.Stderr = os.Stderr
+	err = copy.Run()
+	if err != nil {
+		fmt.Printf("cannot copy '0-basic' service: %v", err)
+		os.Exit(1)
+	}
+
+	err = createTrussService(filepath.Join(basePath, "0-basic"))
+	if err != nil {
+		fmt.Printf("cannot create truss service: %v", err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		os.RemoveAll(filepath.Join(basePath, "0-basic"))
+		os.Exit(exitCode)
+	}()
+
+	exitCode = m.Run()
 }
 
 func TestBasicTypes(t *testing.T) {
@@ -78,6 +112,38 @@ func _TestMapTypes(t *testing.T) {
 	testEndToEnd("4-maps", t)
 }
 
+// Ensure that environment variables are used
+func TestPortVariable(t *testing.T) {
+	path := filepath.Join(basePath, "0-basic")
+	grpcPort := strconv.Itoa(FindFreePort())
+	httpPort := strconv.Itoa(FindFreePort())
+	debugPort := strconv.Itoa(FindFreePort())
+
+	// Set environment variables
+	defer os.Unsetenv("PORT")
+	if err := os.Setenv("PORT", httpPort); err != nil {
+		t.Fatal(err)
+	}
+
+	// launch long running server
+	server, srvrOut, errc := runServer(path,
+		"-grpc.addr", ":"+grpcPort,
+		"-debug.addr", ":"+debugPort)
+	// run client with http transport
+	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort)
+	if errHTTP != nil {
+		t.Error(string(clientHTTP))
+		t.Error(errHTTP)
+	}
+
+	err := reapServer(server, errc)
+	if err != nil {
+		t.Error(srvrOut.String())
+		t.Fatalf("cannot reap server: %v", err)
+	}
+
+}
+
 func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
 	createTrussService(path)
@@ -97,15 +163,8 @@ func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 	// run client with http transport
 	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort)
 
-	var errSRVR error
-	select {
-	// Case server errored and exited
-	case err := <-errc:
-		errSRVR = err
-	default:
-		errSRVR = reapServer(server)
-	}
 	// check server for errors and kill if needed
+	errSRVR := reapServer(server, errc)
 
 	if errGRPC != nil || errHTTP != nil || errSRVR != nil {
 		t.Logf("Communication test FAILED - %v", filepath.Base(path))
@@ -284,7 +343,15 @@ func runServer(path string, flags ...string) (*exec.Cmd, *bytes.Buffer, chan err
 	return server, srvrOut, errc
 }
 
-func reapServer(server *exec.Cmd) error {
+func reapServer(server *exec.Cmd, errc chan error) error {
+	select {
+	// Case server errored and exited
+	case err := <-errc:
+		return err
+	default:
+		break
+	}
+
 	// If the server ever stopped then it errored
 	// If it did not stop, kill it and see if that errors
 	if server.Process == nil {
