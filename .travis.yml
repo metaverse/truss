@@ -4,8 +4,8 @@ language: go
 sudo: false
 
 go:
-  - 1.7
-  - 1.6
+  - tip
+  - 1.7.x
 
 go_import_path: github.com/TuneLab/go-truss
 
@@ -21,15 +21,15 @@ before_install:
   #- go get -v github.com/golang/protobuf/... || true
   - go get -v github.com/golang/protobuf/protoc-gen-go
     # For http annotation support 
-  - go get -v github.com/TuneLab/go-genproto/... || true
+  #- go get -v github.com/TuneLab/go-genproto/... || true
     # go-bindata is used to create binary data from template files
   - go get -v github.com/jteeuwen/go-bindata/...
 
     # these were added because when truss runs its $ go get ... after generating a microservice
     # truss failed, the output seemed git related. This should be dealt with.
-  - go get -u -v google.golang.org/grpc
-  - go get -u -v golang.org/x/net/context
-  - go get -u -v github.com/go-kit/kit/... || true
+  #- go get -u -v google.golang.org/grpc
+  #- go get -u -v golang.org/x/net/context
+  #- go get -u -v github.com/go-kit/kit/... || true
 
 install:
   # install our protoc plugin and truss
