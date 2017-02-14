@@ -185,7 +185,7 @@ func newClientArg(methName string, field *svcdef.Field) *ClientArg {
 		newArg.Repeated = true
 	}
 
-	newArg.FlagName = fmt.Sprintf("%s.%s", strings.ToLower(methName), strings.ToLower(field.Name))
+	newArg.FlagName = fmt.Sprintf("%s", strings.ToLower(field.Name))
 	newArg.FlagArg = fmt.Sprintf("flag%s%s", gogen.CamelCase(field.Name), gogen.CamelCase(methName))
 
 	if field.Type.Enum != nil {
@@ -205,7 +205,7 @@ func newClientArg(methName string, field *svcdef.Field) *ClientArg {
 		ft = "string"
 	}
 	newArg.FlagType = ft
-	newArg.FlagConvertFunc = createFlagConvertFunc(newArg)
+	newArg.FlagConvertFunc = createFlagConvertFunc(newArg, methName)
 
 	newArg.GoArg = fmt.Sprintf("%s%s", gogen.CamelCase(newArg.Name), gogen.CamelCase(methName))
 	// For types outside the base types, treat them as strings
@@ -254,27 +254,28 @@ if {{.FlagArg}} != nil && len(*{{.FlagArg}}) > 0 {
 // createFlagConvertFunc creates the go string for the flag invocation to parse
 // a command line argument into it's nearest available type that the flag
 // package provides.
-func createFlagConvertFunc(a ClientArg) string {
+func createFlagConvertFunc(a ClientArg, methName string) string {
 	fType := ""
 	switch {
 	case strings.Contains(a.FlagType, "uint32"):
-		fType = `%s = flag.Uint("%s", 0, %s)`
+		fType = `%s = fs%s.Uint("%s", 0, %s)`
 	case strings.Contains(a.FlagType, "uint64"):
-		fType = `%s = flag.Uint64("%s", 0, %s)`
+		fType = `%s = fs%s.Uint64("%s", 0, %s)`
 	case strings.Contains(a.FlagType, "int32"):
-		fType = `%s = flag.Int("%s", 0, %s)`
+		fType = `%s = fs%s.Int("%s", 0, %s)`
 	case strings.Contains(a.FlagType, "int64"):
-		fType = `%s = flag.Int64("%s", 0, %s)`
+		fType = `%s = fs%s.Int64("%s", 0, %s)`
 	case strings.Contains(a.FlagType, "bool"):
-		fType = `%s = flag.Bool("%s", false, %s)`
+		fType = `%s = fs%s.Bool("%s", false, %s)`
 	case strings.Contains(a.FlagType, "float32"):
-		fType = `%s = flag.Float64("%s", 0.0, %s)`
+		fType = `%s = fs%s.Float64("%s", 0.0, %s)`
 	case strings.Contains(a.FlagType, "float64"):
-		fType = `%s = flag.Float64("%s", 0.0, %s)`
+		fType = `%s = fs%s.Float64("%s", 0.0, %s)`
 	case strings.Contains(a.FlagType, "string"):
-		fType = `%s = flag.String("%s", "", %s)`
+		fType = `%s = fs%s.String("%s", "", %s)`
 	}
-	return fmt.Sprintf(fType, a.FlagArg, a.FlagName, `""`)
+
+	return fmt.Sprintf(fType, a.FlagArg, methName, a.FlagName, `""`)
 }
 
 // flagTypeConversion creates the proper syntax for converting a flag into
