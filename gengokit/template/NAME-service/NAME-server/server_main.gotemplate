@@ -30,17 +30,17 @@ func main() {
 	)
 
 	// Use environment variables, if set. Flags have priority over Env vars.
-	if os.Getenv("DEBUG_ADDR") != "" {
-		*debugAddr = os.Getenv("DEBUG_ADDR")
+	if addr := os.Getenv("DEBUG_ADDR"); addr != "" {
+		*debugAddr = addr
 	}
-	if os.Getenv("PORT") != "" {
-		*httpAddr = fmt.Sprintf(":%s", os.Getenv("PORT"))
+	if port := os.Getenv("PORT"); port != "" {
+		*httpAddr = fmt.Sprintf(":%s", port)
 	}
-	if os.Getenv("HTTP_ADDR") != "" {
-		*httpAddr = os.Getenv("HTTP_ADDR")
+	if addr := os.Getenv("HTTP_ADDR"); addr != "" {
+		*httpAddr = addr
 	}
-	if os.Getenv("GRPC_ADDR") != "" {
-		*grpcAddr = os.Getenv("GRPC_ADDR")
+	if addr := os.Getenv("GRPC_ADDR"); addr != "" {
+		*grpcAddr = addr
 	}
 
 	// Update addresses if they have been overwritten by flags
