@@ -28,21 +28,23 @@ func main() {
 		httpAddr       = flag.String("http.addr", ":5050", "HTTP listen address")
 		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) listen address")
 	)
-	flag.Parse()
 
 	// Use environment variables, if set. Flags have priority over Env vars.
-	if os.Getenv("DEBUG_ADDR") != ""  && *debugAddr == ":5060" {
-		*debugAddr = os.Getenv("DEBUG_ADDR")
+	if addr := os.Getenv("DEBUG_ADDR"); addr != "" {
+		*debugAddr = addr
 	}
-	if os.Getenv("HTTP_ADDR") != ""  && *httpAddr == ":5050" {
-		*httpAddr = os.Getenv("HTTP_ADDR")
+	if port := os.Getenv("PORT"); port != "" {
+		*httpAddr = fmt.Sprintf(":%s", port)
 	}
-	if os.Getenv("GRPC_ADDR") != "" && *grpcAddr == ":5040" {
-		*grpcAddr = os.Getenv("GRPC_ADDR")
+	if addr := os.Getenv("HTTP_ADDR"); addr != "" {
+		*httpAddr = addr
 	}
-	if os.Getenv("PORT") != "" && *httpAddr == ":5050" {
-		*httpAddr = fmt.Sprintf(":%s", os.Getenv("PORT"))
+	if addr := os.Getenv("GRPC_ADDR"); addr != "" {
+		*grpcAddr = addr
 	}
+
+	// Update addresses if they have been overwritten by flags
+	flag.Parse()
 
 	// Logging domain.
 	var logger log.Logger
