@@ -63,10 +63,10 @@ func TestNewClientServiceArgs(t *testing.T) {
 				Args: []*ClientArg{
 					&ClientArg{
 						Name:            "a",
-						FlagName:        "sum.a",
+						FlagName:        "a",
 						FlagArg:         "flagASum",
 						FlagType:        "string",
-						FlagConvertFunc: "flagASum = flag.String(\"sum.a\", \"\", \"\")",
+						FlagConvertFunc: "flagASum = fsSum.String(\"a\", \"\", \"\")",
 						GoArg:           "ASum",
 						GoType:          "[]int64",
 						GoConvertInvoc:  "\nvar ASum []int64\nif flagASum != nil && len(*flagASum) > 0 {\n\terr = json.Unmarshal([]byte(*flagASum), &ASum)\n\tif err != nil {\n\t\tpanic(errors.Wrapf(err, \"unmarshalling ASum from %v:\", flagASum))\n\t}\n}\n",
@@ -76,10 +76,10 @@ func TestNewClientServiceArgs(t *testing.T) {
 					&ClientArg{
 
 						Name:            "b",
-						FlagName:        "sum.b",
+						FlagName:        "b",
 						FlagArg:         "flagBSum",
 						FlagType:        "int64",
-						FlagConvertFunc: "flagBSum = flag.Int64(\"sum.b\", 0, \"\")",
+						FlagConvertFunc: "flagBSum = fsSum.Int64(\"b\", 0, \"\")",
 						GoArg:           "BSum",
 						GoType:          "int64",
 						GoConvertInvoc:  "BSum := *flagBSum",

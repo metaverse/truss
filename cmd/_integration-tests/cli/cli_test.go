@@ -72,44 +72,44 @@ func TestMain(m *testing.M) {
 }
 
 func TestBasicTypes(t *testing.T) {
-	testEndToEnd("1-basic", t)
+	testEndToEnd("1-basic", "getbasic", t)
 }
 
 func TestBasicTypesWithPBOutFlag(t *testing.T) {
-	testEndToEnd("1-basic", t,
+	testEndToEnd("1-basic", "getbasic", t,
 		"--pbout",
 		"github.com/TuneLab/go-truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
 }
 
 func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
-	testEndToEnd("1-basic", t,
+	testEndToEnd("1-basic", "getbasic", t,
 		"--pbout",
 		"./pbout")
 }
 
 func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
-	testEndToEnd("1-basic", t,
+	testEndToEnd("1-basic", "getbasic", t,
 		"--svcout",
 		".")
 }
 
 func TestMultipleFiles(t *testing.T) {
-	testEndToEnd("1-multifile", t)
+	testEndToEnd("1-multifile", "getbasic", t)
 }
 
 // Disabled until repeated types are implemented for cliclient
 func TestRepeatedTypes(t *testing.T) {
-	testEndToEnd("2-repeated", t)
+	testEndToEnd("2-repeated", "getrepeated", t)
 }
 
 // Disabled until nested types are implemented for cliclient
 func _TestNestedTypes(t *testing.T) {
-	testEndToEnd("3-nested", t)
+	testEndToEnd("3-nested", "getnested", t)
 }
 
 // Disabled until map types are implemented for cliclient
 func _TestMapTypes(t *testing.T) {
-	testEndToEnd("4-maps", t)
+	testEndToEnd("4-maps", "getmap", t)
 }
 
 // Ensure that environment variables are used
@@ -130,7 +130,7 @@ func TestPortVariable(t *testing.T) {
 		"-grpc.addr", ":"+grpcPort,
 		"-debug.addr", ":"+debugPort)
 	// run client with http transport
-	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort)
+	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort, "getbasic")
 	if errHTTP != nil {
 		t.Error(string(clientHTTP))
 		t.Error(errHTTP)
@@ -144,7 +144,7 @@ func TestPortVariable(t *testing.T) {
 
 }
 
-func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
+func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
 	createTrussService(path)
 
@@ -159,9 +159,9 @@ func testEndToEnd(defDir string, t *testing.T, trussOptions ...string) {
 		"-debug.addr", ":"+debugPort)
 
 	// run client with grpc transport
-	clientGRPC, errGRPC := runClient(path, "-grpc.addr", ":"+grpcPort)
+	clientGRPC, errGRPC := runClient(path, "-grpc.addr", ":"+grpcPort, subcmd)
 	// run client with http transport
-	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort)
+	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort, subcmd)
 
 	// check server for errors and kill if needed
 	errSRVR := reapServer(server, errc)

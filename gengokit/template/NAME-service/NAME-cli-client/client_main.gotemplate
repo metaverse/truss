@@ -31,27 +31,45 @@ var (
 
 
 func main() {
+	var (
+		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
+		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) address of addsvc")
+	)
+
 	// The addcli presumes no service discovery system, and expects users to
 	// provide the direct address of an service. This presumption is reflected in
 	// the cli binary and the the client packages: the -transport.addr flags
 	// and various client constructors both expect host:port strings.
 
-	var (
-		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
-		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) address of addsvc")
-		method         = flag.String("method", "{{range $index, $i := .Service.Methods}}{{if $index}}{{else}}{{ToLower $i.Name}}{{end}}{{end}}",	"{{range $index, $i := .Service.Methods}}{{if $index}},{{end}}{{ToLower $i.Name}}{{end}}")
-	)
+	{{ range $meth, $args := .ClientArgs.MethArgs }}
+		fs{{$meth}} := flag.NewFlagSet("{{ToLower $meth}}", flag.ExitOnError)
+	{{end}}
 
 	var (
 		{{.ClientArgs.AllFlags}}
 	)
-	flag.Parse()
 
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\n")
+		fmt.Fprintf(os.Stderr, "Subcommands:\n")
+		{{range $meth, $args := .ClientArgs.MethArgs -}}
+			fmt.Fprintf(os.Stderr, "  %s\n", "{{ToLower $meth}}")
+		{{end -}}
+	}
+	if len(os.Args) < 2 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	flag.Parse()
 
 	var (
 		service pb.{{GoName .Service.Name}}Server
 		err     error
 	)
+
 	if *httpAddr != "" {
 		service, err = httpclient.New(*httpAddr)
 	} else if *grpcAddr != "" {
@@ -71,33 +89,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch *method {
-{{ with $te := .}}
-	{{range $i := $te.Service.Methods}}
-		case "{{ToLower $i.Name}}":
-			{{- with index $te.ClientArgs.MethArgs $i.Name -}}
-				var err error
-				{{.MarshalFlags}}
-			{{- end}}
-			request, err := clientHandler.{{$i.Name}}({{with index $te.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
+
+	switch flag.Args()[0] {
+	{{range $meth, $args := .ClientArgs.MethArgs}}
+		case "{{ToLower $meth}}":
+			fs{{$meth}}.Parse(flag.Args()[1:])
+
+			{{$args.MarshalFlags}}
+
+			request, err := clientHandler.{{$meth}}({{$args.CallArgs}})
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$i.Name}}: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$meth}}: %v\n", err)
 				os.Exit(1)
 			}
 
-			v, err := service.{{$i.Name}}(context.Background(), request)
+			v, err := service.{{$meth}}(context.Background(), request)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error calling service.{{$i.Name}}: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error calling service.{{$meth}}: %v\n", err)
 				os.Exit(1)
 			}
 			fmt.Println("Client Requested with:")
-			fmt.Println({{with index $te.ClientArgs.MethArgs $i.Name}}{{.CallArgs}}{{end}})
+			fmt.Println({{$args.CallArgs}})
 			fmt.Println("Server Responded with:")
 			fmt.Println(v)
-	{{- end}}
-{{- end}}
+	{{end}}
 	default:
-		fmt.Fprintf(os.Stderr, "error: invalid method %q\n", method)
+		flag.Usage()
 		os.Exit(1)
 	}
 }
