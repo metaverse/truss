@@ -13,13 +13,13 @@ import (
 
 // NewService returns a naïve, stateless implementation of Service.
 func NewService() pb.TransportPermutationsServer {
-	return transportService{}
+	return transportpermutationsService{}
 }
 
-type transportService struct{}
+type transportpermutationsService struct{}
 
 // GetWithQuery implements Service.
-func (s transportService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+func (s transportpermutationsService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
@@ -28,7 +28,7 @@ func (s transportService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryR
 }
 
 // GetWithRepeatedQuery implements Service.
-func (s transportService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error) {
+func (s transportpermutationsService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWithRepeatedQueryRequest) (*pb.GetWithRepeatedQueryResponse, error) {
 	var out int64
 
 	for _, v := range in.A {
@@ -43,7 +43,7 @@ func (s transportService) GetWithRepeatedQuery(ctx context.Context, in *pb.GetWi
 }
 
 // PostWithNestedMessageBody implements Service.
-func (s transportService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
+func (s transportpermutationsService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
 	response := pb.PostWithNestedMessageBodyResponse{
 		V: in.NM.A + in.NM.B,
 	}
@@ -51,7 +51,7 @@ func (s transportService) PostWithNestedMessageBody(ctx context.Context, in *pb.
 }
 
 // CtxToCtx implements Service.
-func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb.MetaResponse, error) {
+func (s transportpermutationsService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb.MetaResponse, error) {
 	var resp pb.MetaResponse
 	val := ctx.Value(in.Key)
 
@@ -67,7 +67,7 @@ func (s transportService) CtxToCtx(ctx context.Context, in *pb.MetaRequest) (*pb
 }
 
 // GetWithCapsPath implements Service.
-func (s transportService) GetWithCapsPath(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+func (s transportpermutationsService) GetWithCapsPath(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
@@ -76,7 +76,7 @@ func (s transportService) GetWithCapsPath(ctx context.Context, in *pb.GetWithQue
 }
 
 // GetWithPathParams implements Service.
-func (s transportService) GetWithPathParams(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+func (s transportpermutationsService) GetWithPathParams(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
@@ -84,13 +84,13 @@ func (s transportService) GetWithPathParams(ctx context.Context, in *pb.GetWithQ
 }
 
 // EchoOddNames implements Service.
-func (s transportService) EchoOddNames(ctx context.Context, in *pb.OddFieldNames) (*pb.OddFieldNames, error) {
+func (s transportpermutationsService) EchoOddNames(ctx context.Context, in *pb.OddFieldNames) (*pb.OddFieldNames, error) {
 	return in, nil
 }
 
 var testError error = errors.New("This error should be json over http transport")
 
 // ErrorRPC implements Service.
-func (s transportService) ErrorRPC(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+func (s transportpermutationsService) ErrorRPC(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
 	return nil, testError
 }
