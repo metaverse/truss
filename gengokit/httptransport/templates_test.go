@@ -61,7 +61,9 @@ func TestGenClientEncode(t *testing.T) {
 // that encodes a sum request into the various portions of
 // the http request (path, query, and body).
 func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interface{}) error {
-	fmt.Printf("Encoding request %v\n", request)
+	if Verbose {
+		fmt.Printf("Encoding request %v\n", request)
+	}
 	strval := ""
 	_ = strval
 	req := request.(*pb.SumRequest)
@@ -96,7 +98,9 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 	}
 	r.Body = ioutil.NopCloser(&buf)
-	fmt.Printf("URL: %v\n", r.URL)
+	if Verbose {
+		fmt.Printf("URL: %v\n", r.URL)
+	}
 	return nil
 }
 

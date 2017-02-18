@@ -45,7 +45,9 @@ var ClientEncodeTemplate = `
 	// that encodes a {{ToLower $binding.Parent.Name}} request into the various portions of
 	// the http request (path, query, and body).
 	func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, request interface{}) error {
-		fmt.Printf("Encoding request %v\n", request)
+		if Verbose {
+			fmt.Printf("Encoding request %v\n", request)
+		}
 		strval := ""
 		_ = strval
 		req := request.(*pb.{{GoName $binding.Parent.RequestType}})
@@ -99,7 +101,9 @@ var ClientEncodeTemplate = `
 			return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 		}
 		r.Body = ioutil.NopCloser(&buf)
-		fmt.Printf("URL: %v\n", r.URL)
+		if Verbose {
+			fmt.Printf("URL: %v\n", r.URL)
+		}
 		return nil
 	}
 {{- end -}}
@@ -233,6 +237,7 @@ var (
 	_ = ioutil.NopCloser
 	_ = pb.Register{{.Service.Name}}Server
 	_ = io.Copy
+	Verbose = false
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available

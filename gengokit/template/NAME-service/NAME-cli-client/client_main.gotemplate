@@ -18,6 +18,7 @@ import (
 	clientHandler "{{.ImportPath -}} /generated/cli/handlers"
 	grpcclient "{{.ImportPath -}} /generated/client/grpc"
 	httpclient "{{.ImportPath -}} /generated/client/http"
+	transport "{{.ImportPath -}} /generated"
 	pb "{{.PBImportPath -}}"
 )
 
@@ -42,6 +43,7 @@ func submain() int {
 	var (
 		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
 		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) address of addsvc")
+		verbose        = flag.Bool("verbose", false, "Print more information about requests")
 	)
 
 	// The addcli presumes no service discovery system, and expects users to
@@ -72,6 +74,7 @@ func submain() int {
 	}
 
 	flag.Parse()
+	transport.Verbose = *verbose
 
 	var (
 		service pb.{{GoName .Service.Name}}Server
@@ -113,13 +116,37 @@ func submain() int {
 
 			v, err := service.{{$meth}}(context.Background(), request)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error calling service.{{$meth}}: %v\n", err)
+				if *verbose {
+					fmt.Fprintf(os.Stderr, "Error calling service.{{$meth}}: %v\n", err)
+				}
+				errBytes, err := json.Marshal(map[string]string{"error": fmt.Sprint(err)})
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error marshaling error %+v for display", request)
+					return 1
+				}
+				fmt.Println(string(errBytes))
 				return 1
 			}
-			fmt.Println("Client Requested with:")
-			fmt.Println({{$args.CallArgs}})
-			fmt.Println("Server Responded with:")
-			fmt.Println(v)
+
+			if *verbose {
+				fmt.Println("Client Requested with:")
+			}
+			reqBytes, err := json.Marshal(request)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error marshaling request %+v for display", request)
+				return 1
+			}
+			fmt.Println(string(reqBytes))
+
+			if *verbose {
+				fmt.Println("Server Responded with:")
+			}
+			respBytes, err := json.Marshal(v)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error marshaling response %+v for display", request)
+				return 1
+			}
+			fmt.Println(string(respBytes))
 	{{end}}
 	default:
 		flag.Usage()
