@@ -313,7 +313,7 @@ func applyTemplate(name string, tmpl string, executor interface{}, fncs template
 }
 
 // lowCamelName returns a CamelCased string, but with the first letter
-// lowercased. "package_name" becomes "packageName".
+// lowercased. "example_name" becomes "exampleName".
 func lowCamelName(s string) string {
 	s = gogen.CamelCase(s)
 	new := []rune(s)

@@ -9,6 +9,7 @@ import (
 	"go/printer"
 	"go/token"
 	"io"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -26,12 +27,11 @@ const ServerHandlerPath = "NAME-service/handlers/server/server_handler.gotemplat
 
 // New returns a truss.Renderable capable of updating server handlers.
 // New should be passed the previous version of the server handler to parse.
-func New(svc *svcdef.Service, prev io.Reader, pkgName string) (gengokit.Renderable, error) {
+func New(svc *svcdef.Service, prev io.Reader) (gengokit.Renderable, error) {
 	var h handler
 	log.WithField("Service Methods", len(svc.Methods)).Debug("Handler being created")
 	h.mMap = newMethodMap(svc.Methods)
 	h.service = svc
-	h.pkgName = pkgName
 
 	if prev == nil {
 		return &h, nil
@@ -63,11 +63,10 @@ type handler struct {
 	service *svcdef.Service
 	mMap    methodMap
 	ast     *ast.File
-	pkgName string
 }
 
 type handlerData struct {
-	PackageName string
+	ServiceName string
 	Methods     []*svcdef.ServiceMethod
 }
 
@@ -84,12 +83,15 @@ func (h *handler) Render(alias string, data *gengokit.Data) (io.Reader, error) {
 	// Remove exported methods not defined in service definition
 	// and remove methods defined in the previous file from methodMap
 	log.WithField("Service Methods", len(h.mMap)).Debug("Before prune")
-	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, data.PackageName)
+	// Lowercase the service name before pruning because the templates all
+	// lowercase the service name when generating code to ensure Identifiers
+	// incorporating the service name remain unexported.
+	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, strings.ToLower(data.Service.Name))
 	log.WithField("Service Methods", len(h.mMap)).Debug("After prune")
 
 	// create a new handlerData, and add all methods not defined in the previous file
 	ex := handlerData{
-		PackageName: data.PackageName,
+		ServiceName: data.Service.Name,
 	}
 
 	// If there are no methods to template then exit early
@@ -136,7 +138,7 @@ func (h *handler) buffer() (*bytes.Buffer, error) {
 
 // pruneDecls constructs a new []ast.Decls with the exported funcs in decls
 // who's names are not keys in methodMap and/or does not have the function
-// receiver pkgName + "Service" ("Handler func")  removed.
+// receiver svcName + "Service" ("Handler func")  removed.
 //
 // When a "Handler func" is not removed from decls that funcs name is also
 // deleted from methodMap, resulting in a methodMap only containing keys and
@@ -145,7 +147,7 @@ func (h *handler) buffer() (*bytes.Buffer, error) {
 // In addition pruneDecls will update unremoved "Handler func"s input
 // paramaters and output results to by the types described in methodMap's
 // serviceMethod for that "Handler func".
-func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
+func (m methodMap) pruneDecls(decls []ast.Decl, svcName string) []ast.Decl {
 	var newDecls []ast.Decl
 	for _, d := range decls {
 		switch x := d.(type) {
@@ -158,7 +160,7 @@ func (m methodMap) pruneDecls(decls []ast.Decl, pkgName string) []ast.Decl {
 				newDecls = append(newDecls, x)
 				continue
 			}
-			if ok := isValidFunc(x, m, pkgName); ok == true {
+			if ok := isValidFunc(x, m, svcName); ok == true {
 				updateParams(x, m[name])
 				updateResults(x, m[name])
 				newDecls = append(newDecls, x)
@@ -207,9 +209,9 @@ func updatePBFieldType(t ast.Expr, newType string) {
 	}
 }
 
-// isVaidFunc returns fase if f is exported and does no exist in m with
-// reciever pkgName + "Service".
-func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
+// isVaidFunc returns false if f is exported and does no exist in m with
+// reciever svcName + "Service".
+func isValidFunc(f *ast.FuncDecl, m methodMap, svcName string) bool {
 	name := f.Name.String()
 	if !ast.IsExported(name) {
 		log.WithField("Func", name).
@@ -226,7 +228,7 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, pkgName string) bool {
 	}
 
 	rName := recvTypeToString(f.Recv)
-	if rName != pkgName+"Service" {
+	if rName != svcName+"Service" {
 		log.WithField("Func", name).WithField("Receiver", rName).
 			Info("Func is exported with improper receiver; removing")
 		return false

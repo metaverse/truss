@@ -359,7 +359,7 @@ func EnglishNumber(i int) string {
 }
 
 // LowCamelName returns a CamelCased string, but with the first letter
-// lowercased. "package_name" becomes "packageName".
+// lowercased. "example_name" becomes "exampleName".
 func LowCamelName(s string) string {
 	s = gogen.CamelCase(s)
 	new := []rune(s)

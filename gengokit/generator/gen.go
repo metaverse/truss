@@ -58,11 +58,11 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 	var err error
 
 	// Get the actual path to the file rather than the template file path
-	actualFP := templatePathToActual(templFP, data.PackageName)
+	actualFP := templatePathToActual(templFP, data.Service.Name)
 
 	switch templFP {
 	case handler.ServerHandlerPath:
-		h, err := handler.New(data.Service, prevFile, data.PackageName)
+		h, err := handler.New(data.Service, prevFile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot parse previous handler: %q", actualFP)
 		}
@@ -105,13 +105,13 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 	return bytes.NewReader(formattedCode), nil
 }
 
-// templatePathToActual accepts a templateFilePath and the packageName of the
+// templatePathToActual accepts a templateFilePath and the svcName of the
 // service and returns what the relative file path of what should be written to
 // disk
-func templatePathToActual(templFilePath, packageName string) string {
-	// Switch "NAME" in path with packageName.
-	// i.e. for packageName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
-	actual := strings.Replace(templFilePath, "NAME", packageName, -1)
+func templatePathToActual(templFilePath, svcName string) string {
+	// Switch "NAME" in path with svcName.
+	// i.e. for svcName = addsvc; /NAME-service/NAME-server -> /addsvc-service/addsvc-server
+	actual := strings.Replace(templFilePath, "NAME", svcName, -1)
 
 	actual = strings.TrimSuffix(actual, "template")
 

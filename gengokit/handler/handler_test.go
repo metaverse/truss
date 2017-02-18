@@ -50,8 +50,8 @@ func TestServerMethsTempl(t *testing.T) {
 			string output = 1;
 		}
 
-		// ProtoService is a service
-		service ProtoService {
+		// Proto is a service
+		service Proto {
 			// ProtoMethod is simple. Like a gopher.
 			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
 				// No {} in path and no body, everything is in the query
@@ -68,7 +68,7 @@ func TestServerMethsTempl(t *testing.T) {
 
 	var he handlerData
 	he.Methods = sd.Service.Methods
-	he.PackageName = sd.PkgName
+	he.ServiceName = sd.Service.Name
 
 	gen, err := applyServerMethsTempl(he)
 	if err != nil {
@@ -77,7 +77,7 @@ func TestServerMethsTempl(t *testing.T) {
 	genBytes, err := ioutil.ReadAll(gen)
 	const expected = `
 		// ProtoMethod implements Service.
-		func (s generalService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error){
+		func (s protoService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error){
 			var resp pb.ResponseMessage
 			resp = pb.ResponseMessage{
 				// Output:
@@ -110,8 +110,8 @@ func TestApplyServerTempl(t *testing.T) {
 			string output = 1;
 		}
 
-		// ProtoService is a service
-		service ProtoService {
+		// Proto is a service
+		service Proto {
 			// ProtoMethod is simple. Like a gopher.
 			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
 				// No {} in path and no body, everything is in the query
@@ -143,14 +143,14 @@ func TestApplyServerTempl(t *testing.T) {
 		)
 
 		// NewService returns a naïve, stateless implementation of Service.
-		func NewService() pb.ProtoServiceServer {
-			return generalService{}
+		func NewService() pb.ProtoServer {
+			return protoService{}
 		}
 
-		type generalService struct{}
+		type protoService struct{}
 
 		// ProtoMethod implements Service.
-		func (s generalService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
+		func (s protoService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
 			var resp pb.ResponseMessage
 			resp = pb.ResponseMessage{
 			// Output:
@@ -202,8 +202,8 @@ func TestIsValidFunc(t *testing.T) {
 			string output = 1;
 		}
 
-		// ProtoService is a service
-		service ProtoService {
+		// Proto is a service
+		service Proto {
 			// ProtoMethod is simple. Like a gopher.
 			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
 				// No {} in path and no body, everything is in the query
@@ -219,33 +219,35 @@ func TestIsValidFunc(t *testing.T) {
 	}
 
 	m := newMethodMap(sd.Service.Methods)
-	const validUnexported = `package p; 
+	const validUnexported = `package p;
 	func init() {}`
 
-	const valid = `package p; 
-	func (s generalService) ProtoMethod(context.Context, pb.RequestMessage) (pb.ResponseMessage, error) {}`
+	const valid = `package p;
+	func (s protoService) ProtoMethod(context.Context, pb.RequestMessage) (pb.ResponseMessage, error) {}`
 
-	const invalidRecv = `package p; 
+	const invalidRecv = `package p;
 	func (s fooService) ProtoMethod(context.Context, pb.RequestMessage) (pb.ResponseMessage, error) {}`
 
-	const invalidFuncName = `package p; 
+	const invalidFuncName = `package p;
 	func (generalService) FOOBAR(context.Context, pb.RequestMessage) (pb.ResponseMessage, error) {}`
+
+	svcName := strings.ToLower(sd.Service.Name)
 
 	var in string
 	in = validUnexported
-	if ok := isValidFunc(parseFuncFromString(in, t), m, sd.PkgName); !ok {
+	if ok := isValidFunc(parseFuncFromString(in, t), m, svcName); !ok {
 		t.Errorf("Unexported Func considered invalid: %q", in)
 	}
 	in = valid
-	if ok := isValidFunc(parseFuncFromString(in, t), m, sd.PkgName); !ok {
+	if ok := isValidFunc(parseFuncFromString(in, t), m, svcName); !ok {
 		t.Errorf("Func in service definition with proper recv considered invalid: %q", in)
 	}
 	in = invalidRecv
-	if ok := isValidFunc(parseFuncFromString(in, t), m, sd.PkgName); ok {
+	if ok := isValidFunc(parseFuncFromString(in, t), m, svcName); ok {
 		t.Errorf("Func with invalid recv considered valid: %q", in)
 	}
 	in = invalidFuncName
-	if ok := isValidFunc(parseFuncFromString(in, t), m, sd.PkgName); ok {
+	if ok := isValidFunc(parseFuncFromString(in, t), m, svcName); ok {
 		t.Errorf("Func with invalid name considered valid: %q", in)
 	}
 }
@@ -269,8 +271,8 @@ func TestPruneDecls(t *testing.T) {
 			string output = 1;
 		}
 
-		// ProtoService is a service
-		service ProtoService {
+		// Proto is a service
+		service Proto {
 			// ProtoMethod is simple. Like a gopher.
 			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
 				// No {} in path and no body, everything is in the query
@@ -311,18 +313,18 @@ func TestPruneDecls(t *testing.T) {
 		)
 
 		// NewService returns a naïve, stateless implementation of Service.
-		func NewService() pb.ProtoServiceServer {
-			return generalService{}
+		func NewService() pb.ProtoServer {
+			return protoService{}
 		}
 
-		type generalService struct{}
+		type protoService struct{}
 
 		func init() {
 			//FOOING
 		}
 
 		// ProtoMethod implements Service.
-		func (s generalService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
+		func (s protoService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
 			var resp pb.ResponseMessage
 			resp = pb.ResponseMessage{
 			// Output:
@@ -331,7 +333,7 @@ func TestPruneDecls(t *testing.T) {
 		}
 
 		// FOOBAR implements Service.
-		func (s generalService) FOOBAR(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
+		func (s protoService) FOOBAR(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
 			var resp pb.ResponseMessage
 			resp = pb.ResponseMessage{
 			// Output:
@@ -343,7 +345,7 @@ func TestPruneDecls(t *testing.T) {
 	lenDeclsBefore := len(f.Decls)
 	lenMMapBefore := len(m)
 
-	newDecls := m.pruneDecls(f.Decls, sd.PkgName)
+	newDecls := m.pruneDecls(f.Decls, strings.ToLower(sd.Service.Name))
 
 	lenDeclsAfter := len(newDecls)
 	lenMMapAfter := len(m)
@@ -405,8 +407,8 @@ func TestUpdateMethods(t *testing.T) {
 			int64 blue = 1;
 		}
 
-		// ProtoService is a service
-		service ProtoService {
+		// Proto is a service
+		service Proto {
 			// ProtoMethod is simple. Like a gopher.
 			rpc ProtoMethod (RequestMessage) returns (ResponseMessage) {
 				// No {} in path and no body, everything is in the query
@@ -513,7 +515,7 @@ func renderService(svc *svcdef.Service, prev string, data *gengokit.Data) (strin
 		prevFile = strings.NewReader(prev)
 	}
 
-	h, err := New(svc, prevFile, data.PackageName)
+	h, err := New(svc, prevFile)
 	if err != nil {
 		return "", err
 	}

@@ -40,7 +40,7 @@ type Field struct {
 	// Removes underscores, adds camelcase; "client_id" becomes "ClientId".
 	CamelName string
 	// The name of this field, but run through the camelcase function and with
-	// the first letter lowercased. "package_name" becomes "packageName".
+	// the first letter lowercased. "example_name" becomes "exampleName".
 	// LowCamelName is how the names of fields should appear when marshaled to
 	// JSON, according to the gRPC language guide.
 	LowCamelName string
