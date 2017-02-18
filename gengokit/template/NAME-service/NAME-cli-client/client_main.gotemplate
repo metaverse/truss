@@ -29,8 +29,16 @@ var (
 	_ = pb.Register{{.Service.Name}}Server
 )
 
-
 func main() {
+	os.Exit(submain())
+}
+
+// submain exists to act as the functional main, but will return exit codes to
+// the actual main instead of calling os.Exit directly. This is done to allow
+// the defered functions to be called, since if os.Exit where called directly
+// from this function, none of the defered functions set up by this function
+// would be called.
+func submain() int {
 	var (
 		httpAddr       = flag.String("http.addr", "", "HTTP address of addsvc")
 		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) address of addsvc")
@@ -60,7 +68,7 @@ func main() {
 	}
 	if len(os.Args) < 2 {
 		flag.Usage()
-		os.Exit(1)
+		return 1
 	}
 
 	flag.Parse()
@@ -76,17 +84,17 @@ func main() {
 		conn, err := grpc.Dial(*grpcAddr, grpc.WithInsecure(), grpc.WithTimeout(time.Second))
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error while dialing grpc connection: %v", err)
-			os.Exit(1)
+			return 1
 		}
 		defer conn.Close()
 		service, err = grpcclient.New(conn)
 	} else {
 		fmt.Fprintf(os.Stderr, "error: no remote address specified\n")
-		os.Exit(1)
+		return 1
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 
@@ -100,13 +108,13 @@ func main() {
 			request, err := clientHandler.{{$meth}}({{$args.CallArgs}})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$meth}}: %v\n", err)
-				os.Exit(1)
+				return 1
 			}
 
 			v, err := service.{{$meth}}(context.Background(), request)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error calling service.{{$meth}}: %v\n", err)
-				os.Exit(1)
+				return 1
 			}
 			fmt.Println("Client Requested with:")
 			fmt.Println({{$args.CallArgs}})
@@ -115,7 +123,8 @@ func main() {
 	{{end}}
 	default:
 		flag.Usage()
-		os.Exit(1)
+		return 1
 	}
-}
 
+	return 0
+}
