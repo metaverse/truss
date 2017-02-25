@@ -237,6 +237,12 @@ var (
 	_ = ioutil.NopCloser
 	_ = pb.Register{{.Service.Name}}Server
 	_ = io.Copy
+)
+
+var (
+	// Verbose controls whether to print additional information about the
+	// encode and decode stages. Set by generated CLI applications via the '-v'
+	// flag.
 	Verbose = false
 )
 
