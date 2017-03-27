@@ -84,6 +84,7 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 		field := param.Field
 		newField := Field{
 			Name:         field.Name,
+			PBFieldName:  field.PBFieldName,
 			CamelName:    gogen.CamelCase(field.Name),
 			LowCamelName: LowCamelName(field.Name),
 			Location:     param.Location,
@@ -207,7 +208,7 @@ func (b *Binding) PathSections() []string {
 // of a query parameter into it's correct field on the request struct.
 func (f *Field) GenQueryUnmarshaler() (string, error) {
 	genericLogic := `
-{{.LocalName}}Str := {{.Location}}Params["{{.Name}}"]
+{{.LocalName}}Str := {{.Location}}Params["{{.PBFieldName}}"]
 {{.ConvertFunc}}
 // TODO: Better error handling
 if err != nil {

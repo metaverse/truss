@@ -323,9 +323,11 @@ func TestErrorRPCReturnsJSONError(t *testing.T) {
 // and expects must be pointers to structs.
 func testHTTP(
 	t *testing.T,
-	resp, expects interface{},
+	resp,
+	expects interface{},
 	bodyBytes []byte,
-	method, routeFormat string,
+	method,
+	routeFormat string,
 	routeFields ...interface{}) {
 	respBytes, err := httpRequestBuilder{
 		method: method,

@@ -36,6 +36,9 @@ type Binding struct {
 // useful for templating http transport.
 type Field struct {
 	Name string
+	// PBFieldName 'snake_case' in `protobuf:"varint,1,opt,name=snake_case,json=snakeCase" json:"snake_case,omitempty"`
+	// Where Name is 'SnakeCase'
+	PBFieldName string
 	// The name of this field, but passed through the CamelCase function.
 	// Removes underscores, adds camelcase; "client_id" becomes "ClientId".
 	CamelName string
