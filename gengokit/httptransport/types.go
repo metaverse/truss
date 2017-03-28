@@ -58,6 +58,8 @@ type Field struct {
 	// The string form of the function to be used to convert the incoming
 	// string msg from a string into it's intended type.
 	ConvertFunc string
+	// Used in determining if a convert func will need error checking logic
+	ConvertFuncNeedsErrorCheck bool
 	// The string form of a type cast from 64 to 32bit if the GoType is 32bit
 	// as the ConvertFunc will always use return a 64bit type
 	TypeConversion string

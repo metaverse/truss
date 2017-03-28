@@ -115,28 +115,30 @@ func TestGenServerDecode(t *testing.T) {
 		Verb:         "get",
 		Fields: []*Field{
 			&Field{
-				Name:           "a",
-				PBFieldName:    "a",
-				CamelName:      "A",
-				LowCamelName:   "a",
-				LocalName:      "ASum",
-				Location:       "path",
-				GoType:         "int64",
-				ConvertFunc:    "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
-				TypeConversion: "ASum",
-				IsBaseType:     true,
+				Name:                       "a",
+				PBFieldName:                "a",
+				CamelName:                  "A",
+				LowCamelName:               "a",
+				LocalName:                  "ASum",
+				Location:                   "path",
+				GoType:                     "int64",
+				ConvertFunc:                "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
+				ConvertFuncNeedsErrorCheck: true,
+				TypeConversion:             "ASum",
+				IsBaseType:                 true,
 			},
 			&Field{
-				Name:           "b",
-				PBFieldName:    "b",
-				CamelName:      "B",
-				LowCamelName:   "b",
-				LocalName:      "BSum",
-				Location:       "query",
-				GoType:         "int64",
-				ConvertFunc:    "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
-				TypeConversion: "BSum",
-				IsBaseType:     true,
+				Name:                       "b",
+				PBFieldName:                "b",
+				CamelName:                  "B",
+				LowCamelName:               "b",
+				LocalName:                  "BSum",
+				Location:                   "query",
+				GoType:                     "int64",
+				ConvertFunc:                "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
+				ConvertFuncNeedsErrorCheck: true,
+				TypeConversion:             "BSum",
+				IsBaseType:                 true,
 			},
 		},
 	}
@@ -173,12 +175,9 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 		fmt.Printf("Error while reading path params: %v\n", err)
 		return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
 	}
-	queryParams, err := QueryParams(r.URL.Query())
+
+	queryParams := r.URL.Query()
 	_ = queryParams
-	if err != nil {
-		fmt.Printf("Error while reading query params: %v\n", err)
-		return nil, errors.Wrapf(err, "Error while reading query params: %v", r.URL.Query())
-	}
 
 	ASumStr := pathParams["a"]
 	ASum, err := strconv.ParseInt(ASumStr, 10, 64)
@@ -190,15 +189,17 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 	}
 	req.A = ASum
 
-	BSumStr := queryParams["b"]
-	BSum, err := strconv.ParseInt(BSumStr, 10, 64)
-	// TODO: Better error handling
-	if err != nil {
-		fmt.Printf("Error while extracting BSum from query: %v\n", err)
-		fmt.Printf("queryParams: %v\n", queryParams)
-		return nil, err
+	if BSumStrArr, ok := queryParams["b"]; ok {
+		BSumStr := BSumStrArr[0]
+		BSum, err := strconv.ParseInt(BSumStr, 10, 64)
+		// TODO: Better error handling
+		if err != nil {
+			fmt.Printf("Error while extracting BSum from query: %v\n", err)
+			fmt.Printf("queryParams: %v\n", queryParams)
+			return nil, err
+		}
+		req.B = BSum
 	}
-	req.B = BSum
 
 	return &req, err
 }

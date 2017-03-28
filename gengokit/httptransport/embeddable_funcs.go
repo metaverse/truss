@@ -2,7 +2,6 @@ package httptransport
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 )
 
@@ -69,20 +68,4 @@ func RemoveBraces(val string) string {
 	val = strings.Replace(val, "{", "", -1)
 	val = strings.Replace(val, "}", "", -1)
 	return val
-}
-
-// QueryParams takes query parameters in the form of url.Values, and returns a
-// bare map of the string representation of each key to the string
-// representation for each value. The representations of repeated query
-// parameters is undefined.
-func QueryParams(vals url.Values) (map[string]string, error) {
-	// TODO make this not flatten the query params
-	// WARNING this is a super huge hack and will ignore repeated values in the
-	// query parameter. This should absolutely be correctly implemented later
-	// by someone else or maybe future me...
-	rv := map[string]string{}
-	for k, v := range vals {
-		rv[k] = v[0]
-	}
-	return rv, nil
 }

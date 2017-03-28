@@ -106,7 +106,7 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 			newField.GoType = "[]" + newField.GoType
 		}
 
-		newField.ConvertFunc = createDecodeConvertFunc(newField)
+		newField.ConvertFunc, newField.ConvertFuncNeedsErrorCheck = createDecodeConvertFunc(newField)
 		newField.TypeConversion = createDecodeTypeConversion(newField)
 
 		nBinding.Fields = append(nBinding.Fields, &newField)
@@ -207,18 +207,29 @@ func (b *Binding) PathSections() []string {
 // GenQueryUnmarshaler returns the generated code for server-side unmarshaling
 // of a query parameter into it's correct field on the request struct.
 func (f *Field) GenQueryUnmarshaler() (string, error) {
+	queryParamLogic := `
+if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.PBFieldName}}"]; ok {
+{{.LocalName}}Str := {{.LocalName}}StrArr[0]`
+
+	pathParamLogic := `
+{{.LocalName}}Str := {{.Location}}Params["{{.PBFieldName}}"]`
+
 	genericLogic := `
-{{.LocalName}}Str := {{.Location}}Params["{{.PBFieldName}}"]
-{{.ConvertFunc}}
+{{.ConvertFunc}}{{if .ConvertFuncNeedsErrorCheck}}
 // TODO: Better error handling
 if err != nil {
 	fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
 	fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
 	return nil, err
-}
+}{{end}}
 req.{{.CamelName}} = {{.TypeConversion}}
 `
-	code, err := ApplyTemplate("FieldEncodeLogic", genericLogic, f, TemplateFuncs)
+	mergedLogic := queryParamLogic + genericLogic + "}"
+	if f.Location == "path" {
+		mergedLogic = pathParamLogic + genericLogic
+	}
+
+	code, err := ApplyTemplate("FieldEncodeLogic", mergedLogic, f, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -228,7 +239,8 @@ req.{{.CamelName}} = {{.TypeConversion}}
 
 // createDecodeConvertFunc creates a go string representing the function to
 // convert the string form of the field to it's correct go type.
-func createDecodeConvertFunc(f Field) string {
+func createDecodeConvertFunc(f Field) (string, bool) {
+	needsErrorCheck := true
 	fType := ""
 	switch {
 	case strings.Contains(f.GoType, "uint32"):
@@ -247,6 +259,7 @@ func createDecodeConvertFunc(f Field) string {
 		fType = "%s, err := strconv.ParseFloat(%s, 64)"
 	case strings.Contains(f.GoType, "string"):
 		fType = "%s := %s"
+		needsErrorCheck = false
 	}
 	// Use json unmarshalling for any custom/repeated messages
 	if !f.IsBaseType || f.Repeated {
@@ -291,9 +304,9 @@ if err != nil {
 		if err != nil {
 			panic(fmt.Sprintf("Couldn't apply template: %v", err))
 		}
-		return code
+		return code, false
 	}
-	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str")
+	return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str"), needsErrorCheck
 }
 
 // createDecodeTypeConversion creates a go string that converts a 64 bit type

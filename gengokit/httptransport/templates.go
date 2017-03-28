@@ -21,12 +21,10 @@ var ServerDecodeTemplate = `
 			fmt.Printf("Error while reading path params: %v\n", err)
 			return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
 		}
-		queryParams, err := QueryParams(r.URL.Query())
+
+		queryParams := r.URL.Query()
 		_ = queryParams
-		if err != nil {
-			fmt.Printf("Error while reading query params: %v\n", err)
-			return nil, errors.Wrapf(err, "Error while reading query params: %v", r.URL.Query())
-		}
+
 	{{range $field := $binding.Fields}}
 		{{if ne $field.Location "body"}}
 			{{$field.GenQueryUnmarshaler}}
@@ -174,29 +172,13 @@ func RemoveBraces(val string) string {
 	val = strings.Replace(val, "{", "", -1)
 	val = strings.Replace(val, "}", "", -1)
 	return val
-}`
-
-// QueryParamsTemplate is a source code literal of the code for the QueryParams
-// function found in embeddeable_funcs.go
-var QueryParamsTemplate = `
-// QueryParams takes query parameters in the form of url.Values, and returns a
-// bare map of the string representation of each key to the string
-// representation for each value. The representations of repeated query
-// parameters is undefined.
-func QueryParams(vals url.Values) (map[string]string, error) {
-
-	rv := map[string]string{}
-	for k, v := range vals {
-		rv[k] = v[0]
-	}
-	return rv, nil
 }
 `
 
 // HTTPAssistFuncs is a source code literal of all the helper functions used
 // for encoding and decoding http request to and from generated protobuf
 // structs, and is used within the generated code of each service.
-var HTTPAssistFuncs = PathParamsTemplate + BuildParamMapTemplate + RemoveBracesTemplate + QueryParamsTemplate
+var HTTPAssistFuncs = PathParamsTemplate + BuildParamMapTemplate + RemoveBracesTemplate
 
 var serverTemplate = `
 package svc
