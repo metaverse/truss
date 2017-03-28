@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
+	"github.com/TuneLab/go-truss/gengokit/httptransport/templates"
 )
 
 // Test that rendering certain templates will ouput the code we expect. The
@@ -61,7 +62,9 @@ func TestGenClientEncode(t *testing.T) {
 // that encodes a sum request into the various portions of
 // the http request (path, query, and body).
 func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interface{}) error {
-	fmt.Printf("Encoding request %v\n", request)
+	if Verbose {
+		fmt.Printf("Encoding request %v\n", request)
+	}
 	strval := ""
 	_ = strval
 	req := request.(*pb.SumRequest)
@@ -96,7 +99,9 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 	}
 	r.Body = ioutil.NopCloser(&buf)
-	fmt.Printf("URL: %v\n", r.URL)
+	if Verbose {
+		fmt.Printf("URL: %v\n", r.URL)
+	}
 	return nil
 }
 
@@ -213,7 +218,7 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 // Test that all the templated source code is identical to the source code
 // found within the file 'embeddable_funcs.go'.
 func TestHTTPAssistFuncs(t *testing.T) {
-	tmplfncs := FormatCode(HTTPAssistFuncs)
+	tmplfncs := FormatCode(templates.HTTPAssistFuncs)
 	// Get the source code for all the functions in the same source file as
 	// the BuildParamMap function
 	source, err := AllFuncSourceCode(BuildParamMap)
