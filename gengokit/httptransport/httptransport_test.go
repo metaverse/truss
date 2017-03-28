@@ -60,6 +60,7 @@ func TestNewMethod(t *testing.T) {
 		Fields: []*Field{
 			&Field{
 				Name:           "A",
+				PBFieldName:    "a",
 				CamelName:      "A",
 				LowCamelName:   "a",
 				LocalName:      "ASum",
@@ -71,6 +72,7 @@ func TestNewMethod(t *testing.T) {
 			},
 			&Field{
 				Name:           "B",
+				PBFieldName:    "b",
 				CamelName:      "B",
 				LowCamelName:   "b",
 				LocalName:      "BSum",

@@ -22,9 +22,8 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
+	"reflect"
 	"strings"
-	"unicode"
-	"unicode/utf8"
 
 	"github.com/pkg/errors"
 )
@@ -75,7 +74,10 @@ type ServiceMethod struct {
 // Field represents a field on a protobuf message.
 type Field struct {
 	Name string
-	Type *FieldType
+	// PBFieldName 'snake_case' in `protobuf:"varint,1,opt,name=snake_case,json=snakeCase" json:"snake_case,omitempty"`
+	// Where Name is 'SnakeCase'
+	PBFieldName string
+	Type        *FieldType
 }
 
 // FieldType contains information about the type of one Field on a message,
@@ -214,7 +216,7 @@ func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef
 				}
 			case *ast.StructType:
 				// Non-exported structs do not represent types
-				if !isExported(t.Name.Name) {
+				if !t.Name.IsExported() {
 					break
 				}
 				nmsg, err := NewMessage(t)
@@ -415,6 +417,13 @@ func NewField(f *ast.Field) (*Field, error) {
 	// both, and modifying the return value accordingly.
 	var typeFollower func(ast.Expr) error
 	typeFollower = func(e ast.Expr) error {
+		if f.Tag != nil {
+			tag := reflect.StructTag(f.Tag.Value).Get("json")
+			if idx := strings.Index(tag, ","); idx != -1 {
+				rv.PBFieldName = tag[:idx]
+			}
+		}
+
 		switch ex := e.(type) {
 		case *ast.Ident:
 			rv.Type.Name += ex.Name
@@ -442,14 +451,4 @@ func NewField(f *ast.Field) (*Field, error) {
 		return nil, err
 	}
 	return rv, nil
-}
-
-// isExported returns true if the provided name of a declaration begins with a
-// capital letter.
-func isExported(name string) bool {
-	r, _ := utf8.DecodeRuneInString(name)
-	if unicode.IsUpper(r) {
-		return true
-	}
-	return false
 }

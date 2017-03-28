@@ -58,7 +58,8 @@ func TestMessages(t *testing.T) {
 			Name: "SumRequest",
 			Fields: []*Field{
 				&Field{
-					Name: "A",
+					Name:        "A",
+					PBFieldName: "a",
 					Type: &FieldType{
 						Name:      "int64",
 						Enum:      nil,
@@ -69,7 +70,8 @@ func TestMessages(t *testing.T) {
 					},
 				},
 				&Field{
-					Name: "B",
+					Name:        "B",
+					PBFieldName: "b",
 					Type: &FieldType{
 						Name:      "int64",
 						Enum:      nil,
@@ -85,7 +87,8 @@ func TestMessages(t *testing.T) {
 			Name: "SumReply",
 			Fields: []*Field{
 				&Field{
-					Name: "V",
+					Name:        "V",
+					PBFieldName: "v",
 					Type: &FieldType{
 						Name:      "int64",
 						Enum:      nil,
@@ -96,7 +99,8 @@ func TestMessages(t *testing.T) {
 					},
 				},
 				&Field{
-					Name: "Err",
+					Name:        "Err",
+					PBFieldName: "err",
 					Type: &FieldType{
 						Name:      "string",
 						Enum:      nil,
@@ -126,7 +130,8 @@ func TestHTTPBinding(t *testing.T) {
 				&HTTPParameter{
 					Location: "path",
 					Field: &Field{
-						Name: "A",
+						Name:        "A",
+						PBFieldName: "a",
 						Type: &FieldType{
 							Name: "int64",
 						},
@@ -135,7 +140,8 @@ func TestHTTPBinding(t *testing.T) {
 				&HTTPParameter{
 					Location: "query",
 					Field: &Field{
-						Name: "B",
+						Name:        "B",
+						PBFieldName: "b",
 						Type: &FieldType{
 							Name: "int64",
 						},
