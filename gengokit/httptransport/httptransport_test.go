@@ -60,7 +60,7 @@ func TestNewMethod(t *testing.T) {
 		Fields: []*Field{
 			&Field{
 				Name:                       "A",
-				PBFieldName:                "a",
+				QueryParamName:             "a",
 				CamelName:                  "A",
 				LowCamelName:               "a",
 				LocalName:                  "ASum",
@@ -73,7 +73,7 @@ func TestNewMethod(t *testing.T) {
 			},
 			&Field{
 				Name:                       "B",
-				PBFieldName:                "b",
+				QueryParamName:             "b",
 				CamelName:                  "B",
 				LowCamelName:               "b",
 				LocalName:                  "BSum",

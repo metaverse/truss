@@ -83,14 +83,14 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 		// Methods RequestType
 		field := param.Field
 		newField := Field{
-			Name:         field.Name,
-			PBFieldName:  field.PBFieldName,
-			CamelName:    gogen.CamelCase(field.Name),
-			LowCamelName: LowCamelName(field.Name),
-			Location:     param.Location,
-			Repeated:     field.Type.ArrayType,
-			GoType:       field.Type.Name,
-			LocalName:    fmt.Sprintf("%s%s", gogen.CamelCase(field.Name), gogen.CamelCase(meth.Name)),
+			Name:           field.Name,
+			QueryParamName: field.PBFieldName,
+			CamelName:      gogen.CamelCase(field.Name),
+			LowCamelName:   LowCamelName(field.Name),
+			Location:       param.Location,
+			Repeated:       field.Type.ArrayType,
+			GoType:         field.Type.Name,
+			LocalName:      fmt.Sprintf("%s%s", gogen.CamelCase(field.Name), gogen.CamelCase(meth.Name)),
 		}
 
 		if field.Type.Message == nil && field.Type.Enum == nil && field.Type.Map == nil {
@@ -208,11 +208,11 @@ func (b *Binding) PathSections() []string {
 // of a query parameter into it's correct field on the request struct.
 func (f *Field) GenQueryUnmarshaler() (string, error) {
 	queryParamLogic := `
-if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.PBFieldName}}"]; ok {
+if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.QueryParamName}}"]; ok {
 {{.LocalName}}Str := {{.LocalName}}StrArr[0]`
 
 	pathParamLogic := `
-{{.LocalName}}Str := {{.Location}}Params["{{.PBFieldName}}"]`
+{{.LocalName}}Str := {{.Location}}Params["{{.QueryParamName}}"]`
 
 	genericLogic := `
 {{.ConvertFunc}}{{if .ConvertFuncNeedsErrorCheck}}

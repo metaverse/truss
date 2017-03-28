@@ -116,7 +116,7 @@ func TestGenServerDecode(t *testing.T) {
 		Fields: []*Field{
 			&Field{
 				Name:                       "a",
-				PBFieldName:                "a",
+				QueryParamName:             "a",
 				CamelName:                  "A",
 				LowCamelName:               "a",
 				LocalName:                  "ASum",
@@ -129,7 +129,7 @@ func TestGenServerDecode(t *testing.T) {
 			},
 			&Field{
 				Name:                       "b",
-				PBFieldName:                "b",
+				QueryParamName:             "b",
 				CamelName:                  "B",
 				LowCamelName:               "b",
 				LocalName:                  "BSum",
