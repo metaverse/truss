@@ -74,8 +74,9 @@ type ServiceMethod struct {
 // Field represents a field on a protobuf message.
 type Field struct {
 	Name string
-	// PBFieldName 'snake_case' in `protobuf:"varint,1,opt,name=snake_case,json=snakeCase" json:"snake_case,omitempty"`
-	// Where Name is 'SnakeCase'
+	// PBFieldName is the string value of the field name in the definition .proto file.
+	// For Example: 'snake_case' from below -- where Name would be 'SnakeCase'
+	// `protobuf:"varint,1,opt,name=snake_case,json=snakeCase" json:"snake_case,omitempty"`
 	PBFieldName string
 	Type        *FieldType
 }
