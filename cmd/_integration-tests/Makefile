@@ -5,13 +5,15 @@ END_COLOR_LINE=$(UNDER)$(NO_COLOR)
 
 TRANSPORT_TEST_MSG=\n$(OK_COLOR)Starting transport end to end test:$(END_COLOR_LINE)
 
+MIDDLEWARES_TEST_MSG=\n$(OK_COLOR)Starting middlewares end to end test:$(END_COLOR_LINE)
+
 CLI_TEST_MSG=\n$(OK_COLOR)Start server and cliclient generate, build, and run test:$(END_COLOR_LINE)
 
 export PATH := $(CURDIR):$(PATH)
 
 all: test
 
-test: clean test-transport test-cli
+test: clean test-transport test-middlewares test-cli
 
 truss:
 	go build -o truss github.com/TuneLab/go-truss/cmd/truss
@@ -25,6 +27,12 @@ test-transport: protoc-gen-truss-protocast truss
 	$(MAKE) -C transport
 	rm -f ./truss ./protoc-gen-truss-protocast
 
+test-middlewares: protoc-gen-truss-protocast truss
+	@which truss
+	@printf '$(MIDDLEWARES_TEST_MSG)'
+	$(MAKE) -C middlewares
+	rm -f ./truss ./protoc-gen-truss-protocast
+
 test-cli: protoc-gen-truss-protocast truss
 	@which truss
 	@printf '$(CLI_TEST_MSG)'
@@ -35,4 +43,5 @@ clean:
 	rm -f ./truss ./protoc-gen-truss-protocast
 	go test ./cli -clean
 	$(MAKE) -C transport clean
+	$(MAKE) -C middlewares clean
 
