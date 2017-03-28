@@ -4,7 +4,7 @@ language: go
 sudo: false
 
 go:
-  - tip
+  - 1.8.x
   - 1.7.x
 
 go_import_path: github.com/TuneLab/go-truss
@@ -20,7 +20,7 @@ before_install:
     # golang/protobuf contains protoc-gen-go which generates the .pb.go files
   #- go get -v github.com/golang/protobuf/... || true
   - go get -v github.com/golang/protobuf/protoc-gen-go
-    # For http annotation support 
+    # For http annotation support
   #- go get -v github.com/TuneLab/go-genproto/... || true
     # go-bindata is used to create binary data from template files
   - go get -v github.com/jteeuwen/go-bindata/...
