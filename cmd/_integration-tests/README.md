@@ -31,6 +31,13 @@ the test. Then each `transport/{TRANSPORT}_test.go` imports the generated code,
 runs requests against the server, checking for errors and that the input values
 add to the expected output value(s).
 
+# ./middlewares
+
+`middlewares` is very similar to transport, having prewritten handlers and
+middlewares, it generates a truss service and copies these into that service.
+Then it runs tests against the endpoints (avoiding the transport logic) to see
+if middlewares were correctly applied and/or excluded from the endpoints.
+
 # ./cli
 
 The truss CLI integration runner does the following tasks:

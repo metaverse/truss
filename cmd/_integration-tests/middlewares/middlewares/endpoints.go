@@ -1,12 +1,10 @@
-package templates
-
-const EndpointsBase = `
 package middlewares
 
 import (
-	_ "github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/endpoint"
+	"golang.org/x/net/context"
 
-	svc "{{.ImportPath -}} /generated"
+	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/generated"
 )
 
 // WrapEndpoints accepts the service's entire collection of endpoints, so that a
@@ -21,10 +19,17 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	// optionally pass in endpoints by name that you want to be excluded
 	// e.g.
 	// in.WrapAll(authMiddleware, "Status", "Ping")
-
-	// How to apply a middleware to a single endpoint.
-	// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)
+	in.WrapAll(addBoolToContext("NotSometimes"), "SometimesWrapped")
+	in.WrapAll(addBoolToContext("Always"))
 
 	return in
 }
-`
+
+func addBoolToContext(key string) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (interface{}, error) {
+			ctx = context.WithValue(ctx, key, true)
+			return next(ctx, request)
+		}
+	}
+}

@@ -6,6 +6,7 @@ package svc
 // formats. It also includes endpoint middlewares.
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/endpoint"
@@ -25,8 +26,7 @@ import (
 //
 // In a client, it's useful to collect individually constructed endpoints into a
 // single type that implements the Service interface. For example, you might
-// construct individual endpoints using transport/http.NewClient, combine them
-// into an Endpoints, and return it to the caller as a Service.
+// construct individual endpoints using transport/http.NewClient, combine them into an Endpoints, and return it to the caller as a Service.
 type Endpoints struct {
 {{range $i := .Service.Methods}}
 	{{$i.Name}}Endpoint    endpoint.Endpoint
@@ -63,14 +63,27 @@ type Endpoints struct {
 // WrapAll wraps each Endpoint field of struct Endpoints with a
 // go-kit/kit/endpoint.Middleware.
 // Use this for applying a set of middlewares to every endpoint in the service.
-// The middlewares will be applied in the order passed, with the first
-// middleware being the outermost middleware.
-func (e *Endpoints) WrapAll(middlewares ...endpoint.Middleware) {
-	if len(middlewares) == 0 {
-		return
+// Optionally, endpoints can be passed in by name to be excluded from being wrapped.
+// WrapAll(middleware, "Status", "Ping")
+func (e *Endpoints) WrapAll(middleware endpoint.Middleware, excluded ...string) {
+	included := map[string]struct{}{
+		{{- range $i := .Service.Methods}}
+			"{{$i.Name}}": struct{}{},
+		{{- end}}
 	}
-	m := endpoint.Chain(middlewares[0], middlewares[1:]...)
-	{{range $i := .Service.Methods}}
-		e.{{$i.Name}}Endpoint = m(e.{{$i.Name}}Endpoint)
-	{{- end}}
+
+	for _, ex := range excluded {
+		if _, ok := included[ex]; !ok {
+			panic(fmt.Sprintf("Excluded endpoint '%s' does not exist; see middlewares/endpoints.go", ex))
+		}
+		delete(included, ex)
+	}
+
+	for inc, _ := range included {
+		{{- range $i := .Service.Methods}}
+			if inc == "{{$i.Name}}" {
+				e.{{$i.Name}}Endpoint = middleware(e.{{$i.Name}}Endpoint)
+			}
+		{{- end}}
+	}
 }
