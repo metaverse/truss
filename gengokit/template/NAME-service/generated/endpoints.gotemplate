@@ -6,6 +6,7 @@ package svc
 // formats. It also includes endpoint middlewares.
 
 import (
+	"fmt"
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/endpoint"
@@ -25,8 +26,7 @@ import (
 //
 // In a client, it's useful to collect individually constructed endpoints into a
 // single type that implements the Service interface. For example, you might
-// construct individual endpoints using transport/http.NewClient, combine them
-// into an Endpoints, and return it to the caller as a Service.
+// construct individual endpoints using transport/http.NewClient, combine them into an Endpoints, and return it to the caller as a Service.
 type Endpoints struct {
 {{range $i := .Service.Methods}}
 	{{$i.Name}}Endpoint    endpoint.Endpoint
@@ -73,6 +73,9 @@ func (e *Endpoints) WrapAll(middleware endpoint.Middleware, excluded ...string) 
 	}
 
 	for _, ex := range excluded {
+		if _, ok := included[ex]; !ok {
+			panic(fmt.Sprintf("Excluded endpoint '%s' does not exist; see middlewares/endpoints.go", ex))
+		}
 		delete(included, ex)
 	}
 
