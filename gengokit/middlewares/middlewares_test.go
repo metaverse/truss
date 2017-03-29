@@ -74,7 +74,7 @@ func TestNewEndpointMiddleware(t *testing.T) {
 			// Pass in the middlewares you want applied to every endpoint.
 			// optionally pass in endpoints by name that you want to be excluded
 			// e.g.
-			// in.WrapAll(authMiddleware, "Status", "Ping")
+			// in.WrapAllExcept(authMiddleware, "Status", "Ping")
 
 			// How to apply a middleware to a single endpoint.
 			// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)

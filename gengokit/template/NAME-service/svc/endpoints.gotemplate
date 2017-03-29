@@ -64,12 +64,12 @@ type Endpoints struct {
 	{{end}}
 {{end}}
 
-// WrapAll wraps each Endpoint field of struct Endpoints with a
+// WrapAllExcept wraps each Endpoint field of struct Endpoints with a
 // go-kit/kit/endpoint.Middleware.
 // Use this for applying a set of middlewares to every endpoint in the service.
 // Optionally, endpoints can be passed in by name to be excluded from being wrapped.
-// WrapAll(middleware, "Status", "Ping")
-func (e *Endpoints) WrapAll(middleware endpoint.Middleware, excluded ...string) {
+// WrapAllExcept(middleware, "Status", "Ping")
+func (e *Endpoints) WrapAllExcept(middleware endpoint.Middleware, excluded ...string) {
 	included := map[string]struct{}{
 		{{- range $i := .Service.Methods}}
 			"{{$i.Name}}": struct{}{},
