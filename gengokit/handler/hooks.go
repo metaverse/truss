@@ -7,7 +7,7 @@ import (
 	"github.com/TuneLab/go-truss/gengokit"
 )
 
-const HookPath = "handlers/server/hooks.gotemplate"
+const HookPath = "handlers/hooks.gotemplate"
 
 // NewHook returns a new HookRender
 func NewHook(prev io.Reader) gengokit.Renderable {

@@ -18,7 +18,7 @@ const serverMethsTempl = `
 `
 
 const serverTempl = `
-package handler
+package handlers
 
 import (
 	"golang.org/x/net/context"
@@ -49,7 +49,7 @@ type {{ToLower .Service.Name}}Service struct{}
 {{- end}}
 `
 const hookTempl = `
-package handler
+package handlers
 
 import (
 	"fmt"

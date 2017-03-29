@@ -6,7 +6,7 @@ package middlewares
 import (
 	_ "github.com/go-kit/kit/endpoint"
 
-	svc "{{.ImportPath -}} /generated"
+	svc "{{.ImportPath -}} /svc"
 )
 
 // WrapEndpoints accepts the service's entire collection of endpoints, so that a

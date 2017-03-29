@@ -4,7 +4,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	"golang.org/x/net/context"
 
-	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/generated"
+	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
 )
 
 // WrapEndpoints accepts the service's entire collection of endpoints, so that a

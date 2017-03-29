@@ -134,7 +134,7 @@ func TestApplyServerTempl(t *testing.T) {
 	gen, err := applyServerTempl(te)
 	genBytes, err := ioutil.ReadAll(gen)
 	expected := `
-		package handler
+		package handlers
 
 		import (
 			"golang.org/x/net/context"
@@ -304,7 +304,7 @@ func TestPruneDecls(t *testing.T) {
 	m := newMethodMap(sd.Service.Methods)
 
 	prev := `
-		package handler
+		package handlers
 
 		import (
 			"golang.org/x/net/context"

@@ -29,18 +29,27 @@ func TestMain(m *testing.M) {
 	}
 
 	basePath = filepath.Join(wd, definitionDirectory)
+	// Create a standalone copy of the 'basic' service binary that persists
+	// through all the tests. This binary to be used to test things like flags
+	// and flag-groups.
+
+	exitCode := 1
+	defer func() {
+		if exitCode == 0 {
+			cleanTests(basePath)
+		}
+		os.Exit(exitCode)
+	}()
 
 	clean := flag.Bool("clean", false, "Remove all generated test files and do nothing else")
 	flag.Parse()
 	if *clean {
-		cleanTests(basePath)
-		os.Exit(0)
+		exitCode = 0
+		return
 	}
 
-	// Create a standalone copy of the 'basic' service binary that persists
-	// through all the tests. This binary to be used to test things like flags
-	// and flag-groups.
-	exitCode := 0
+	// Cleanup so that cp works as expected
+	cleanTests(basePath)
 
 	// Copy "1-basic" into a special "0-basic" which is removed
 	copy := exec.Command(
@@ -54,7 +63,7 @@ func TestMain(m *testing.M) {
 	err = copy.Run()
 	if err != nil {
 		fmt.Printf("cannot copy '0-basic' service: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	path := filepath.Join(basePath, "0-basic")
@@ -62,19 +71,14 @@ func TestMain(m *testing.M) {
 	err = createTrussService(path)
 	if err != nil {
 		fmt.Printf("cannot create truss service: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	err = buildTestService(filepath.Join(path, "test-service"))
 	if err != nil {
 		fmt.Printf("cannot build truss service: %v", err)
-		os.Exit(1)
+		return
 	}
-
-	defer func() {
-		os.RemoveAll(filepath.Join(basePath, "0-basic"))
-		os.Exit(exitCode)
-	}()
 
 	exitCode = m.Run()
 }
@@ -210,13 +214,9 @@ func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...st
 		t.FailNow()
 	}
 
-	// If nothing failed, delete the generated files
-	removeTestFiles(path)
 }
 
 func createTrussService(path string, trussFlags ...string) error {
-	// Remove tests if they exists
-	removeTestFiles(path)
 
 	trussOut, err := truss(path, trussFlags...)
 
@@ -275,14 +275,14 @@ func buildTestService(serviceDir string) (err error) {
 		return err
 	}
 
-	const serverPath = "/test-server"
-	const clientPath = "/test-cli-client"
+	const serverPath = "cmd/test-server"
+	const clientPath = "cmd/test"
 
 	// Build server and client
 	errChan := make(chan error)
 
 	go goBuild("test-server", binDir, filepath.Join(relDir, serverPath), errChan)
-	go goBuild("test-cli-client", binDir, filepath.Join(relDir, clientPath), errChan)
+	go goBuild("test", binDir, filepath.Join(relDir, clientPath), errChan)
 
 	err = <-errChan
 	if err != nil {
@@ -399,7 +399,7 @@ func reapServer(server *exec.Cmd, errc chan error) error {
 }
 
 func runClient(path string, flags ...string) ([]byte, error) {
-	const relativeClientPath = "/bin/test-cli-client"
+	const relativeClientPath = "/bin/test"
 
 	client := exec.Command(
 		path+relativeClientPath,
@@ -420,6 +420,8 @@ func fileExists(path string) bool {
 
 // cleanTests removes all test files from all directories in servicesDir
 func cleanTests(servicesDir string) {
+	// Remove the 0-basic used for non building tests
+	os.RemoveAll(filepath.Join(servicesDir, "0-basic"))
 	// Clean up the service directories in each test
 	dirs, _ := ioutil.ReadDir(servicesDir)
 	for _, d := range dirs {
@@ -434,9 +436,16 @@ func cleanTests(servicesDir string) {
 // removeTestFiles removes all files created by running truss and building the
 // service from a single definition directory
 func removeTestFiles(defDir string) {
+	// svcout dir
+	os.RemoveAll(filepath.Join(defDir, "tunelab"))
+	// service dir
 	os.RemoveAll(filepath.Join(defDir, "test-service"))
+	// where the binaries are compiled to
 	os.RemoveAll(filepath.Join(defDir, "bin"))
+	// test pbout
 	os.RemoveAll(filepath.Join(defDir, "pbout"))
+	// So that the directory exists for pbout
+	// TODO: Make pbout create the directory if it does not exist
 	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)
 }
 

@@ -16,8 +16,8 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	handler "{{.ImportPath -}} /handlers/server"
-	svc "{{.ImportPath -}} /generated"
+	handler "{{.ImportPath -}} /handlers"
+	svc "{{.ImportPath -}} /svc"
 	pb "{{.PBImportPath -}}"
 	middlewares "{{.ImportPath -}} /middlewares"
 )
