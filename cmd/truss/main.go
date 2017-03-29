@@ -25,7 +25,7 @@ import (
 
 var (
 	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
-	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written")
+	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written. Trailing slash will create a NAME-service directory")
 	verboseFlag    = flag.BoolP("verbose", "v", false, "Verbose output")
 	helpFlag       = flag.BoolP("help", "h", false, "Print usage")
 )
@@ -133,10 +133,10 @@ func parseInput() (*truss.Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
-	svcFolderName := svcName + "-service"
+	svcDirName := svcName + "-service"
 
 	if *svcPackageFlag == "" {
-		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcFolderName)
+		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
 		p, err := build.Default.ImportDir(svcPath, build.FindOnly)
 		if err != nil {
 			return nil, err
@@ -148,8 +148,7 @@ func parseInput() (*truss.Config, error) {
 		cfg.ServicePackage = p.ImportPath
 		cfg.ServicePath = p.Dir
 	} else {
-		baseSVCPackage := *svcPackageFlag
-		p, err := build.Default.Import(baseSVCPackage, wd, build.FindOnly)
+		p, err := build.Default.Import(*svcPackageFlag, wd, build.FindOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -157,8 +156,16 @@ func parseInput() (*truss.Config, error) {
 			return nil, errors.New("svcout not in GOPATH")
 		}
 
-		cfg.ServicePackage = p.ImportPath
 		cfg.ServicePath = p.Dir
+		cfg.ServicePackage = p.ImportPath
+
+		// If the package flag ends in a seperator, file will be "".
+		// In this case, append the svcDirName to the path and package
+		_, file := filepath.Split(*svcPackageFlag)
+		if file == "" {
+			cfg.ServicePath = filepath.Join(cfg.ServicePath, svcDirName)
+			cfg.ServicePackage = filepath.Join(cfg.ServicePackage, svcDirName)
+		}
 
 		if !fileExists(cfg.ServicePath) {
 			err := os.MkdirAll(cfg.ServicePath, 0777)
