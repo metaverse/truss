@@ -46,7 +46,7 @@ add [http annotations](
 https://github.com/googleapis/googleapis/blob/928a151b2f871b4239b7707e1bb59258df3fe10a/google/api/http.proto#L36)
 for HTTP 1.1/JSON transport!
 
-Then you open the `handlers/server/server_handler.go`,
+Then you open the `handlers/handlers.go`,
 add you business logic, and you're good to go.
 
 Here is an example service definition: [Echo Service](./_example/echo.proto)

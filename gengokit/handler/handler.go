@@ -23,7 +23,7 @@ import (
 const ignoredFunc = "NewService"
 
 // ServerHadlerPath is the relative path to the server handler template file
-const ServerHandlerPath = "handlers/server/server_handler.gotemplate"
+const ServerHandlerPath = "handlers/handlers.gotemplate"
 
 // New returns a truss.Renderable capable of updating server handlers.
 // New should be passed the previous version of the server handler to parse.

@@ -63,8 +63,6 @@ overwrite user code in the /NAME-service/handlers directory
 
 Additional internal packages of note used by these programs are:
 
-- `astmodifier`, located in `gengokit/astmodifier/`, used to
-  modify go files in place, and used by gengokit`
 - `deftree`, located in `deftree/`, which makes sense of the protobuf file
   passed to it by `protoc`, and is used by `gengokit` and
   `gendoc`

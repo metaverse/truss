@@ -87,7 +87,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	end, err := applyTemplateFromPath("generated/endpoints.gotemplate", te)
+	end, err := applyTemplateFromPath("svc/endpoints.gotemplate", te)
 	if err != nil {
 		t.Fatal(err)
 	}
