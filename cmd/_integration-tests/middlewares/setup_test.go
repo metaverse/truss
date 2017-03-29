@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service"
-	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
-	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers/server"
+	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
 	"github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/middlewares"
+	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
 )
 
 var middlewareEndpoints svc.Endpoints

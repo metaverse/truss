@@ -15,8 +15,8 @@ import (
 	"github.com/go-kit/kit/log"
 
 	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service"
+	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service/handlers"
 	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service/svc"
-	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service/handlers/server"
 )
 
 func TestMain(m *testing.M) {

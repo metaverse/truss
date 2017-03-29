@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"golang.org/x/net/context"
@@ -14,8 +14,8 @@ func NewService() pb.MiddlewaresTestServer {
 type middlewarestestService struct{}
 
 // AlwaysWrapped implements Service.
-func (s middlewarestestService) AlwaysWrapped(ctx context.Context, in *pb.Empty) (*pb.WrapAllTest, error) {
-	var resp pb.WrapAllTest
+func (s middlewarestestService) AlwaysWrapped(ctx context.Context, in *pb.Empty) (*pb.WrapAllExceptTest, error) {
+	var resp pb.WrapAllExceptTest
 
 	always := ctx.Value("Always")
 	if a, ok := always.(bool); ok {
@@ -30,8 +30,8 @@ func (s middlewarestestService) AlwaysWrapped(ctx context.Context, in *pb.Empty)
 }
 
 // SometimesWrapped implements Service.
-func (s middlewarestestService) SometimesWrapped(ctx context.Context, in *pb.Empty) (*pb.WrapAllTest, error) {
-	var resp pb.WrapAllTest
+func (s middlewarestestService) SometimesWrapped(ctx context.Context, in *pb.Empty) (*pb.WrapAllExceptTest, error) {
+	var resp pb.WrapAllExceptTest
 
 	always := ctx.Value("Always")
 	if a, ok := always.(bool); ok {

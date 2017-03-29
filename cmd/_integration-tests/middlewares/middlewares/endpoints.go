@@ -19,8 +19,8 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	// optionally pass in endpoints by name that you want to be excluded
 	// e.g.
 	// in.WrapAll(authMiddleware, "Status", "Ping")
-	in.WrapAll(addBoolToContext("NotSometimes"), "SometimesWrapped")
-	in.WrapAll(addBoolToContext("Always"))
+	in.WrapAllExcept(addBoolToContext("NotSometimes"), "SometimesWrapped")
+	in.WrapAllExcept(addBoolToContext("Always"))
 
 	return in
 }

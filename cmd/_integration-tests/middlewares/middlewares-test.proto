@@ -5,16 +5,16 @@ package middlewares;
 import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 service MiddlewaresTest {
-  // Test endpoints.WrapAll(middleware, exclude ...)
-  // AlwaysWrapped will never be excluded in endpoints.WrapAll
-  rpc AlwaysWrapped (Empty) returns (WrapAllTest) {
+  // Test endpoints.WrapAllExcept(middleware, exclude ...)
+  // AlwaysWrapped will never be excluded in endpoints.WrapAllExcept
+  rpc AlwaysWrapped (Empty) returns (WrapAllExceptTest) {
     option (google.api.http) = {
       get: "/alwayswrapped"
     };
   }
   // SometimesWrapped will be excluded from the middleware that set the
   // NotSometimes value
-  rpc SometimesWrapped (Empty) returns (WrapAllTest) {
+  rpc SometimesWrapped (Empty) returns (WrapAllExceptTest) {
     option (google.api.http) = {
       get: "/sometimeswrapped"
     };
@@ -23,9 +23,9 @@ service MiddlewaresTest {
 
 message Empty {}
 
-// WrapAllTest will be populated by middlewares which were wrapped
-// around endpoints using WrapAll
-message WrapAllTest {
+// WrapAllExceptTest will be populated by middlewares which were wrapped
+// around endpoints using WrapAllExcept
+message WrapAllExceptTest {
   // Always will be set to true
   bool Always = 1;
   // NotSometimes will be set to true for endpoint AlwaysWrapped and set to
