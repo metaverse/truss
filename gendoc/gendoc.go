@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/TuneLab/go-truss/deftree"
-	"github.com/golang/protobuf/protoc-gen-go/generator"
 )
 
 func findServiceName(md *deftree.MicroserviceDefinition) string {
@@ -33,11 +32,9 @@ func GenerateDocs(dt deftree.Deftree) map[string]io.Reader {
 		response = "Error, could not cast Deftree to MicroserviceDefinition"
 	}
 
-	files := make(map[string]io.Reader)
-	md := dt.(*deftree.MicroserviceDefinition)
-	// Normalize the service to prevent diversion from convention
-	svcname := strings.ToLower(generator.CamelCase(findServiceName(md)))
-	files[svcname+"-service/docs/docs.md"] = strings.NewReader(response)
+	files := map[string]io.Reader{
+		"docs/docs.md": strings.NewReader(response),
+	}
 
 	return files
 }
