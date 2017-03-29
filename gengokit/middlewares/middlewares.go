@@ -1,4 +1,4 @@
-// Package middlewares renders the service and endpointe middleware files in NAME-service/middlewares/.
+// Package middlewares renders the service and endpointe middleware files in middlewares/.
 package middlewares
 
 import (
@@ -11,10 +11,10 @@ import (
 )
 
 // EndpointsPath is the path to the Endpoints middleware file that package middlewares renders
-const EndpointsPath = "NAME-service/middlewares/endpoints.gotemplate"
+const EndpointsPath = "middlewares/endpoints.gotemplate"
 
 // ServicePath is the path to the Service middleware file that package middlewares renders
-const ServicePath = "NAME-service/middlewares/service.gotemplate"
+const ServicePath = "middlewares/service.gotemplate"
 
 // New returns a Middleware which can render EndpointsFile and ServiceFile as
 // well as read in previous versions of each respective file

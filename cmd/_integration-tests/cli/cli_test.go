@@ -57,9 +57,17 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	err = createTrussService(filepath.Join(basePath, "0-basic"))
+	path := filepath.Join(basePath, "0-basic")
+
+	err = createTrussService(path)
 	if err != nil {
 		fmt.Printf("cannot create truss service: %v", err)
+		os.Exit(1)
+	}
+
+	err = buildTestService(filepath.Join(path, "test-service"))
+	if err != nil {
+		fmt.Printf("cannot build truss service: %v", err)
 		os.Exit(1)
 	}
 
@@ -88,9 +96,29 @@ func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
 }
 
 func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
-	testEndToEnd("1-basic", "getbasic", t,
-		"--svcout",
-		".")
+	svcOut := "./tunelab"
+	path := filepath.Join(basePath, "1-basic")
+	err := createTrussService(path, "--svcout", svcOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = buildTestService(filepath.Join(path, svcOut))
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBasicTypesWithTrailingSlashSVCOutFlag(t *testing.T) {
+	svcOut := "./tunelab/"
+	path := filepath.Join(basePath, "1-basic")
+	err := createTrussService(path, "--svcout", svcOut)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = buildTestService(filepath.Join(path, svcOut, "test-service"))
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestMultipleFiles(t *testing.T) {
@@ -114,7 +142,7 @@ func _TestMapTypes(t *testing.T) {
 
 // Ensure that environment variables are used
 func TestPortVariable(t *testing.T) {
-	path := filepath.Join(basePath, "0-basic")
+	path := filepath.Join(basePath, "0-basic", "test-service")
 	grpcPort := strconv.Itoa(FindFreePort())
 	httpPort := strconv.Itoa(FindFreePort())
 	debugPort := strconv.Itoa(FindFreePort())
@@ -146,7 +174,15 @@ func TestPortVariable(t *testing.T) {
 
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
-	createTrussService(path)
+	err := createTrussService(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path = filepath.Join(path, "test-service")
+	err = buildTestService(path)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	grpcPort := strconv.Itoa(FindFreePort())
 	httpPort := strconv.Itoa(FindFreePort())
@@ -189,11 +225,6 @@ func createTrussService(path string, trussFlags ...string) error {
 		return errors.Errorf("Truss generation FAILED - %v\nTruss Output:\n%v", path, trussOut)
 	}
 
-	// Build the service to be tested
-	err = buildTestService(path)
-	if err != nil {
-		return errors.Errorf("Could not build service. Error: %v", err)
-	}
 	return nil
 }
 
@@ -244,8 +275,8 @@ func buildTestService(serviceDir string) (err error) {
 		return err
 	}
 
-	const serverPath = "/test-service/test-server"
-	const clientPath = "/test-service/test-cli-client"
+	const serverPath = "/test-server"
+	const clientPath = "/test-cli-client"
 
 	// Build server and client
 	errChan := make(chan error)

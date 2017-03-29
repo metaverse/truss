@@ -25,7 +25,7 @@ import (
 
 var (
 	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
-	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written")
+	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written. Trailing slash will create a NAME-service directory")
 	verboseFlag    = flag.BoolP("verbose", "v", false, "Verbose output")
 	helpFlag       = flag.BoolP("help", "h", false, "Print usage")
 )
@@ -133,10 +133,10 @@ func parseInput() (*truss.Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
-	svcFolderName := svcName + "-service"
+	svcDirName := svcName + "-service"
 
 	if *svcPackageFlag == "" {
-		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcFolderName)
+		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
 		p, err := build.Default.ImportDir(svcPath, build.FindOnly)
 		if err != nil {
 			return nil, err
@@ -148,19 +148,31 @@ func parseInput() (*truss.Config, error) {
 		cfg.ServicePackage = p.ImportPath
 		cfg.ServicePath = p.Dir
 	} else {
-		baseSVCPackage := *svcPackageFlag
-		p, err := build.Default.Import(baseSVCPackage, wd, build.FindOnly)
+		p, err := build.Default.Import(*svcPackageFlag, wd, build.FindOnly)
 		if err != nil {
 			return nil, err
 		}
 		if p.Root == "" {
 			return nil, errors.New("svcout not in GOPATH")
 		}
-		if !fileExists(p.Dir) {
-			return nil, errors.Errorf("specified package path for service output directory does not exist: %q", p.Dir)
+
+		cfg.ServicePath = p.Dir
+		cfg.ServicePackage = p.ImportPath
+
+		// If the package flag ends in a seperator, file will be "".
+		// In this case, append the svcDirName to the path and package
+		_, file := filepath.Split(*svcPackageFlag)
+		if file == "" {
+			cfg.ServicePath = filepath.Join(cfg.ServicePath, svcDirName)
+			cfg.ServicePackage = filepath.Join(cfg.ServicePackage, svcDirName)
 		}
-		cfg.ServicePackage = filepath.Join(p.ImportPath, svcFolderName)
-		cfg.ServicePath = filepath.Join(p.Dir, svcFolderName)
+
+		if !fileExists(cfg.ServicePath) {
+			err := os.MkdirAll(cfg.ServicePath, 0777)
+			if err != nil {
+				return nil, errors.Errorf("specified package path for service output directory cannot be created: %q", p.Dir)
+			}
+		}
 	}
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
 	log.WithField("Service Path", cfg.ServicePath).Debug()
@@ -300,13 +312,7 @@ func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
 
 // writeGenFile writes a file at relPath relative to serviceDir to the filesystem
 func writeGenFile(file io.Reader, relPath, serviceDir string) error {
-	// the serviceDir contains /NAME-service so we want to write to the
-	// directory above
-	outDir := filepath.Dir(serviceDir)
-
-	// i.e. NAME-service/generated/endpoint.go
-
-	fullPath := filepath.Join(outDir, relPath)
+	fullPath := filepath.Join(serviceDir, relPath)
 	err := os.MkdirAll(filepath.Dir(fullPath), 0777)
 	if err != nil {
 		return err
@@ -365,7 +371,6 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 		return nil, nil
 	}
 
-	dir, _ := filepath.Split(serviceDir)
 	files := make(map[string]io.Reader)
 
 	addFileToFiles := func(path string, info os.FileInfo, err error) error {
@@ -380,7 +385,7 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 		}
 
 		// trim the prefix of the path to the proto files from the full path to the file
-		relPath, err := filepath.Rel(dir, path)
+		relPath, err := filepath.Rel(serviceDir, path)
 		if err != nil {
 			return err
 		}
@@ -392,7 +397,7 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 
 	err := filepath.Walk(serviceDir, addFileToFiles)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot fully walk directory %v", dir)
+		return nil, errors.Wrapf(err, "cannot fully walk directory %v", serviceDir)
 	}
 
 	return files, nil
