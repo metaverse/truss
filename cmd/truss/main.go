@@ -133,9 +133,6 @@ func parseInput() (*truss.Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
-	// TODO: if no --svcout then create svcFolderName
-	// TODO: cfg.ServicePath is now inside svcFolderName / passed --svcout rather than containing it
-	// Make sure the file writing happens inside cfg.ServicePath
 	svcFolderName := svcName + "-service"
 
 	if *svcPackageFlag == "" {
@@ -159,11 +156,16 @@ func parseInput() (*truss.Config, error) {
 		if p.Root == "" {
 			return nil, errors.New("svcout not in GOPATH")
 		}
-		if !fileExists(p.Dir) {
-			return nil, errors.Errorf("specified package path for service output directory does not exist: %q", p.Dir)
+
+		cfg.ServicePackage = p.ImportPath
+		cfg.ServicePath = p.Dir
+
+		if !fileExists(cfg.ServicePath) {
+			err := os.MkdirAll(cfg.ServicePath, 0777)
+			if err != nil {
+				return nil, errors.Errorf("specified package path for service output directory cannot be created: %q", p.Dir)
+			}
 		}
-		cfg.ServicePackage = filepath.Join(p.ImportPath, svcFolderName)
-		cfg.ServicePath = filepath.Join(p.Dir, svcFolderName)
 	}
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
 	log.WithField("Service Path", cfg.ServicePath).Debug()

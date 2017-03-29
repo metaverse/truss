@@ -90,7 +90,7 @@ func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
 func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
 	testEndToEnd("1-basic", "getbasic", t,
 		"--svcout",
-		".")
+		"./1-basic")
 }
 
 func TestMultipleFiles(t *testing.T) {
