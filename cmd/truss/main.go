@@ -133,6 +133,9 @@ func parseInput() (*truss.Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
+	// TODO: if no --svcout then create svcFolderName
+	// TODO: cfg.ServicePath is now inside svcFolderName / passed --svcout rather than containing it
+	// Make sure the file writing happens inside cfg.ServicePath
 	svcFolderName := svcName + "-service"
 
 	if *svcPackageFlag == "" {
@@ -300,13 +303,7 @@ func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
 
 // writeGenFile writes a file at relPath relative to serviceDir to the filesystem
 func writeGenFile(file io.Reader, relPath, serviceDir string) error {
-	// the serviceDir contains /NAME-service so we want to write to the
-	// directory above
-	outDir := filepath.Dir(serviceDir)
-
-	// i.e. NAME-service/generated/endpoint.go
-
-	fullPath := filepath.Join(outDir, relPath)
+	fullPath := filepath.Join(serviceDir, relPath)
 	err := os.MkdirAll(filepath.Dir(fullPath), 0777)
 	if err != nil {
 		return err
@@ -365,7 +362,6 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 		return nil, nil
 	}
 
-	dir, _ := filepath.Split(serviceDir)
 	files := make(map[string]io.Reader)
 
 	addFileToFiles := func(path string, info os.FileInfo, err error) error {
@@ -380,7 +376,7 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 		}
 
 		// trim the prefix of the path to the proto files from the full path to the file
-		relPath, err := filepath.Rel(dir, path)
+		relPath, err := filepath.Rel(serviceDir, path)
 		if err != nil {
 			return err
 		}
@@ -392,7 +388,7 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 
 	err := filepath.Walk(serviceDir, addFileToFiles)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot fully walk directory %v", dir)
+		return nil, errors.Wrapf(err, "cannot fully walk directory %v", serviceDir)
 	}
 
 	return files, nil
