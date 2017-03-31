@@ -2,7 +2,7 @@
 // Rerunning truss will overwrite this file.
 // DO NOT EDIT!
 
-package clienthandler
+package handlers
 
 import (
 	pb "{{$.PBImportPath -}}"

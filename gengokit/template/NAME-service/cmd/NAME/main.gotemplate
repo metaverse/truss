@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	// This Service
-	clientHandler "{{.ImportPath -}} /svc/cli/handlers"
+	"{{.ImportPath -}} /svc/cli/handlers"
 	grpcclient "{{.ImportPath -}} /svc/client/grpc"
 	httpclient "{{.ImportPath -}} /svc/client/http"
 	pb "{{.PBImportPath -}}"
@@ -109,9 +109,9 @@ func submain() int {
 
 			{{$args.MarshalFlags}}
 
-			request, err := clientHandler.{{$meth}}({{$args.CallArgs}})
+			request, err := handlers.{{$meth}}({{$args.CallArgs}})
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error calling clientHandler.{{$meth}}: %v\n", err)
+				fmt.Fprintf(os.Stderr, "Error calling handlers.{{$meth}}: %v\n", err)
 				return 1
 			}
 
