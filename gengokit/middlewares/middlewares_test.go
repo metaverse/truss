@@ -60,7 +60,7 @@ func TestNewEndpointMiddleware(t *testing.T) {
 		import (
 			_ "github.com/go-kit/kit/endpoint"
 
-			svc "github.com/TuneLab/go-truss/gengokit/general-service/svc"
+			"github.com/TuneLab/go-truss/gengokit/general-service/svc"
 		)
 
 		// WrapEndpoints accepts the service's entire collection of endpoints, so that a
@@ -152,7 +152,7 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 		import (
 			"github.com/go-kit/kit/endpoint"
-			svc "github.com/TuneLab/go-truss/gengokit/general-service/svc"
+			"github.com/TuneLab/go-truss/gengokit/general-service/svc"
 		)
 
 		// WrapEndpoint will be called individually for all endpoints defined in
