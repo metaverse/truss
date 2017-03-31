@@ -15,6 +15,7 @@ import (
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 
+	"github.com/TuneLab/go-truss/gengokit/httptransport/templates"
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
@@ -34,7 +35,7 @@ type Helper struct {
 func NewHelper(svc *svcdef.Service) *Helper {
 	// The HTTPAssistFuncs global is a group of function literals defined
 	// within templates.go
-	pp := FormatCode(HTTPAssistFuncs)
+	pp := FormatCode(templates.HTTPAssistFuncs)
 	rv := Helper{
 		PathParamsBuilder: pp,
 		ServerTemplate:    GenServerTemplate,
@@ -133,7 +134,7 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 }
 
 func GenServerTemplate(exec interface{}) (string, error) {
-	code, err := ApplyTemplate("ServerTemplate", serverTemplate, exec, TemplateFuncs)
+	code, err := ApplyTemplate("ServerTemplate", templates.ServerTemplate, exec, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -142,7 +143,7 @@ func GenServerTemplate(exec interface{}) (string, error) {
 }
 
 func GenClientTemplate(exec interface{}) (string, error) {
-	code, err := ApplyTemplate("ClientTemplate", clientTemplate, exec, TemplateFuncs)
+	code, err := ApplyTemplate("ClientTemplate", templates.ClientTemplate, exec, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -153,7 +154,7 @@ func GenClientTemplate(exec interface{}) (string, error) {
 // GenServerDecode returns the generated code for the server-side decoding of
 // an http request into its request struct.
 func (b *Binding) GenServerDecode() (string, error) {
-	code, err := ApplyTemplate("ServerDecodeTemplate", ServerDecodeTemplate, b, TemplateFuncs)
+	code, err := ApplyTemplate("ServerDecodeTemplate", templates.ServerDecodeTemplate, b, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -164,7 +165,7 @@ func (b *Binding) GenServerDecode() (string, error) {
 // GenClientEncode returns the generated code for the client-side encoding of
 // that clients request struct into the correctly formatted http request.
 func (b *Binding) GenClientEncode() (string, error) {
-	code, err := ApplyTemplate("ClientEncodeTemplate", ClientEncodeTemplate, b, TemplateFuncs)
+	code, err := ApplyTemplate("ClientEncodeTemplate", templates.ClientEncodeTemplate, b, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
