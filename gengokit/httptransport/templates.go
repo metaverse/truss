@@ -351,7 +351,7 @@ import (
 	"golang.org/x/net/context"
 
 	// This Service
-	svc "{{.ImportPath -}} /svc"
+	"{{.ImportPath -}} /svc"
 	pb "{{.PBImportPath -}}"
 )
 

@@ -20,10 +20,10 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	handler "{{.ImportPath -}} /handlers"
-	svc "{{.ImportPath -}} /svc"
+	"{{.ImportPath -}} /handlers"
 	pb "{{.PBImportPath -}}"
-	middlewares "{{.ImportPath -}} /middlewares"
+	"{{.ImportPath -}} /svc"
+	"{{.ImportPath -}} /middlewares"
 )
 
 func main() {
@@ -63,7 +63,7 @@ func main() {
 	// Business domain.
 	var service pb.{{GoName .Service.Name}}Server
 	{
-		service = handler.NewService()
+		service = handlers.NewService()
 		// Wrap Service with middlewares. See ../middlewares/service.go
 		service = middlewares.WrapService(service)
 	}
@@ -90,7 +90,7 @@ func main() {
 	ctx := context.Background()
 
 	// Interrupt handler.
-	go handler.InterruptHandler(errc)
+	go handlers.InterruptHandler(errc)
 
 	// Debug listener.
 	go func() {
