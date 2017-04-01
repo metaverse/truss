@@ -219,9 +219,7 @@ if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.QueryParamName}}"]; ok {
 {{.ConvertFunc}}{{if .ConvertFuncNeedsErrorCheck}}
 // TODO: Better error handling
 if err != nil {
-	fmt.Printf("Error while extracting {{.LocalName}} from {{.Location}}: %v\n", err)
-	fmt.Printf("{{.Location}}Params: %v\n", {{.Location}}Params)
-	return nil, err
+	return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting {{.LocalName}} from {{.Location}}, {{.Location}}Params: %v", {{.Location}}Params))
 }{{end}}
 req.{{.CamelName}} = {{.TypeConversion}}
 `

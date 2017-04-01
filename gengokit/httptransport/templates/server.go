@@ -18,7 +18,6 @@ var ServerDecodeTemplate = `
 		pathParams, err := PathParams(r.URL.Path, "{{$binding.PathTemplate}}")
 		_ = pathParams
 		if err != nil {
-			fmt.Printf("Error while reading path params: %v\n", err)
 			return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
 		}
 
@@ -169,24 +168,13 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 			m.Handle("{{$binding.BasePath}}", httptransport.NewServer(
 				ctx,
 				endpoints.{{$method.Name}}Endpoint,
-				HttpDecodeLogger(DecodeHTTP{{$binding.Label}}Request, logger),
+				DecodeHTTP{{$binding.Label}}Request,
 				EncodeHTTPGenericResponse,
 				serverOptions...,
 			))
 		{{- end}}
 	{{- end}}
 	return m
-}
-
-func HttpDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) httptransport.DecodeRequestFunc {
-	return func(ctx context.Context, r *http.Request) (interface{}, error) {
-		logger.Log("method", r.Method, "url", r.URL.String())
-		rv, err := next(ctx, r)
-		if err != nil {
-			logger.Log("method", r.Method, "url", r.URL.String(), "Error", err)
-		}
-		return rv, err
-	}
 }
 
 func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
@@ -261,5 +249,16 @@ func headersToContext(ctx context.Context, r *http.Request) context.Context {
 	}
 
 	return ctx
+}
+
+func HTTPDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) httptransport.DecodeRequestFunc {
+	return func(ctx context.Context, r *http.Request) (interface{}, error) {
+		logger.Log("method", r.Method, "url", r.URL.String())
+		rv, err := next(ctx, r)
+		if err != nil {
+			logger.Log("method", r.Method, "url", r.URL.String(), "Error", err)
+		}
+		return rv, err
+	}
 }
 `
