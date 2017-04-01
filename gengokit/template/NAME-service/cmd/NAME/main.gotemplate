@@ -19,7 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	// This Service
-	"{{.ImportPath -}} /svc/cli/handlers"
+	"{{.ImportPath -}} /svc/client/cli/handlers"
 	grpcclient "{{.ImportPath -}} /svc/client/grpc"
 	httpclient "{{.ImportPath -}} /svc/client/http"
 	pb "{{.PBImportPath -}}"
