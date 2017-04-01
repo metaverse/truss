@@ -127,7 +127,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"io"
@@ -185,14 +184,6 @@ func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(errorWrapper{Error: msg})
 }
 
-func errorDecoder(r *http.Response) error {
-	var w errorWrapper
-	if err := json.NewDecoder(r.Body).Decode(&w); err != nil {
-		return err
-	}
-	return errors.New(w.Error)
-}
-
 type errorWrapper struct {
 	Error string ` + "`json:\"error\"`\n" + `
 }
@@ -201,30 +192,6 @@ type errorWrapper struct {
 {{range $method := .HTTPHelper.Methods}}
 	{{range $binding := $method.Bindings}}
 		{{$binding.GenServerDecode}}
-	{{end}}
-{{end}}
-
-// Client Decode
-{{range $method := .HTTPHelper.Methods}}
-	// DecodeHTTP{{$method.Name}} is a transport/http.DecodeResponseFunc that decodes
-	// a JSON-encoded {{GoName $method.ResponseType}} response from the HTTP response body.
-	// If the response has a non-200 status code, we will interpret that as an
-	// error and attempt to decode the specific error message from the response
-	// body. Primarily useful in a client.
-	func DecodeHTTP{{$method.Name}}Response(_ context.Context, r *http.Response) (interface{}, error) {
-		if r.StatusCode != http.StatusOK {
-			return nil, errorDecoder(r)
-		}
-		var resp pb.{{GoName $method.ResponseType}}
-		err := json.NewDecoder(r.Body).Decode(&resp)
-		return &resp, err
-	}
-{{end}}
-
-// Client Encode
-{{range $method := .HTTPHelper.Methods}}
-	{{range $binding := $method.Bindings}}
-		{{$binding.GenClientEncode}}
 	{{end}}
 {{end}}
 
