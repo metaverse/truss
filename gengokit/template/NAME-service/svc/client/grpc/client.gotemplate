@@ -44,8 +44,8 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{GoName .Service.N
 						conn,
 						"{{$pkgName}}.{{$te.Service.Name}}",
 						"{{$i.Name}}",
-						svc.EncodeGRPC{{$i.Name}}Request,
-						svc.DecodeGRPC{{$i.Name}}Response,
+						EncodeGRPC{{$i.Name}}Request,
+						DecodeGRPC{{$i.Name}}Response,
 						pb.{{GoName $i.ResponseType.Name}}{},
 						clientOptions...,
 					).Endpoint()
@@ -60,6 +60,27 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{GoName .Service.N
 	{{end}}
 	}, nil
 }
+
+// GRPC Client Decode
+{{range $i := .Service.Methods}}
+// DecodeGRPC{{$i.Name}}Response is a transport/grpc.DecodeResponseFunc that converts a
+// gRPC {{ToLower $i.Name}} reply to a user-domain {{ToLower $i.Name}} response. Primarily useful in a client.
+func DecodeGRPC{{$i.Name}}Response(_ context.Context, grpcReply interface{}) (interface{}, error) {
+	reply := grpcReply.(*pb.{{GoName $i.ResponseType.Name}})
+	return reply, nil
+}
+{{end}}
+
+// GRPC Client Encode
+{{range $i := .Service.Methods}}
+// EncodeGRPC{{$i.Name}}Request is a transport/grpc.EncodeRequestFunc that converts a
+// user-domain {{ToLower $i.Name}} request to a gRPC {{ToLower $i.Name}} request. Primarily useful in a client.
+func EncodeGRPC{{$i.Name}}Request(_ context.Context, request interface{}) (interface{}, error) {
+	req := request.(*pb.{{GoName $i.RequestType.Name}})
+	return req, nil
+}
+{{end}}
+
 
 type clientConfig struct {
 	headers []string
