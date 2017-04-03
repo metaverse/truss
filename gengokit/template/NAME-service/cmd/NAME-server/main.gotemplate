@@ -6,47 +6,17 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"net"
-	"net/http"
-	"net/http/pprof"
 	"os"
-
-	// 3d Party
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 
 	// Go Kit
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	"{{.ImportPath -}} /handlers"
-	pb "{{.PBImportPath -}}"
-	"{{.ImportPath -}} /svc"
-	"{{.ImportPath -}} /middlewares"
+	"{{.ImportPath -}} /svc/server"
+	"{{.ImportPath -}} /svc/server/cli"
 )
 
 func main() {
-	var (
-		debugAddr      = flag.String("debug.addr", ":5060", "Debug and metrics listen address")
-		httpAddr       = flag.String("http.addr", ":5050", "HTTP listen address")
-		grpcAddr       = flag.String("grpc.addr", ":5040", "gRPC (HTTP) listen address")
-	)
-
-	// Use environment variables, if set. Flags have priority over Env vars.
-	if addr := os.Getenv("DEBUG_ADDR"); addr != "" {
-		*debugAddr = addr
-	}
-	if port := os.Getenv("PORT"); port != "" {
-		*httpAddr = fmt.Sprintf(":%s", port)
-	}
-	if addr := os.Getenv("HTTP_ADDR"); addr != "" {
-		*httpAddr = addr
-	}
-	if addr := os.Getenv("GRPC_ADDR"); addr != "" {
-		*grpcAddr = addr
-	}
-
 	// Update addresses if they have been overwritten by flags
 	flag.Parse()
 
@@ -57,82 +27,5 @@ func main() {
 		logger = log.NewContext(logger).With("ts", log.DefaultTimestampUTC)
 		logger = log.NewContext(logger).With("caller", log.DefaultCaller)
 	}
-	logger.Log("msg", "hello")
-	defer logger.Log("msg", "goodbye")
-
-	// Business domain.
-	var service pb.{{GoName .Service.Name}}Server
-	{
-		service = handlers.NewService()
-		// Wrap Service with middlewares. See ../middlewares/service.go
-		service = middlewares.WrapService(service)
-	}
-
-	// Endpoint domain.
-	var (
-	{{range $i := .Service.Methods -}}
-		{{ToLower $i.Name}}Endpoint = svc.Make{{$i.Name}}Endpoint(service)
-	{{end}}
-	)
-
-	// Wrap Endpoints with middlewares. See ../middlewares/endpoints.go
-	endpoints := svc.Endpoints{
-	{{range $i := .Service.Methods -}}
-		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
-	{{end}}
-	}
-
-	// Wrap selected Endpoints with middlewares. See ../middlewares/endpoints.go
-	endpoints = middlewares.WrapEndpoints(endpoints)
-
-	// Mechanical domain.
-	errc := make(chan error)
-	ctx := context.Background()
-
-	// Interrupt handler.
-	go handlers.InterruptHandler(errc)
-
-	// Debug listener.
-	go func() {
-		logger := log.NewContext(logger).With("transport", "debug")
-
-		m := http.NewServeMux()
-		m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
-
-		logger.Log("addr", *debugAddr)
-		errc <- http.ListenAndServe(*debugAddr, m)
-	}()
-
-	// HTTP transport.
-	go func() {
-		logger := log.NewContext(logger).With("transport", "HTTP")
-		h := svc.MakeHTTPHandler(ctx, endpoints, logger)
-		logger.Log("addr", *httpAddr)
-		errc <- http.ListenAndServe(*httpAddr, h)
-	}()
-
-	// gRPC transport.
-	go func() {
-		logger := log.NewContext(logger).With("transport", "gRPC")
-
-		ln, err := net.Listen("tcp", *grpcAddr)
-		if err != nil {
-			errc <- err
-			return
-		}
-
-		srv := svc.MakeGRPCServer(ctx, endpoints)
-		s := grpc.NewServer()
-		pb.Register{{.Service.Name}}Server(s, srv)
-
-		logger.Log("addr", *grpcAddr)
-		errc <- s.Serve(ln)
-	}()
-
-	// Run!
-	logger.Log("exit", <-errc)
+	server.Run(cli.Config, logger)
 }

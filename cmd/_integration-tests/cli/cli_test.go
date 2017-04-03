@@ -83,6 +83,37 @@ func TestMain(m *testing.M) {
 	exitCode = m.Run()
 }
 
+// Ensure that environment variables are used
+func TestPortVariable(t *testing.T) {
+	path := filepath.Join(basePath, "0-basic", "test-service")
+	grpcPort := strconv.Itoa(FindFreePort())
+	httpPort := strconv.Itoa(FindFreePort())
+	debugPort := strconv.Itoa(FindFreePort())
+
+	// Set environment variables
+	defer os.Unsetenv("PORT")
+	if err := os.Setenv("PORT", httpPort); err != nil {
+		t.Fatal(err)
+	}
+
+	// launch long running server
+	server, srvrOut, errc := runServer(path,
+		"-grpc.addr", ":"+grpcPort,
+		"-debug.addr", ":"+debugPort)
+	// run client with http transport
+	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort, "getbasic")
+	if errHTTP != nil {
+		t.Error(string(clientHTTP))
+		t.Error(errHTTP)
+	}
+
+	err := reapServer(server, errc)
+	if err != nil {
+		t.Error(srvrOut.String())
+		t.Fatalf("cannot reap server: %v", err)
+	}
+}
+
 func TestBasicTypes(t *testing.T) {
 	testEndToEnd("1-basic", "getbasic", t)
 }
@@ -144,38 +175,6 @@ func _TestMapTypes(t *testing.T) {
 	testEndToEnd("4-maps", "getmap", t)
 }
 
-// Ensure that environment variables are used
-func TestPortVariable(t *testing.T) {
-	path := filepath.Join(basePath, "0-basic", "test-service")
-	grpcPort := strconv.Itoa(FindFreePort())
-	httpPort := strconv.Itoa(FindFreePort())
-	debugPort := strconv.Itoa(FindFreePort())
-
-	// Set environment variables
-	defer os.Unsetenv("PORT")
-	if err := os.Setenv("PORT", httpPort); err != nil {
-		t.Fatal(err)
-	}
-
-	// launch long running server
-	server, srvrOut, errc := runServer(path,
-		"-grpc.addr", ":"+grpcPort,
-		"-debug.addr", ":"+debugPort)
-	// run client with http transport
-	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort, "getbasic")
-	if errHTTP != nil {
-		t.Error(string(clientHTTP))
-		t.Error(errHTTP)
-	}
-
-	err := reapServer(server, errc)
-	if err != nil {
-		t.Error(srvrOut.String())
-		t.Fatalf("cannot reap server: %v", err)
-	}
-
-}
-
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
 	err := createTrussService(path)
@@ -213,7 +212,6 @@ func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...st
 		t.Logf("Server Output\n%v", srvrOut.String())
 		t.FailNow()
 	}
-
 }
 
 func createTrussService(path string, trussFlags ...string) error {
