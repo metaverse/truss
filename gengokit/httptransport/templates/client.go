@@ -77,9 +77,13 @@ var ClientTemplate = `
 package http
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"strings"
-	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -131,8 +135,8 @@ func New(instance string, options ...ClientOption) (pb.{{GoName .Service.Name}}S
 				{{$binding.Label}}Endpoint = httptransport.NewClient(
 					"{{$binding.Verb}}",
 					copyURL(u, "{{$binding.BasePath}}"),
-					svc.EncodeHTTP{{$binding.Label}}Request,
-					svc.DecodeHTTP{{$method.Name}}Response,
+					EncodeHTTP{{$binding.Label}}Request,
+					DecodeHTTP{{$method.Name}}Response,
 					clientOptions...,
 				).Endpoint()
 			}
@@ -182,5 +186,41 @@ func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
 
 		return ctx
 	}
+}
+
+// HTTP Client Decode
+{{range $method := .HTTPHelper.Methods}}
+	// DecodeHTTP{{$method.Name}}Response is a transport/http.DecodeResponseFunc that decodes
+	// a JSON-encoded {{GoName $method.ResponseType}} response from the HTTP response body.
+	// If the response has a non-200 status code, we will interpret that as an
+	// error and attempt to decode the specific error message from the response
+	// body. Primarily useful in a client.
+	func DecodeHTTP{{$method.Name}}Response(_ context.Context, r *http.Response) (interface{}, error) {
+		if r.StatusCode != http.StatusOK {
+			return nil, errorDecoder(r)
+		}
+		var resp pb.{{GoName $method.ResponseType}}
+		err := json.NewDecoder(r.Body).Decode(&resp)
+		return &resp, err
+	}
+{{end}}
+
+// HTTP Client Encode
+{{range $method := .HTTPHelper.Methods}}
+	{{range $binding := $method.Bindings}}
+		{{$binding.GenClientEncode}}
+	{{end}}
+{{end}}
+
+func errorDecoder(r *http.Response) error {
+	var w errorWrapper
+	if err := json.NewDecoder(r.Body).Decode(&w); err != nil {
+		return err
+	}
+	return errors.New(w.Error)
+}
+
+type errorWrapper struct {
+	Error string ` + "`json:\"error\"`\n" + `
 }
 `
