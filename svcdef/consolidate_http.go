@@ -52,7 +52,10 @@ func consolidateHTTP(sd *Svcdef, protoFiles map[string]io.Reader) error {
 
 			return errors.Wrap(err, "error while parsing http options for the service definition")
 		}
-		assembleHTTPParams(sd.Service, protosvc)
+		err = assembleHTTPParams(sd.Service, protosvc)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -63,7 +66,9 @@ func consolidateHTTP(sd *Svcdef, protoFiles map[string]io.Reader) error {
 func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 	getMethNamed := func(name string) *ServiceMethod {
 		for _, m := range svc.Methods {
-			if m.Name == name {
+			// Have to CamelCase the data from the parser since it may be lowercase
+			// while the name from the Go file will be CamelCased
+			if m.Name == gogen.CamelCase(name) {
 				return m
 			}
 		}
@@ -77,7 +82,6 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 		bind := HTTPBinding{}
 		bind.Verb, bind.Path = getVerb(parsedbind)
 
-		//params := make([]*HTTPParameter, 0)
 		var params []*HTTPParameter
 		for _, field := range msg.Fields {
 			newParam := &HTTPParameter{}
@@ -94,7 +98,7 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 	for _, hm := range httpsvc.Methods {
 		m := getMethNamed(hm.Name)
 		if m == nil {
-			return fmt.Errorf("Could not find service method named %q", hm.Name)
+			return fmt.Errorf("cannot not find service method named %q", hm.Name)
 		}
 		for _, hbind := range hm.HTTPBindings {
 			createParams(m, hbind)
