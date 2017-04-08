@@ -49,6 +49,12 @@ service TransportPermutations {
       get: "/error"
     };
   }
+  /* Odd RPC names need to still work */
+  rpc _2aOddRPCName (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/oddrpcname"
+    };
+  }
 }
 
 message Empty {}

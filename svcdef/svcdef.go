@@ -193,7 +193,7 @@ func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef
 		fset := token.NewFileSet()
 		fileAst, err := parser.ParseFile(fset, "", gofile, parser.ParseComments)
 		if err != nil {
-			return nil, errors.Wrapf(err, "couldn't parse go file %q to create Svcdef", path)
+			return nil, errors.Wrapf(err, "cannot parse go file %q to create Svcdef", path)
 		}
 		debugInfo := &DebugInfo{
 			Path: path,
@@ -203,7 +203,7 @@ func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef
 
 		typespecs, err := retrieveTypeSpecs(fileAst)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not retrive type specs")
+			return nil, errors.Wrap(err, "cannot retrive type specs")
 		}
 		for _, t := range typespecs {
 			switch typdf := t.Type.(type) {
@@ -267,7 +267,7 @@ func NewMessage(m *ast.TypeSpec) (*Message, error) {
 	for _, f := range strct.Fields.List {
 		nfield, err := NewField(f)
 		if err != nil {
-			return nil, errors.Wrapf(err, "couldn't create field %q while creating message %q", f.Names[0].Name, rv.Name)
+			return nil, errors.Wrapf(err, "cannot create field %q while creating message %q", f.Names[0].Name, rv.Name)
 		}
 		rv.Fields = append(rv.Fields, nfield)
 	}
@@ -324,7 +324,7 @@ func NewService(s *ast.TypeSpec, info *DebugInfo) (*Service, error) {
 	for _, m := range asvc.Methods.List {
 		nmeth, err := NewServiceMethod(m, info)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Couldn't create service method %q of service %q", m.Names[0].Name, rv.Name)
+			return nil, errors.Wrapf(err, "cannot create service method %q of service %q", m.Names[0].Name, rv.Name)
 		}
 		rv.Methods = append(rv.Methods, nmeth)
 	}
@@ -340,7 +340,7 @@ func NewServiceMethod(m *ast.Field, info *DebugInfo) (*ServiceMethod, error) {
 	}
 	ft, ok := m.Type.(*ast.FuncType)
 	if !ok {
-		return nil, NewLocationError("Provided *ast.Field.Type is not of type "+
+		return nil, NewLocationError("provided *ast.Field.Type is not of type "+
 			"*ast.FuncType; cannot proceed",
 			info.Path, info.Position(m.Pos()))
 	}
@@ -363,13 +363,13 @@ func NewServiceMethod(m *ast.Field, info *DebugInfo) (*ServiceMethod, error) {
 	makeFieldType := func(in *ast.Field) (*FieldType, error) {
 		star, ok := in.Type.(*ast.StarExpr)
 		if !ok {
-			return nil, NewLocationError("could not create FieldType, in.Type "+
+			return nil, NewLocationError("cannot create FieldType, in.Type "+
 				"is not *ast.StarExpr",
 				info.Path, info.Position(in.Pos()))
 		}
 		ident, ok := star.X.(*ast.Ident)
 		if !ok {
-			return nil, NewLocationError("could not create FieldType, "+
+			return nil, NewLocationError("cannot create FieldType, "+
 				"star.Type is not *ast.Ident",
 				info.Path, info.Position(star.Pos()))
 		}
@@ -382,11 +382,11 @@ func NewServiceMethod(m *ast.Field, info *DebugInfo) (*ServiceMethod, error) {
 	var err error
 	rv.RequestType, err = makeFieldType(rq)
 	if err != nil {
-		return nil, errors.Wrapf(err, "RequestType creation of service method %q failed", rv.Name)
+		return nil, errors.Wrapf(err, "requestType creation of service method %q failed", rv.Name)
 	}
 	rv.ResponseType, err = makeFieldType(rs)
 	if err != nil {
-		return nil, errors.Wrapf(err, "ResponseType creation of service method %q failed", rv.Name)
+		return nil, errors.Wrapf(err, "responseType creation of service method %q failed", rv.Name)
 	}
 
 	return rv, nil

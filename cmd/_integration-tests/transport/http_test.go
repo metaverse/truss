@@ -311,6 +311,29 @@ func TestErrorRPCReturnsJSONError(t *testing.T) {
 	}
 }
 
+// Certain RPC's with strange names (names which change when passed through the
+// camelcase function) might break on HTTP encode/decode generation. Here we
+// call an RPC with an one of those odd names which returns an empty message.
+func TestStrangeRPCName(t *testing.T) {
+	var req pb.Empty
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.X2AOddRPCName(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	var want *pb.Empty
+	want = &pb.Empty{}
+	if resp != want {
+		t.Fatalf("Expect: %d, got %d", want, resp)
+	}
+}
+
 // Helpers
 
 // Generic way to test that making an HTTP request returns the expected data,

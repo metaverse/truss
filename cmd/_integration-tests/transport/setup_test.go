@@ -37,6 +37,7 @@ func TestMain(m *testing.M) {
 	getWithPathParamsE := svc.MakeGetWithPathParamsEndpoint(service)
 	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
+	X2AOddRPCNameE := svc.MakeX2AOddRPCNameEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
@@ -47,6 +48,7 @@ func TestMain(m *testing.M) {
 		GetWithPathParamsEndpoint:         getWithPathParamsE,
 		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
+		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,
 	}
 
 	ctx := context.Background()
