@@ -94,3 +94,8 @@ var testError error = errors.New("This error should be json over http transport"
 func (s transportpermutationsService) ErrorRPC(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
 	return nil, testError
 }
+
+// X2AOddRPCName implements Service.
+func (s transportpermutationsService) X2AOddRPCName(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	return in, nil
+}
