@@ -54,7 +54,7 @@ func consolidateHTTP(sd *Svcdef, protoFiles map[string]io.Reader) error {
 		}
 		err = assembleHTTPParams(sd.Service, protosvc)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "while assembling HTTP parameters")
 		}
 	}
 	return nil
