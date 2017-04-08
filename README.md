@@ -8,7 +8,7 @@ drastically with no notice. There is no versioning, no guarantees, no stability
 at this time. However, if you want to play around, make suggestions, or submit
 changes, we welcome issues and pull requests!**
 
-![Everything all the time forever](http://i.imgur.com/FCmSUiQ.png)
+![Everything all the time forever](http://i.imgur.com/FtvVeBG.jpg)
 
 ## Install
 
