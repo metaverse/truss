@@ -181,7 +181,6 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 
 	ASumStr := pathParams["a"]
 	ASum, err := strconv.ParseInt(ASumStr, 10, 64)
-	// TODO: Better error handling
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting ASum from path, pathParams: %v", pathParams))
 	}
@@ -190,7 +189,6 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 	if BSumStrArr, ok := queryParams["b"]; ok {
 		BSumStr := BSumStrArr[0]
 		BSum, err := strconv.ParseInt(BSumStr, 10, 64)
-		// TODO: Better error handling
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting BSum from query, queryParams: %v", queryParams))
 		}

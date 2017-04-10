@@ -94,6 +94,39 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d]", "A", A[0], "A", A[1])
 }
 
+func TestGetWithEnumQueryClient(t *testing.T) {
+	var req pb.GetWithEnumQueryRequest
+	req.In = pb.TestStatus_test_passed
+	want := pb.TestStatus_test_passed
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.GetWithEnumQuery(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	if resp.Out != want {
+		t.Fatalf("Expect: %d, got %d", want, resp.Out)
+	}
+}
+
+func TestGetWithEnumQueryRequest(t *testing.T) {
+	resp := pb.GetWithEnumQueryResponse{}
+
+	expects := pb.GetWithEnumQueryResponse{
+		Out: pb.TestStatus_test_passed,
+	}
+
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumquery?in=%d", pb.TestStatus_test_passed)
+	// csv style
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumquery?in=%d", pb.TestStatus_test_passed)
+	// multi / golang style
+}
+
 func TestPostWithNestedMessageBodyClient(t *testing.T) {
 	var req pb.PostWithNestedMessageBodyRequest
 	var reqNM pb.NestedMessage
@@ -260,6 +293,39 @@ func TestGetWithPathParams(t *testing.T) {
 	}
 
 	testHTTP(t, &resp, &expects, nil, "GET", "path/%d/%d", A, B)
+}
+
+func TestGetWithEnumPathClient(t *testing.T) {
+	var req pb.GetWithEnumQueryRequest
+	req.In = pb.TestStatus_test_passed
+	want := pb.TestStatus_test_passed
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.GetWithEnumPath(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	if resp.Out != want {
+		t.Fatalf("Expect: %d, got %d", want, resp.Out)
+	}
+}
+
+func TestGetWithEnumPathRequest(t *testing.T) {
+	resp := pb.GetWithEnumQueryResponse{}
+
+	expects := pb.GetWithEnumQueryResponse{
+		Out: pb.TestStatus_test_passed,
+	}
+
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumpath/%d", pb.TestStatus_test_passed)
+	// csv style
+	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumpath/%d", pb.TestStatus_test_passed)
+	// multi / golang style
 }
 
 // A manually created request verifying that the server properly responds with

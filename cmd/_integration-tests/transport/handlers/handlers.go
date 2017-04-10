@@ -42,6 +42,15 @@ func (s transportpermutationsService) GetWithRepeatedQuery(ctx context.Context, 
 	return &response, nil
 }
 
+// GetWithEnumQuery implements Service.
+func (s transportpermutationsService) GetWithEnumQuery(ctx context.Context, in *pb.GetWithEnumQueryRequest) (*pb.GetWithEnumQueryResponse, error) {
+	response := pb.GetWithEnumQueryResponse{
+		Out: in.In,
+	}
+
+	return &response, nil
+}
+
 // PostWithNestedMessageBody implements Service.
 func (s transportpermutationsService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
 	response := pb.PostWithNestedMessageBodyResponse{
@@ -80,6 +89,15 @@ func (s transportpermutationsService) GetWithPathParams(ctx context.Context, in 
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}
+	return &response, nil
+}
+
+// GetWithEnumQuery implements Service.
+func (s transportpermutationsService) GetWithEnumPath(ctx context.Context, in *pb.GetWithEnumQueryRequest) (*pb.GetWithEnumQueryResponse, error) {
+	response := pb.GetWithEnumQueryResponse{
+		Out: in.In,
+	}
+
 	return &response, nil
 }
 
