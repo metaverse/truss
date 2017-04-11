@@ -31,10 +31,12 @@ func TestMain(m *testing.M) {
 	// Endpoint domain.
 	getWithQueryE := svc.MakeGetWithQueryEndpoint(service)
 	getWithRepeatedQueryE := svc.MakeGetWithRepeatedQueryEndpoint(service)
+	getWithEnumQueryE := svc.MakeGetWithEnumQueryEndpoint(service)
 	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
 	ctxToCtxE := svc.MakeCtxToCtxEndpoint(service)
 	getWithCapsPathE := svc.MakeGetWithCapsPathEndpoint(service)
 	getWithPathParamsE := svc.MakeGetWithPathParamsEndpoint(service)
+	getWithEnumPathE := svc.MakeGetWithEnumPathEndpoint(service)
 	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 	X2AOddRPCNameE := svc.MakeX2AOddRPCNameEndpoint(service)
@@ -42,10 +44,12 @@ func TestMain(m *testing.M) {
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
 		GetWithRepeatedQueryEndpoint:      getWithRepeatedQueryE,
+		GetWithEnumQueryEndpoint:          getWithEnumQueryE,
 		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
 		CtxToCtxEndpoint:                  ctxToCtxE,
 		GetWithCapsPathEndpoint:           getWithCapsPathE,
 		GetWithPathParamsEndpoint:         getWithPathParamsE,
+		GetWithEnumPathEndpoint:           getWithEnumPathE,
 		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
 		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,

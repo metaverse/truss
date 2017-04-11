@@ -107,10 +107,17 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 			newField.GoType = "[]" + newField.GoType
 		}
 
+		// IsEnum needed for ConvertFunc and TypeConversion logic just below
+		newField.IsEnum = field.Type.Enum != nil
 		newField.ConvertFunc, newField.ConvertFuncNeedsErrorCheck = createDecodeConvertFunc(newField)
 		newField.TypeConversion = createDecodeTypeConversion(newField)
 
 		nBinding.Fields = append(nBinding.Fields, &newField)
+
+		// Enums are allowed in query/path parameters, skip warning
+		if newField.IsEnum {
+			continue
+		}
 
 		// Emit warnings for certain cases
 		if !newField.IsBaseType && newField.Location != "body" {
@@ -188,11 +195,23 @@ func (b *Binding) GenClientEncode() (string, error) {
 //         "fmt.Sprint(req.A)",
 //     }
 func (b *Binding) PathSections() []string {
+	isEnum := make(map[string]struct{})
+	for _, v := range b.Fields {
+		if v.IsEnum {
+			isEnum[v.CamelName] = struct{}{}
+		}
+	}
+
 	rv := []string{}
 	parts := strings.Split(b.PathTemplate, "/")
 	for _, part := range parts {
 		if len(part) > 2 && part[0] == '{' && part[len(part)-1] == '}' {
 			name := RemoveBraces(part)
+			if _, ok := isEnum[gogen.CamelCase(name)]; ok {
+				convert := fmt.Sprintf("fmt.Sprintf(\"%%d\", req.%v)", gogen.CamelCase(name))
+				rv = append(rv, convert)
+				continue
+			}
 			convert := fmt.Sprintf("fmt.Sprint(req.%v)", gogen.CamelCase(name))
 			rv = append(rv, convert)
 		} else {
@@ -217,7 +236,6 @@ if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.QueryParamName}}"]; ok {
 
 	genericLogic := `
 {{.ConvertFunc}}{{if .ConvertFuncNeedsErrorCheck}}
-// TODO: Better error handling
 if err != nil {
 	return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting {{.LocalName}} from {{.Location}}, {{.Location}}Params: %v", {{.Location}}Params))
 }{{end}}
@@ -241,25 +259,31 @@ req.{{.CamelName}} = {{.TypeConversion}}
 func createDecodeConvertFunc(f Field) (string, bool) {
 	needsErrorCheck := true
 	fType := ""
-	switch {
-	case strings.Contains(f.GoType, "uint32"):
+	switch f.GoType {
+	case "uint32":
 		fType = "%s, err := strconv.ParseUint(%s, 10, 32)"
-	case strings.Contains(f.GoType, "uint64"):
+	case "uint64":
 		fType = "%s, err := strconv.ParseUint(%s, 10, 64)"
-	case strings.Contains(f.GoType, "int32"):
+	case "int32":
 		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
-	case strings.Contains(f.GoType, "int64"):
+	case "int64":
 		fType = "%s, err := strconv.ParseInt(%s, 10, 64)"
-	case strings.Contains(f.GoType, "bool"):
+	case "bool":
 		fType = "%s, err := strconv.ParseBool(%s)"
-	case strings.Contains(f.GoType, "float32"):
+	case "float32":
 		fType = "%s, err := strconv.ParseFloat(%s, 32)"
-	case strings.Contains(f.GoType, "float64"):
+	case "float64":
 		fType = "%s, err := strconv.ParseFloat(%s, 64)"
-	case strings.Contains(f.GoType, "string"):
+	case "string":
 		fType = "%s := %s"
 		needsErrorCheck = false
 	}
+
+	if f.IsEnum {
+		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
+		return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str"), true
+	}
+
 	// Use json unmarshalling for any custom/repeated messages
 	if !f.IsBaseType || f.Repeated {
 		// Args representing single custom message types are represented as
@@ -319,15 +343,14 @@ func createDecodeTypeConversion(f Field) string {
 		return f.LocalName
 	}
 	fType := ""
-	switch {
-	case strings.Contains(f.GoType, "uint32"):
-		fType = "uint32(%s)"
-	case strings.Contains(f.GoType, "int32"):
-		fType = "int32(%s)"
-	case strings.Contains(f.GoType, "float32"):
-		fType = "float32(%s)"
+	switch f.GoType {
+	case "uint32", "int32", "float32":
+		fType = f.GoType + "(%s)"
 	default:
 		fType = "%s"
+	}
+	if f.IsEnum {
+		fType = f.GoType + "(%s)"
 	}
 	return fmt.Sprintf(fType, f.LocalName)
 }

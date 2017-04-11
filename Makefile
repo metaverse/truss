@@ -7,16 +7,14 @@ SHA := $(shell git rev-parse --short=10 HEAD)
 default: truss
 
 dependencies:
-	go get github.com/TuneLab/go-genproto
-	go get github.com/golang/protobuf/{proto,protoc-gen-go}
+	go get github.com/golang/protobuf/protoc-gen-go
+	go get github.com/golang/protobuf/proto
 	go get github.com/jteeuwen/go-bindata/...
-	go get -d github.com/go-kit/kit
 
 update-dependencies:
-	go get -u github.com/TuneLab/go-genproto
-	go get -u github.com/golang/protobuf/{proto,protoc-gen-go}
+	go get -u github.com/golang/protobuf/protoc-gen-go
+	go get -u github.com/golang/protobuf/proto
 	go get -u github.com/jteeuwen/go-bindata/...
-	go get -u github.com/go-kit/kit
 
 # Generate go files containing the all template files in []byte form
 gobindata:

@@ -15,6 +15,11 @@ service TransportPermutations {
       get: "/getwithrepeatedquery"
     };
   }
+  rpc GetWithEnumQuery (GetWithEnumQueryRequest) returns (GetWithEnumQueryResponse) {
+    option (google.api.http) = {
+      get: "/getwithenumquery"
+    };
+  }
   rpc PostWithNestedMessageBody (PostWithNestedMessageBodyRequest) returns (PostWithNestedMessageBodyResponse) {
     option (google.api.http) = {
       post: "/postwithnestedmessagebody"
@@ -35,6 +40,11 @@ service TransportPermutations {
   rpc GetWithPathParams(GetWithQueryRequest) returns (GetWithQueryResponse) {
     option (google.api.http) = {
       get: "/path/{A}/{B}"
+    };
+  }
+  rpc GetWithEnumPath(GetWithEnumQueryRequest) returns (GetWithEnumQueryResponse) {
+    option (google.api.http) = {
+      get: "/getwithenumpath/{in}"
     };
   }
   rpc EchoOddNames (OddFieldNames) returns (OddFieldNames) {
@@ -74,6 +84,19 @@ message GetWithRepeatedQueryRequest {
 
 message GetWithRepeatedQueryResponse {
   int64 V = 1;
+}
+
+enum TestStatus {
+  test_failed = 0;
+  test_passed = 1;
+}
+
+message GetWithEnumQueryRequest {
+  TestStatus in = 1;
+}
+
+message GetWithEnumQueryResponse {
+  TestStatus out = 1;
 }
 
 message PostWithNestedMessageBodyRequest {
