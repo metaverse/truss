@@ -26,11 +26,6 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 	```
 	go get -u github.com/golang/protobuf/protoc-gen-go
 	```
-1. Install HTTP Annotations
-
-	```
-	go get -u github.com/TuneLab/go-genproto
-	```
 1. Install Truss with
 
 	```
