@@ -21,24 +21,26 @@ func TestGenClientEncode(t *testing.T) {
 		Verb:         "get",
 		Fields: []*Field{
 			&Field{
-				Name:         "a",
-				CamelName:    "A",
-				LowCamelName: "a",
-				LocalName:    "ASum",
-				Location:     "path",
-				GoType:       "int64",
-				ConvertFunc:  "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
-				IsBaseType:   true,
+				Name:           "a",
+				CamelName:      "A",
+				LowCamelName:   "a",
+				QueryParamName: "a",
+				LocalName:      "ASum",
+				Location:       "path",
+				GoType:         "int64",
+				ConvertFunc:    "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
+				IsBaseType:     true,
 			},
 			&Field{
-				Name:         "b",
-				CamelName:    "B",
-				LowCamelName: "b",
-				LocalName:    "BSum",
-				Location:     "query",
-				GoType:       "int64",
-				ConvertFunc:  "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
-				IsBaseType:   true,
+				Name:           "b",
+				CamelName:      "B",
+				LowCamelName:   "b",
+				QueryParamName: "b",
+				LocalName:      "BSum",
+				Location:       "query",
+				GoType:         "int64",
+				ConvertFunc:    "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
+				IsBaseType:     true,
 			},
 		},
 	}
@@ -62,7 +64,6 @@ func TestGenClientEncode(t *testing.T) {
 // that encodes a sum request into the various portions of
 // the http request (path, query, and body).
 func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interface{}) error {
-	fmt.Printf("Encoding request %v\n", request)
 	strval := ""
 	_ = strval
 	req := request.(*pb.SumRequest)
@@ -97,7 +98,6 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 	}
 	r.Body = ioutil.NopCloser(&buf)
-	fmt.Printf("URL: %v\n", r.URL)
 	return nil
 }
 
