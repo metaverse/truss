@@ -8,7 +8,6 @@ var ClientEncodeTemplate = `
 	// that encodes a {{ToLower $binding.Parent.Name}} request into the various portions of
 	// the http request (path, query, and body).
 	func EncodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request, request interface{}) error {
-		fmt.Printf("Encoding request %v\n", request)
 		strval := ""
 		_ = strval
 		req := request.(*pb.{{GoName $binding.Parent.RequestType}})
@@ -39,9 +38,9 @@ var ClientEncodeTemplate = `
 						return errors.Wrap(err, "failed to marshal req.{{$field.CamelName}}")
 					}
 					strval = string(tmp)
-					values.Add("{{$field.Name}}", strval)
+					values.Add("{{$field.QueryParamName}}", strval)
 				{{else}}
-					values.Add("{{$field.Name}}", fmt.Sprint(req.{{$field.CamelName}}))
+					values.Add("{{$field.QueryParamName}}", fmt.Sprint(req.{{$field.CamelName}}))
 				{{- end }}
 			{{- end }}
 		{{- end}}
@@ -62,7 +61,6 @@ var ClientEncodeTemplate = `
 			return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 		}
 		r.Body = ioutil.NopCloser(&buf)
-		fmt.Printf("URL: %v\n", r.URL)
 		return nil
 	}
 {{- end -}}
@@ -98,6 +96,7 @@ import (
 var (
 	_ = endpoint.Chain
 	_ = httptransport.NewClient
+	_ = fmt.Sprint
 )
 
 // New returns a service backed by an HTTP server living at the remote
