@@ -127,6 +127,10 @@ func New(instance string, options ...ClientOption) (pb.{{GoName .Service.Name}}S
 	}
 	_ = u
 
+	{{if not .HTTPHelper.Methods -}}
+		panic("No HTTP Endpoints, this client will not work, define bindings in your proto definition")
+	{{- end}}
+
 	{{range $method := .HTTPHelper.Methods}}
 		{{range $binding := $method.Bindings}}
 			var {{$binding.Label}}Endpoint endpoint.Endpoint

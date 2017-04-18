@@ -25,7 +25,7 @@ func FromPaths(gopath []string, protoDefPaths []string) (string, error) {
 	}
 	err = execprotoc.GeneratePBDotGo(protoDefPaths, gopath, td)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to generate .pb.go files from protobuf definition files")
+		return "", errors.Wrap(err, "failed to generate .pb.go files from proto definition files")
 	}
 
 	// Get path names of .pb.go files
