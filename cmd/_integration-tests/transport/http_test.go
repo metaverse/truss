@@ -28,7 +28,7 @@ func TestGetWithQueryClient(t *testing.T) {
 	req.B = 45360
 	want := req.A + req.B
 
-	svchttp, err := httpclient.New(httpAddr)
+	svchttp, err := httpclient.New(httpAddr, httpclient.CtxValuesToSend("request-url", "transport"))
 	if err != nil {
 		t.Fatalf("failed to create httpclient: %q", err)
 	}
@@ -449,6 +449,11 @@ func (h httpRequestBuilder) Test(t *testing.T) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// These are set to allow TestGetWithQueryRequest to pass since it will
+	// use the same handler as the client version
+	httpReq.Header.Set("request-url", httpReq.URL.Path)
+	httpReq.Header.Set("transport", "HTTPJSON")
 
 	return testHTTPRequest(httpReq)
 }
