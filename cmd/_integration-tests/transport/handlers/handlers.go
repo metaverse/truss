@@ -20,6 +20,13 @@ type transportpermutationsService struct{}
 
 // GetWithQuery implements Service.
 func (s transportpermutationsService) GetWithQuery(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+	if rurl := ctx.Value("request-url").(string); rurl != "/getwithquery" {
+		panic("Context Value: request-url, expected '/getwithquery' got " + rurl)
+	}
+	if t := ctx.Value("transport").(string); t != "HTTPJSON" {
+		panic("Context Value: transport, expected 'HTTPJSON' got " + t)
+	}
+
 	response := pb.GetWithQueryResponse{
 		V: in.A + in.B,
 	}

@@ -13,6 +13,9 @@ var ClientEncodeTemplate = `
 		req := request.(*pb.{{GoName $binding.Parent.RequestType}})
 		_ = req
 
+		r.Header.Set("transport", "HTTPJSON")
+		r.Header.Set("request-url", r.URL.Path)
+
 		// Set the path parameters
 		path := strings.Join([]string{
 		{{- range $section := $binding.PathSections}}
