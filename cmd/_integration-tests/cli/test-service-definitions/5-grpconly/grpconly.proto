@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package grpconly;
+
+service TEST {
+  rpc GetBasic (BasicTypeRequest) returns (BasicTypeResponse) {}
+  rpc PostBasic (BasicTypeRequest) returns (BasicTypeRequest) {}
+}
+
+message BasicTypeRequest {
+  double A = 1;
+  float B = 2;
+  int32 C = 3;
+  int64 D = 4;
+  uint32 E = 5;
+  uint64 F = 6;
+  sint32 G = 7;
+  sint64 H = 8;
+  fixed32 I = 9;
+  fixed64 J = 10;
+  sfixed32 K = 11;
+  bool L = 12;
+  string M = 13;
+  bytes N = 14;
+}
+
+message BasicTypeResponse {
+  double A = 1;
+  float B = 2;
+  int32 C = 3;
+  int64 D = 4;
+  uint32 E = 5;
+  uint64 F = 6;
+  sint32 G = 7;
+  sint64 H = 8;
+  fixed32 I = 9;
+  fixed64 J = 10;
+  sfixed32 K = 11;
+  bool L = 12;
+  string M = 13;
+  bytes N = 14;
+}
+

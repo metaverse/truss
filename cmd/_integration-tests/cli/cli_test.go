@@ -160,19 +160,29 @@ func TestMultipleFiles(t *testing.T) {
 	testEndToEnd("1-multifile", "getbasic", t)
 }
 
-// Disabled until repeated types are implemented for cliclient
 func TestRepeatedTypes(t *testing.T) {
 	testEndToEnd("2-repeated", "getrepeated", t)
 }
 
-// Disabled until nested types are implemented for cliclient
-func _TestNestedTypes(t *testing.T) {
+func TestNestedTypes(t *testing.T) {
 	testEndToEnd("3-nested", "getnested", t)
 }
 
 // Disabled until map types are implemented for cliclient
 func _TestMapTypes(t *testing.T) {
 	testEndToEnd("4-maps", "getmap", t)
+}
+
+func TestGRPCOnly(t *testing.T) {
+	path := filepath.Join(basePath, "5-grpconly")
+	err := createTrussService(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = buildTestService(filepath.Join(path, "test-service"))
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
