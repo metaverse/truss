@@ -100,6 +100,8 @@ var (
 	_ = endpoint.Chain
 	_ = httptransport.NewClient
 	_ = fmt.Sprint
+	_ = bytes.Compare
+	_ = ioutil.NopCloser
 )
 
 // New returns a service backed by an HTTP server living at the remote
