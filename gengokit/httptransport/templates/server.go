@@ -149,6 +149,7 @@ var (
 	_ = ioutil.NopCloser
 	_ = pb.Register{{.Service.Name}}Server
 	_ = io.Copy
+	_ = errors.Wrap
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
