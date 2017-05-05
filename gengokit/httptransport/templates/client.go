@@ -137,25 +137,29 @@ func New(instance string, options ...ClientOption) (pb.{{GoName .Service.Name}}S
 	{{- end}}
 
 	{{range $method := .HTTPHelper.Methods}}
-		{{range $binding := $method.Bindings}}
-			var {{$binding.Label}}Endpoint endpoint.Endpoint
-			{
-				{{$binding.Label}}Endpoint = httptransport.NewClient(
-					"{{$binding.Verb}}",
-					copyURL(u, "{{$binding.BasePath}}"),
-					EncodeHTTP{{$binding.Label}}Request,
-					DecodeHTTP{{$method.Name}}Response,
-					clientOptions...,
-				).Endpoint()
-			}
+		{{ if $method.Bindings -}}
+			{{ with $binding := index $method.Bindings 0 -}}
+				var {{$binding.Label}}Endpoint endpoint.Endpoint
+				{
+					{{$binding.Label}}Endpoint = httptransport.NewClient(
+						"{{$binding.Verb}}",
+						copyURL(u, "{{$binding.BasePath}}"),
+						EncodeHTTP{{$binding.Label}}Request,
+						DecodeHTTP{{$method.Name}}Response,
+						clientOptions...,
+					).Endpoint()
+				}
+			{{- end}}
 		{{- end}}
 	{{- end}}
 
 	return svc.Endpoints{
 	{{range $method := .HTTPHelper.Methods -}}
-		{{range $binding := $method.Bindings -}}
-			{{$method.Name}}Endpoint:    {{$binding.Label}}Endpoint,
-		{{end}}
+		{{ if $method.Bindings -}}
+			{{ with $binding := index $method.Bindings 0 -}}
+				{{$method.Name}}Endpoint:    {{$binding.Label}}Endpoint,
+			{{end}}
+		{{- end}}
 	{{- end}}
 	}, nil
 }
