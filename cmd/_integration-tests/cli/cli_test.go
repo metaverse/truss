@@ -185,6 +185,10 @@ func TestGRPCOnly(t *testing.T) {
 	}
 }
 
+func TestAdditionalBindings(t *testing.T) {
+	testEndToEnd("6-additional_bindings", "getadditional", t)
+}
+
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
 	err := createTrussService(path)
@@ -230,7 +234,7 @@ func createTrussService(path string, trussFlags ...string) error {
 
 	// If truss fails, test error and skip communication
 	if err != nil {
-		return errors.Errorf("Truss generation FAILED - %v\nTruss Output:\n%v", path, trussOut)
+		return errors.Errorf("Truss generation FAILED - %v\nTruss Output:\n%v Error:\n%v", path, trussOut, err)
 	}
 
 	return nil
