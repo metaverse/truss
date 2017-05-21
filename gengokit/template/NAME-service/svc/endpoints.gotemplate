@@ -92,16 +92,17 @@ func (e *Endpoints) WrapAllExcept(middleware endpoint.Middleware, excluded ...st
 	}
 }
 
-// LabeledMiddleware will get passed the methodName when passed to
-// WrapAllNamedExecpt, this can be used to write a metrics middleware that can
-// report which method it is reporting data including method name.
+// LabeledMiddleware will get passed the handler name when passed to
+// WrapAllWithLabeledExcept, this can be used to write a metrics middleware
+// that can report which handler it is reporting data.
 type LabeledMiddleware func(string, endpoint.Endpoint) endpoint.Endpoint
 
 // WrapAllNamedExcept wraps each Endpoint field of struct Endpoints with a
-// LabeledMiddleware, which will receive the name of the method. See LabeldMiddleware.
-// See method WrapAllExept for details on excluded functionality.
+// LabeledMiddleware, which will receive the name of the handler. See
+// LabeldMiddleware. See method WrapAllExept for details on excluded
+// functionality.
 // TODO: Write test for this function
-func (e *Endpoints) WrapAllNamedExcept(middleware LabeledMiddleware, excluded ...string) {
+func (e *Endpoints) WrapAllWithLabeledExcept(middleware LabeledMiddleware, excluded ...string) {
 	included := map[string]struct{}{
 		{{- range $i := .Service.Methods}}
 			"{{$i.Name}}": struct{}{},
