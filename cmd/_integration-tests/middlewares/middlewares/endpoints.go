@@ -22,7 +22,7 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	in.WrapAllExcept(addBoolToContext("NotSometimes"), "SometimesWrapped")
 	in.WrapAllExcept(addBoolToContext("Always"))
 
-	in.WrapAllWithLabeledExcept(addNameToContext())
+	in.WrapAllLabeledExcept(addNameToContext())
 
 	return in
 }
