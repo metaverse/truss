@@ -29,7 +29,7 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	// These middlewares get passed the handlers name as their first argument when applied.
 	// This can be used to write generic metric gathering middlewares that can
 	// report the handler name for free.
-	// in.WrapAllLabeledExecpt(errCounter(statsdCounter), "Status", "Ping")
+	// in.WrapAllWithLabeledExcept(errCounter(statsdCounter), "Status", "Ping")
 
 	// How to apply a middleware to a single endpoint.
 	// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)
@@ -37,7 +37,7 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	return in
 }
 
-// errCounter is a LabeledMiddleware, when applied with WrapAllLabeledExecpt
+// errCounter is a LabeledMiddleware, when applied with WrapAllWithLabeledExcept
 // name will be populated with the handler name, and such this middleware will
 // report errors to the metric provider with the handler name. Feel free to
 // remove this example middleware

@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -39,5 +40,19 @@ func TestSometimesWrapped(t *testing.T) {
 
 	if resp.NotSometimes {
 		t.Error("NotSometimes middleware did wrap SomtimesWrapped endpoint")
+	}
+}
+
+func TestWrapAllLabeledExcept(t *testing.T) {
+	ctx := context.Background()
+
+	resp, err := middlewareEndpoints.LabeledTestHandler(ctx, &pb.Empty{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := "LabeledTestHandler"
+	if resp.Name != want {
+		t.Fatal(fmt.Sprintf("want: '%s' got:'%s'", want, resp.Name))
 	}
 }

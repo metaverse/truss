@@ -97,11 +97,10 @@ func (e *Endpoints) WrapAllExcept(middleware endpoint.Middleware, excluded ...st
 // that can report which handler it is reporting data.
 type LabeledMiddleware func(string, endpoint.Endpoint) endpoint.Endpoint
 
-// WrapAllNamedExcept wraps each Endpoint field of struct Endpoints with a
+// WrapAllWithLabeledExcept wraps each Endpoint field of struct Endpoints with a
 // LabeledMiddleware, which will receive the name of the handler. See
 // LabeldMiddleware. See method WrapAllExept for details on excluded
 // functionality.
-// TODO: Write test for this function
 func (e *Endpoints) WrapAllWithLabeledExcept(middleware LabeledMiddleware, excluded ...string) {
 	included := map[string]struct{}{
 		{{- range $i := .Service.Methods}}
