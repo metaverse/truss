@@ -22,10 +22,12 @@ func TestMain(m *testing.M) {
 	// Endpoint domain.
 	alwaysWrapped := svc.MakeAlwaysWrappedEndpoint(service)
 	sometimesWrapped := svc.MakeSometimesWrappedEndpoint(service)
+	labeledTestHandler := svc.MakeLabeledTestHandlerEndpoint(service)
 
 	middlewareEndpoints = svc.Endpoints{
-		AlwaysWrappedEndpoint:    alwaysWrapped,
-		SometimesWrappedEndpoint: sometimesWrapped,
+		AlwaysWrappedEndpoint:      alwaysWrapped,
+		SometimesWrappedEndpoint:   sometimesWrapped,
+		LabeledTestHandlerEndpoint: labeledTestHandler,
 	}
 
 	middlewareEndpoints = middlewares.WrapEndpoints(middlewareEndpoints)

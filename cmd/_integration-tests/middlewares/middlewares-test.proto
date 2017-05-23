@@ -19,6 +19,9 @@ service MiddlewaresTest {
       get: "/sometimeswrapped"
     };
   }
+
+  // LabeledTestHandler will be used to test WrapAllLabeledExcept
+  rpc LabeledTestHandler (Empty) returns (LabeledTest) {};
 }
 
 message Empty {}
@@ -31,4 +34,11 @@ message WrapAllExceptTest {
   // NotSometimes will be set to true for endpoint AlwaysWrapped and set to
   // false for SometimesWrapped
   bool NotSometimes = 2;
+}
+
+// Labeled will be populated by a middleware which was wrapped
+// around endpoints using WrapAllLabeledExcept
+message LabeledTest {
+  // Will be populated with "LabeledTestHandler"
+  string Name = 1;
 }

@@ -22,6 +22,8 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	in.WrapAllExcept(addBoolToContext("NotSometimes"), "SometimesWrapped")
 	in.WrapAllExcept(addBoolToContext("Always"))
 
+	in.WrapAllLabeledExcept(addNameToContext())
+
 	return in
 }
 
@@ -30,6 +32,15 @@ func addBoolToContext(key string) endpoint.Middleware {
 		return func(ctx context.Context, request interface{}) (interface{}, error) {
 			ctx = context.WithValue(ctx, key, true)
 			return next(ctx, request)
+		}
+	}
+}
+
+func addNameToContext() svc.LabeledMiddleware {
+	return func(name string, next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			ctx = context.WithValue(ctx, "handlerName", name)
+			return next(ctx, req)
 		}
 	}
 }

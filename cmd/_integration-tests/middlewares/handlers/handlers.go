@@ -44,3 +44,14 @@ func (s middlewarestestService) SometimesWrapped(ctx context.Context, in *pb.Emp
 
 	return &resp, nil
 }
+
+func (s middlewarestestService) LabeledTestHandler(ctx context.Context, in *pb.Empty) (*pb.LabeledTest, error) {
+	var resp pb.LabeledTest
+
+	always := ctx.Value("handlerName")
+	if name, ok := always.(string); ok {
+		resp.Name = name
+	}
+
+	return &resp, nil
+}
