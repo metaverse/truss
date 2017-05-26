@@ -24,8 +24,6 @@ import (
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
-const trussImportPath = "github.com/TuneLab/go-truss"
-
 var (
 	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
 	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written. Trailing slash will create a NAME-service directory")
@@ -40,22 +38,23 @@ var (
 	// go install -ldflags "-X main.Version=$SHA"
 	Version string
 	// BuildDate is compiled into truss with the flag
-	// go install -ldflags "-X main.BuildDate=$BUILD_DATE"
+	// go install -ldflags "-X main.VersionDate=$VERSION_DATE"
 	VersionDate string
 )
 
 func init() {
-	var buildinfo string
+	// If Version or VersionDate are not set, truss was not built with make
 	if Version == "" || VersionDate == "" {
-		yes := promptNoMake()
-		if !yes {
+		rebuild := promptNoMake()
+		if !rebuild {
 			os.Exit(1)
 		}
-		err := makeAndRunTruss()
-		exitIfError(err)
+		err := makeAndRunTruss(os.Args)
+		exitIfError(errors.Wrap(err, "please install truss with make manually"))
 		os.Exit(0)
 	}
 
+	var buildinfo string
 	buildinfo = fmt.Sprintf("version: %s", Version)
 	buildinfo = fmt.Sprintf("%s version date: %s", buildinfo, VersionDate)
 
@@ -418,6 +417,9 @@ func fileExists(path string) bool {
 	return false
 }
 
+// promptNoMake prints that truss was not built with make and prompts the user
+// asking if they would like for this process to be automated
+// returns true if yes, false if not.
 func promptNoMake() bool {
 	const msg = `
 truss was not built using Makefile.
@@ -449,18 +451,22 @@ Do you want to automatically run 'make' and rerun command:
 	return false
 }
 
-func makeAndRunTruss() error {
+const trussImportPath = "github.com/TuneLab/go-truss"
+
+// makeAndRunTruss installs truss by running make in trussImportPath.
+// It then passes through args to newly installed truss.
+func makeAndRunTruss(args []string) error {
 	p, err := build.Default.Import(trussImportPath, "", build.FindOnly)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not find truss directory")
 	}
 	make := exec.Command("make")
 	make.Dir = p.Dir
 	err = make.Run()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not run make in truss directory")
 	}
-	truss := exec.Command("truss", os.Args[1:]...)
+	truss := exec.Command("truss", args[1:]...)
 	truss.Stdin, truss.Stdout, truss.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return truss.Run()
 }
