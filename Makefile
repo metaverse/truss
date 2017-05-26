@@ -25,7 +25,7 @@ gobindata:
 # Install truss and protoc-gen-truss-protocast
 truss: gobindata
 	go install github.com/TuneLab/go-truss/cmd/protoc-gen-truss-protocast
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.BuildDate=$(VERSION_DATE)"' github.com/TuneLab/go-truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/go-truss/cmd/truss
 
 # Run the go tests and the truss integration tests
 test: test-go test-integration
@@ -39,6 +39,5 @@ test-integration:
 # Removes generated code from tests
 testclean:
 	$(MAKE) -C cmd/_integration-tests clean
-
 
 .PHONY: testclean test-integration test-go test truss gobindata dependencies

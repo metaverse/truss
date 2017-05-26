@@ -5,6 +5,7 @@ import (
 	"go/build"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -23,6 +24,8 @@ import (
 	"github.com/TuneLab/go-truss/svcdef"
 )
 
+const trussImportPath = "github.com/TuneLab/go-truss"
+
 var (
 	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
 	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written. Trailing slash will create a NAME-service directory")
@@ -32,28 +35,29 @@ var (
 
 var binName = filepath.Base(os.Args[0])
 
-const (
-	noVersion   string = "<no-version>"
-	noBuildDate string = "<no-build-date>"
-)
-
 var (
 	// Version is compiled into truss with the flag
 	// go install -ldflags "-X main.Version=$SHA"
-	Version = noVersion
+	Version string
 	// BuildDate is compiled into truss with the flag
 	// go install -ldflags "-X main.BuildDate=$BUILD_DATE"
-	BuildDate = noBuildDate
+	VersionDate string
 )
 
 func init() {
 	var buildinfo string
-	if Version != "" && Version != noVersion {
-		buildinfo = fmt.Sprintf("version: %s", Version)
+	if Version == "" || VersionDate == "" {
+		yes := promptNoMake()
+		if !yes {
+			os.Exit(1)
+		}
+		err := makeAndRunTruss()
+		exitIfError(err)
+		os.Exit(0)
 	}
-	if BuildDate != "" && BuildDate != noBuildDate {
-		buildinfo = fmt.Sprintf("%s built: %s", buildinfo, strings.Replace(BuildDate, "_", " ", -1))
-	}
+
+	buildinfo = fmt.Sprintf("version: %s", Version)
+	buildinfo = fmt.Sprintf("%s version date: %s", buildinfo, VersionDate)
 
 	flag.Usage = func() {
 		if buildinfo != "" && (*verboseFlag || *helpFlag) {
@@ -410,4 +414,51 @@ func fileExists(path string) bool {
 		return true
 	}
 	return false
+}
+
+func promptNoMake() bool {
+	const msg = `
+truss was not built using Makefile.
+Please run 'make' inside go import path %s.
+
+Do you want to automatically run 'make' and rerun command:
+
+	$ `
+	fmt.Printf(msg, trussImportPath)
+	for _, a := range os.Args {
+		fmt.Print(a)
+		fmt.Print(" ")
+	}
+	const q = `
+
+? [Y/n] `
+	fmt.Print(q)
+
+	var response string
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		exitIfError(err)
+	}
+
+	switch strings.ToLower(strings.TrimSpace(response)) {
+	case "y", "yes":
+		return true
+	}
+	return false
+}
+
+func makeAndRunTruss() error {
+	p, err := build.Default.Import(trussImportPath, "", build.FindOnly)
+	if err != nil {
+		return err
+	}
+	make := exec.Command("make")
+	make.Dir = p.Dir
+	err = make.Run()
+	if err != nil {
+		return err
+	}
+	truss := exec.Command("truss", os.Args[1:]...)
+	truss.Stdin, truss.Stdout, truss.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return truss.Run()
 }
