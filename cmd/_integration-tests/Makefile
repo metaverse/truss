@@ -9,6 +9,11 @@ MIDDLEWARES_TEST_MSG=\n$(OK_COLOR)Starting middlewares end to end test:$(END_COL
 
 CLI_TEST_MSG=\n$(OK_COLOR)Start server and cliclient generate, build, and run test:$(END_COLOR_LINE)
 
+SHA := $(shell git rev-parse --short=10 HEAD)
+
+MAKEFILE_PATH := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+VERSION_DATE := $(shell $(MAKEFILE_PATH)/../../commit_date.sh)
+
 export PATH := $(CURDIR):$(PATH)
 
 all: test
@@ -16,7 +21,7 @@ all: test
 test: clean test-transport test-middlewares test-cli
 
 truss:
-	go build -o truss github.com/TuneLab/go-truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/go-truss/cmd/truss
 
 protoc-gen-truss-protocast:
 	go build -o protoc-gen-truss-protocast github.com/TuneLab/go-truss/cmd/protoc-gen-truss-protocast
