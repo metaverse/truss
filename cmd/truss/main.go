@@ -286,6 +286,8 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map
 		PBPackage:     cfg.PBPackage,
 		GoPackage:     cfg.ServicePackage,
 		PreviousFiles: cfg.PrevGen,
+		Version:       Version,
+		VersionDate:   VersionDate,
 	}
 
 	genGokitFiles, err := gengokit.GenerateGokit(sd, conf)

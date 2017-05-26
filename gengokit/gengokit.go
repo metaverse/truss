@@ -19,8 +19,10 @@ type Renderable interface {
 }
 
 type Config struct {
-	GoPackage string
-	PBPackage string
+	GoPackage   string
+	PBPackage   string
+	Version     string
+	VersionDate string
 
 	PreviousFiles map[string]io.Reader
 }
@@ -47,6 +49,9 @@ type Data struct {
 	// A helper struct for generating http transport functionality.
 	HTTPHelper *httptransport.Helper
 	FuncMap    template.FuncMap
+
+	Version     string
+	VersionDate string
 }
 
 func NewData(sd *svcdef.Svcdef, conf Config) (*Data, error) {
@@ -58,6 +63,8 @@ func NewData(sd *svcdef.Svcdef, conf Config) (*Data, error) {
 		ClientArgs:   clientarggen.New(sd.Service),
 		HTTPHelper:   httptransport.NewHelper(sd.Service),
 		FuncMap:      FuncMap,
+		Version:      conf.Version,
+		VersionDate:  conf.VersionDate,
 	}, nil
 }
 
