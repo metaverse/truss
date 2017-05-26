@@ -29,7 +29,10 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 1. Install Truss with
 
 	```
-	go get -u github.com/TuneLab/go-truss/...
+	go get -u -d github.com/TuneLab/go-truss
+	cd $GOPATH/src/github.com/TuneLab/go-truss
+	make dependencies
+	make
 	```
 
 ## Usage
