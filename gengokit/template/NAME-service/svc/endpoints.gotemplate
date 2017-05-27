@@ -9,7 +9,7 @@ package svc
 // This file contains methods to make individual endpoints from services,
 // request and response types to serve those endpoints, as well as encoders and
 // decoders for those types, for all of our supported transport serialization
-// formats. It also includes endpoint middlewares.
+// formats.
 
 import (
 	"fmt"
@@ -94,13 +94,13 @@ func (e *Endpoints) WrapAllExcept(middleware endpoint.Middleware, excluded ...st
 	}
 }
 
-// LabeledMiddleware will get passed the handler name when passed to
+// LabeledMiddleware will get passed the endpoint name when passed to
 // WrapAllLabeledExcept, this can be used to write a generic metrics
-// middleware which can send the handler name to the metrics collector.
+// middleware which can send the endpoint name to the metrics collector.
 type LabeledMiddleware func(string, endpoint.Endpoint) endpoint.Endpoint
 
 // WrapAllLabeledExcept wraps each Endpoint field of struct Endpoints with a
-// LabeledMiddleware, which will receive the name of the handler. See
+// LabeledMiddleware, which will receive the name of the endpoint. See
 // LabeldMiddleware. See method WrapAllExept for details on excluded
 // functionality.
 func (e *Endpoints) WrapAllLabeledExcept(middleware LabeledMiddleware, excluded ...string) {
