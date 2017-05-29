@@ -13,11 +13,10 @@ import (
 // middleware which can send the endpoint name to the metrics collector.
 type LabeledMiddleware func(string, endpoint.Endpoint) endpoint.Endpoint
 
-// errorCounter is a LabeledMiddleware, when applied with WrapAllLabeledExcept
-// name will be populated with the endpoint name, and such this middleware will
+// ErrorCounter is a LabeledMiddleware, when applied with WrapAllLabeledExcept name will be populated with the endpoint name, and such this middleware will
 // report errors to the metric provider with the endpoint name. Feel free to
 // copy this example middleware to your service.
-func errorCounter(errCount metrics.Counter) LabeledMiddleware {
+func ErrorCounter(errCount metrics.Counter) LabeledMiddleware {
 	return func(name string, in endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			resp, err := in(ctx, req)
@@ -29,9 +28,9 @@ func errorCounter(errCount metrics.Counter) LabeledMiddleware {
 	}
 }
 
-// requestLatency is a LabeledMiddleware, reporting the request time of and
+// RequestLatency is a LabeledMiddleware, reporting the request time of and
 // endpoint along with its name
-func requestLatency(h metrics.Histogram) LabeledMiddleware {
+func RequestLatency(h metrics.Histogram) LabeledMiddleware {
 	return func(name string, in endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			defer func(begin time.Time) {
