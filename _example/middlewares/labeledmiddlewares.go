@@ -28,9 +28,9 @@ func ErrorCounter(errCount metrics.Counter) LabeledMiddleware {
 	}
 }
 
-// RequestLatency is a LabeledMiddleware, reporting the request time of and
+// Latency is a LabeledMiddleware, reporting the request time of and
 // endpoint along with its name
-func RequestLatency(h metrics.Histogram) LabeledMiddleware {
+func Latency(h metrics.Histogram) LabeledMiddleware {
 	return func(name string, in endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			defer func(begin time.Time) {
