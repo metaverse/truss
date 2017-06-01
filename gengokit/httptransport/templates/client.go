@@ -60,7 +60,9 @@ var ClientEncodeTemplate = `
 				toRet.{{$field.CamelName}} = req.{{$field.CamelName}}
 			{{end}}
 		{{- end }}
-		if err := json.NewEncoder(&buf).Encode(toRet); err != nil {
+		encoder := json.NewEncoder(&buf)
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(toRet); err != nil {
 			return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 		}
 		r.Body = ioutil.NopCloser(&buf)
