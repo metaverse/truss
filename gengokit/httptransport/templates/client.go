@@ -229,11 +229,27 @@ func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
 {{end}}
 
 func errorDecoder(r *http.Response) error {
+	code := errors.Errorf("status code not ok, status code '%d'", r.StatusCode)
+
 	var w errorWrapper
-	if err := json.NewDecoder(r.Body).Decode(&w); err != nil {
-		return err
+	buf, err := ioutil.ReadAll(r.Body)
+	if len(buf) == 0 {
+		return errors.Wrap(code, "response http body empty")
 	}
-	return errors.New(w.Error)
+
+	if err != nil {
+		return errors.Wrap(errors.Wrap(code, err.Error()), "cannot read http body")
+	}
+
+	if err = json.Unmarshal(buf, &w); err != nil {
+		const size = 8196
+		if len(buf) > size {
+			buf = buf[:size]
+		}
+		return errors.Wrap(code, fmt.Sprintf("request body: '%s'", buf))
+	}
+
+	return errors.Wrap(code, w.Error)
 }
 
 type errorWrapper struct {

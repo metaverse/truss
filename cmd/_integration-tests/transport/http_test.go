@@ -253,7 +253,7 @@ func TestGetWithCapsPathClient(t *testing.T) {
 
 	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
-		t.Fatalf("failed to create httpclient: %q", err)
+		t.Fatalf("cannot create httpclient: %q", err)
 	}
 
 	resp, err := svchttp.GetWithCapsPath(context.Background(), &req)
@@ -337,18 +337,18 @@ func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
 
 	httpReq, err := http.NewRequest("GET", httpAddr+path, strings.NewReader(""))
 	if err != nil {
-		t.Errorf("couldn't create request", err)
+		t.Errorf("cannot create request", err)
 	}
 	respBytes, err := testHTTPRequest(httpReq)
 
 	var resp map[string]string
 	err = json.Unmarshal(respBytes, &resp)
 	if err != nil {
-		t.Fatalf("couldn't unmarshal bytes: %v", err)
+		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
 	}
 
 	want := map[string]string{
-		"error": "couldn't unmarshal path parameters: Expected a path containing 4 parts, provided path contains 3 parts",
+		"error": "cannot unmarshal path parameters: expected a path containing 4 parts, provided path contains 3 parts",
 	}
 	if !reflect.DeepEqual(resp, want) {
 		t.Fatalf("Expect: %v, got %v", want, resp)
@@ -462,13 +462,13 @@ func testHTTPRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not end http request")
+		return nil, errors.Wrap(err, "cannot not end http request")
 	}
 	defer httpResp.Body.Close()
 
 	respBytes, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read http body")
+		return nil, errors.Wrap(err, "cannot not read http body")
 	}
 
 	return respBytes, nil
