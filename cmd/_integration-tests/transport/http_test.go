@@ -21,6 +21,9 @@ import (
 )
 
 var httpAddr string
+var nonJSONHTTPAddr string
+
+const brokenHTTPResponse = `<html> Not json </html>`
 
 func TestGetWithQueryClient(t *testing.T) {
 	var req pb.GetWithQueryRequest
@@ -398,6 +401,48 @@ func TestStrangeRPCName(t *testing.T) {
 	if resp != want {
 		t.Fatalf("Expect: %d, got %d", want, resp)
 	}
+}
+
+// Test that if a truss client recieves a non-json response from a "truss"
+// server, that we put that response in the error message, for easier debugging
+// Rather than just getting a json paring error
+func TestNonJSONResponseBodyFromClientCallIsInError(t *testing.T) {
+	svchttp, err := httpclient.New(nonJSONHTTPAddr)
+	if err != nil {
+		t.Fatalf("cannot create httpclient: %q", err)
+	}
+
+	var req pb.Empty
+	_, err = svchttp.ErrorRPCNonJSON(context.Background(), &req)
+	if err == nil {
+		t.Fatal("Expected error from non json response with http client")
+	}
+
+	if !strings.Contains(err.Error(), brokenHTTPResponse) {
+		t.Fatalf("Expected error to contain `%s`; error is `%s`", brokenHTTPResponse, err.Error())
+	}
+}
+
+// Test that if a non json response is recieved that is greater than 8KB, that
+// we only put the first 8KB error, as to not flood our logs
+func TestNonJSONResponseBodyFromClientCallPrintsLessThan8KB(t *testing.T) {
+	svchttp, err := httpclient.New(nonJSONHTTPAddr)
+	if err != nil {
+		t.Fatalf("cannot create httpclient: %q", err)
+	}
+
+	var req pb.Empty
+	_, err = svchttp.ErrorRPCNonJSONLong(context.Background(), &req)
+	if err == nil {
+		t.Fatal("Expected error from non json response with http client")
+	}
+
+	l := len(err.Error())
+	// Add 200 for padding for the actual error message in addition to the response body
+	if l > 8196+200 {
+		t.Fatalf("Expected error to be less than 8KB with a little padding, actual %d", l)
+	}
+	t.Log("Non JSON response length", l)
 }
 
 // Helpers
