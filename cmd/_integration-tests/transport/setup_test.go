@@ -40,7 +40,10 @@ func TestMain(m *testing.M) {
 	getWithEnumPathE := svc.MakeGetWithEnumPathEndpoint(service)
 	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
+	errorRPCNonJSONE := svc.MakeErrorRPCNonJSONEndpoint(service)
+	errorRPCNonJSONLongE := svc.MakeErrorRPCNonJSONLongEndpoint(service)
 	X2AOddRPCNameE := svc.MakeX2AOddRPCNameEndpoint(service)
+	contentTypeTestE := svc.MakeContentTypeTestEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
@@ -53,7 +56,10 @@ func TestMain(m *testing.M) {
 		GetWithEnumPathEndpoint:           getWithEnumPathE,
 		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
+		ErrorRPCNonJSONEndpoint:           errorRPCNonJSONE,
+		ErrorRPCNonJSONLongEndpoint:       errorRPCNonJSONLongE,
 		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,
+		ContentTypeTestEndpoint:           contentTypeTestE,
 	}
 
 	ctx := context.Background()

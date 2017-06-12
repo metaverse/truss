@@ -415,7 +415,7 @@ func TestNonJSONResponseBodyFromClientCallIsInError(t *testing.T) {
 	var req pb.Empty
 	_, err = svchttp.ErrorRPCNonJSON(context.Background(), &req)
 	if err == nil {
-		t.Fatal("Expected error from non json response with http client")
+		t.Fatal("Expected error from non-json response with http client")
 	}
 
 	if !strings.Contains(err.Error(), brokenHTTPResponse) {
@@ -434,7 +434,7 @@ func TestNonJSONResponseBodyFromClientCallPrintsLessThan8KB(t *testing.T) {
 	var req pb.Empty
 	_, err = svchttp.ErrorRPCNonJSONLong(context.Background(), &req)
 	if err == nil {
-		t.Fatal("Expected error from non json response with http client")
+		t.Fatal("Expected error from non-json response with http client")
 	}
 
 	l := len(err.Error())
@@ -443,6 +443,25 @@ func TestNonJSONResponseBodyFromClientCallPrintsLessThan8KB(t *testing.T) {
 		t.Fatalf("Expected error to be less than 8KB with a little padding, actual %d", l)
 	}
 	t.Log("Non JSON response length", l)
+}
+
+func TestResponseContentType(t *testing.T) {
+	req, err := http.NewRequest("GET", httpAddr+"/content/type", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make end http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.Header.Get("Content-Type"), "application/json"
+	if !strings.HasPrefix(got, want) {
+		t.Fatalf("Expected content type to have `%s` got `%s`", want, got)
+	}
 }
 
 // Helpers
@@ -507,13 +526,13 @@ func testHTTPRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot not end http request")
+		return nil, errors.Wrap(err, "cannot make end http request")
 	}
 	defer httpResp.Body.Close()
 
 	respBytes, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot not read http body")
+		return nil, errors.Wrap(err, "cannot read http body")
 	}
 
 	return respBytes, nil

@@ -75,6 +75,11 @@ service TransportPermutations {
       get: "/oddrpcname"
     };
   }
+  rpc ContentTypeTest (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/content/type"
+    };
+  }
 }
 
 message Empty {}

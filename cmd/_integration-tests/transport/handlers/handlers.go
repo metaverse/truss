@@ -138,3 +138,10 @@ func (s transportpermutationsService) ErrorRPCNonJSON(ctx context.Context, in *p
 	resp = pb.Empty{}
 	return &resp, nil
 }
+
+// ContentTypeTest implements Service.
+func (s transportpermutationsService) ContentTypeTest(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	var resp pb.Empty
+	resp = pb.Empty{}
+	return &resp, nil
+}
