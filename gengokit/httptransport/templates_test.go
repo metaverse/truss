@@ -212,7 +212,7 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 
 // Test that all the templated source code is identical to the source code
 // found within the file 'embeddable_funcs.go'.
-func _TestHTTPAssistFuncs(t *testing.T) {
+func TestHTTPAssistFuncs(t *testing.T) {
 	tmplfncs := FormatCode(templates.HTTPAssistFuncs)
 	// Get the source code for all the functions in the same source file as
 	// the BuildParamMap function
