@@ -450,7 +450,7 @@ func TestNonJSONResponseBodyFromClientCallIsLessThan8KB(t *testing.T) {
 // body in the error message. To allow for developers to see the request body in the errors.
 func TestNonJSONRequestBodyIsInError(t *testing.T) {
 	// Put some bad data into the body
-	req, err := http.NewRequest("GET", httpAddr+"/error/non/json", strings.NewReader(brokenHTTPRequest))
+	req, err := http.NewRequest("POST", httpAddr+"/error/non/json", strings.NewReader(brokenHTTPRequest))
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -479,7 +479,7 @@ func TestNonJSONRequestBodyIsLessThan8KB(t *testing.T) {
 	for i := 0; i < 8196*2; i++ {
 		badBody = append(badBody, byte(i%256))
 	}
-	req, err := http.NewRequest("GET", httpAddr+"/error/non/json", bytes.NewReader(badBody))
+	req, err := http.NewRequest("POST", httpAddr+"/error/non/json", bytes.NewReader(badBody))
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -512,7 +512,7 @@ func TestResponseContentType(t *testing.T) {
 	client := &http.Client{}
 	httpResp, err := client.Do(req)
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "cannot make end http request"))
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
 	}
 	defer httpResp.Body.Close()
 
@@ -584,7 +584,7 @@ func testHTTPRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot make end http request")
+		return nil, errors.Wrap(err, "cannot make http request")
 	}
 	defer httpResp.Body.Close()
 

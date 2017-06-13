@@ -61,12 +61,14 @@ service TransportPermutations {
   }
   rpc ErrorRPCNonJSON (Empty) returns (Empty) {
     option (google.api.http) = {
-      get: "/error/non/json"
+      post: "/error/non/json"
+      body: "*"
     };
   }
   rpc ErrorRPCNonJSONLong (Empty) returns (Empty) {
     option (google.api.http) = {
-      get: "/error/non/json/long"
+      post: "/error/non/json/long"
+      body: "*"
     };
   }
   /* Odd RPC names need to still work */
