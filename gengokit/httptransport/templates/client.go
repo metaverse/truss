@@ -222,7 +222,7 @@ func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
 		}
 
 		if r.StatusCode != http.StatusOK {
-			return nil, errorDecoder(buf)
+			return nil, errors.Wrapf(errorDecoder(buf), "status code: '%d'", r.StatusCode)
 		}
 
 		var resp pb.{{GoName $method.ResponseType}}
