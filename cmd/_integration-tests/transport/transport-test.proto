@@ -65,7 +65,18 @@ service TransportPermutations {
       get: "/oddrpcname"
     };
   }
+  rpc StatusCodeAndNilHeaders (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/status/code"
+    };
+  }
+  rpc StatusCodeAndHeaders (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/status/code/and/headers"
+    };
+  }
 }
+
 
 message Empty {}
 
@@ -125,3 +136,4 @@ message OddFieldNames {
   int64 camelCase = 2;
   int64 __why__so__many__underscores = 3;
 }
+

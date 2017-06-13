@@ -5,7 +5,9 @@ package handlers
 
 import (
 	"errors"
+	"net/http"
 
+	"github.com/TuneLab/go-truss/truss"
 	"golang.org/x/net/context"
 
 	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service"
@@ -123,4 +125,17 @@ func (s transportpermutationsService) ErrorRPC(ctx context.Context, in *pb.Empty
 // X2AOddRPCName implements Service.
 func (s transportpermutationsService) X2AOddRPCName(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
 	return in, nil
+}
+
+// StatusCodeAndNilHeaders implements Service.
+func (s transportpermutationsService) StatusCodeAndNilHeaders(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	return nil, truss.HTTPError(errors.New("test error"), http.StatusTeapot, nil)
+}
+
+// StatusCodeAndHeaders implements Service.
+func (s transportpermutationsService) StatusCodeAndHeaders(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	return nil, truss.HTTPError(errors.New("test error"), http.StatusOK, map[string][]string{
+		"Foo":  []string{"Bar"},
+		"Test": []string{"A", "B"},
+	})
 }

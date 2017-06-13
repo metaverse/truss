@@ -40,6 +40,8 @@ func TestMain(m *testing.M) {
 	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 	X2AOddRPCNameE := svc.MakeX2AOddRPCNameEndpoint(service)
+	StatusCodeAndNilHeadersE := svc.MakeStatusCodeAndNilHeadersEndpoint(service)
+	StatusCodeAndHeadersE := svc.MakeStatusCodeAndHeadersEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
@@ -53,6 +55,8 @@ func TestMain(m *testing.M) {
 		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
 		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,
+		StatusCodeAndNilHeadersEndpoint:   StatusCodeAndNilHeadersE,
+		StatusCodeAndHeadersEndpoint:      StatusCodeAndHeadersE,
 	}
 
 	ctx := context.Background()

@@ -400,6 +400,67 @@ func TestStrangeRPCName(t *testing.T) {
 	}
 }
 
+func TestHTTPErrorStatusCodeAndNilHeaders(t *testing.T) {
+	// See handlers/handlers.go for implementation
+	// Returns status code http.StatusTeapot
+	req, err := http.NewRequest("GET", httpAddr+"/status/code", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make end http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.StatusCode, http.StatusTeapot
+	if got != want {
+		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", want, got)
+	}
+}
+
+func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
+	// See handlers/handlers.go for implementation
+	// Returns status code http.StatusOk and headers
+	// Foo: Bar
+	// Test: A, B
+
+	req, err := http.NewRequest("GET", httpAddr+"/status/code/and/headers", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make end http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.Header, map[string][]string{
+		"Foo":  []string{"Bar"},
+		"Test": []string{"A", "B"},
+	}
+
+	for k := range want {
+		if len(got[k]) == 0 {
+			t.Fatalf("Expected Header `%s:%s`; Got not header with key: `%s`", k, want[k], k)
+		}
+		for i := range got[k] {
+			if got[k][i] != want[k][i] {
+				t.Fatalf("Expected Header `%s:%s`; Got `%s:%s`", k, want[k], k, got[k])
+			}
+		}
+	}
+
+	gotStatus, wantStatus := httpResp.StatusCode, http.StatusOK
+	if gotStatus != wantStatus {
+		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", wantStatus, gotStatus)
+	}
+}
+
 // Helpers
 
 // Generic way to test that making an HTTP request returns the expected data,
