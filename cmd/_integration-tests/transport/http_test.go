@@ -352,7 +352,7 @@ func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
 	}
 
 	want := map[string]string{
-		"error": "cannot unmarshal path parameters: expected a path containing 4 parts, provided path contains 3 parts",
+		"error": "cannot unmarshal path parameters: expecting a path containing 4 parts, provided path contains 3 parts",
 	}
 	if !reflect.DeepEqual(resp, want) {
 		t.Fatalf("Expect: %v, got %v", want, resp)
