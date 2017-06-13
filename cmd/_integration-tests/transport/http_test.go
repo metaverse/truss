@@ -24,6 +24,7 @@ var httpAddr string
 var nonJSONHTTPAddr string
 
 const brokenHTTPResponse = `<html> Not json </html>`
+const brokenHTTPRequest = brokenHTTPResponse
 
 func TestGetWithQueryClient(t *testing.T) {
 	var req pb.GetWithQueryRequest
@@ -403,13 +404,9 @@ func TestStrangeRPCName(t *testing.T) {
 	}
 }
 
-// TODO: TestNonJSONRequestBodyIsInError()
-
-// TODO: TestNonJSONRequestBodyIsLessThan8KB()
-
-// Test that if a truss client recieves a non-json response from a "truss"
-// server, that we put that response in the error message, for easier debugging
-// Rather than just getting a json paring error
+// Test that if a truss client receives a non-json response from a "truss"
+// server, that we put that response body in the error message. To allow for
+// developers to see the request body in the errors.
 func TestNonJSONResponseBodyFromClientCallIsInError(t *testing.T) {
 	svchttp, err := httpclient.New(nonJSONHTTPAddr)
 	if err != nil {
@@ -428,7 +425,7 @@ func TestNonJSONResponseBodyFromClientCallIsInError(t *testing.T) {
 }
 
 // Test that if a non json response is recieved that is greater than 8KB, that
-// we only put the first 8KB error, as to not flood our logs
+// we only put the first 8KB error, as to not flood memory with huge errors.
 func TestNonJSONResponseBodyFromClientCallIsLessThan8KB(t *testing.T) {
 	svchttp, err := httpclient.New(nonJSONHTTPAddr)
 	if err != nil {
@@ -447,6 +444,63 @@ func TestNonJSONResponseBodyFromClientCallIsLessThan8KB(t *testing.T) {
 		t.Fatalf("Expected error to be less than 8KB with a little padding, actual %d", l)
 	}
 	t.Log("Non JSON response length", l)
+}
+
+// Test that if a truss server receives a non-json request, we put that request
+// body in the error message. To allow for developers to see the request body in the errors.
+func TestNonJSONRequestBodyIsInError(t *testing.T) {
+	// Put some bad data into the body
+	req, err := http.NewRequest("GET", httpAddr+"/error/non/json", strings.NewReader(brokenHTTPRequest))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	var resp map[string]string
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
+	}
+
+	if !strings.Contains(resp["error"], brokenHTTPRequest) {
+		t.Fatalf("Expected error to contain `%s`; error is `%s`", brokenHTTPResponse, resp["error"])
+	}
+}
+
+// Test that if a non json request is received that is greater than 8KB, that
+// we only put the first 8KB error, as to not flood memory with huge errors.
+func TestNonJSONRequestBodyIsLessThan8KB(t *testing.T) {
+	// Put a 16kb of bad data into the body
+	badBody := make([]byte, 8196*2)
+	for i := 0; i < 8196*2; i++ {
+		badBody = append(badBody, byte(i%256))
+	}
+	req, err := http.NewRequest("GET", httpAddr+"/error/non/json", bytes.NewReader(badBody))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	var resp map[string]string
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
+	}
+
+	l := len(resp["error"])
+	// Add 200 for padding for the actual error message in addition to the response body
+	if l > 8196+200 {
+		t.Fatalf("Expected error to be less than 8KB with a little padding, actual %d", l)
+	}
+	t.Log("Non JSON request length", l)
 }
 
 func TestResponseContentType(t *testing.T) {
