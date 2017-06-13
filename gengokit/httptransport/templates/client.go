@@ -248,7 +248,7 @@ func errorDecoder(buf []byte) error {
 		if len(buf) > size {
 			buf = buf[:size]
 		}
-		return fmt.Errorf("request body '%s': cannot parse non-json request body", buf)
+		return fmt.Errorf("response body '%s': cannot parse non-json request body", buf)
 	}
 
 	return errors.New(w.Error)

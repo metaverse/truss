@@ -403,6 +403,10 @@ func TestStrangeRPCName(t *testing.T) {
 	}
 }
 
+// TODO: TestNonJSONRequestBodyIsInError()
+
+// TODO: TestNonJSONRequestBodyIsLessThan8KB()
+
 // Test that if a truss client recieves a non-json response from a "truss"
 // server, that we put that response in the error message, for easier debugging
 // Rather than just getting a json paring error
@@ -425,7 +429,7 @@ func TestNonJSONResponseBodyFromClientCallIsInError(t *testing.T) {
 
 // Test that if a non json response is recieved that is greater than 8KB, that
 // we only put the first 8KB error, as to not flood our logs
-func TestNonJSONResponseBodyFromClientCallPrintsLessThan8KB(t *testing.T) {
+func TestNonJSONResponseBodyFromClientCallIsLessThan8KB(t *testing.T) {
 	svchttp, err := httpclient.New(nonJSONHTTPAddr)
 	if err != nil {
 		t.Fatalf("cannot create httpclient: %q", err)
