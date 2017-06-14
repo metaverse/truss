@@ -169,16 +169,24 @@ func TestGenServerDecode(t *testing.T) {
 // body. Primarily useful in a server.
 func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	var req pb.SumRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	// err = io.EOF if r.Body was empty
-	if err != nil && err != io.EOF {
-		return nil, errors.Wrap(err, "decoding body of http request")
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot read body of http request")
+	}
+	if len(buf) > 0 {
+		if err = json.Unmarshal(buf, &req); err != nil {
+			const size = 8196
+			if len(buf) > size {
+				buf = buf[:size]
+			}
+			return nil, fmt.Errorf("request body '%s': cannot parse non-json request body", buf)
+		}
 	}
 
 	pathParams, err := PathParams(r.URL.Path, "/sum/{a}")
 	_ = pathParams
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
+		return nil, errors.Wrap(err, "cannot unmarshal path parameters")
 	}
 
 	queryParams := r.URL.Query()

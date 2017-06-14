@@ -124,3 +124,24 @@ func (s transportpermutationsService) ErrorRPC(ctx context.Context, in *pb.Empty
 func (s transportpermutationsService) X2AOddRPCName(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
 	return in, nil
 }
+
+// ErrorRPCNonJSONLong implements Service.
+func (s transportpermutationsService) ErrorRPCNonJSONLong(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	var resp pb.Empty
+	resp = pb.Empty{}
+	return &resp, nil
+}
+
+// ErrorRPCNonJSON implements Service.
+func (s transportpermutationsService) ErrorRPCNonJSON(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	var resp pb.Empty
+	resp = pb.Empty{}
+	return &resp, nil
+}
+
+// ContentTypeTest implements Service.
+func (s transportpermutationsService) ContentTypeTest(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	var resp pb.Empty
+	resp = pb.Empty{}
+	return &resp, nil
+}

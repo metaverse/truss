@@ -21,6 +21,10 @@ import (
 )
 
 var httpAddr string
+var nonJSONHTTPAddr string
+
+const brokenHTTPResponse = `<html> Not json </html>`
+const brokenHTTPRequest = brokenHTTPResponse
 
 func TestGetWithQueryClient(t *testing.T) {
 	var req pb.GetWithQueryRequest
@@ -253,7 +257,7 @@ func TestGetWithCapsPathClient(t *testing.T) {
 
 	svchttp, err := httpclient.New(httpAddr)
 	if err != nil {
-		t.Fatalf("failed to create httpclient: %q", err)
+		t.Fatalf("cannot create httpclient: %q", err)
 	}
 
 	resp, err := svchttp.GetWithCapsPath(context.Background(), &req)
@@ -337,18 +341,18 @@ func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
 
 	httpReq, err := http.NewRequest("GET", httpAddr+path, strings.NewReader(""))
 	if err != nil {
-		t.Errorf("couldn't create request", err)
+		t.Errorf("cannot create request", err)
 	}
 	respBytes, err := testHTTPRequest(httpReq)
 
 	var resp map[string]string
 	err = json.Unmarshal(respBytes, &resp)
 	if err != nil {
-		t.Fatalf("couldn't unmarshal bytes: %v", err)
+		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
 	}
 
 	want := map[string]string{
-		"error": "couldn't unmarshal path parameters: Expected a path containing 4 parts, provided path contains 3 parts",
+		"error": "cannot unmarshal path parameters: expecting a path containing 4 parts, provided path contains 3 parts",
 	}
 	if !reflect.DeepEqual(resp, want) {
 		t.Fatalf("Expect: %v, got %v", want, resp)
@@ -397,6 +401,124 @@ func TestStrangeRPCName(t *testing.T) {
 	want = &pb.Empty{}
 	if resp != want {
 		t.Fatalf("Expect: %d, got %d", want, resp)
+	}
+}
+
+// Test that if a truss client receives a non-json response from a "truss"
+// server, that we put that response body in the error message. To allow for
+// developers to see the request body in the errors.
+func TestNonJSONResponseBodyFromClientCallIsInError(t *testing.T) {
+	svchttp, err := httpclient.New(nonJSONHTTPAddr)
+	if err != nil {
+		t.Fatalf("cannot create httpclient: %q", err)
+	}
+
+	var req pb.Empty
+	_, err = svchttp.ErrorRPCNonJSON(context.Background(), &req)
+	if err == nil {
+		t.Fatal("Expected error from non-json response with http client")
+	}
+
+	if !strings.Contains(err.Error(), brokenHTTPResponse) {
+		t.Fatalf("Expected error to contain `%s`; error is `%s`", brokenHTTPResponse, err.Error())
+	}
+}
+
+// Test that if a non json response is recieved that is greater than 8KB, that
+// we only put the first 8KB error, as to not flood memory with huge errors.
+func TestNonJSONResponseBodyFromClientCallIsLessThan8KB(t *testing.T) {
+	svchttp, err := httpclient.New(nonJSONHTTPAddr)
+	if err != nil {
+		t.Fatalf("cannot create httpclient: %q", err)
+	}
+
+	var req pb.Empty
+	_, err = svchttp.ErrorRPCNonJSONLong(context.Background(), &req)
+	if err == nil {
+		t.Fatal("Expected error from non-json response with http client")
+	}
+
+	l := len(err.Error())
+	// Add 200 for padding for the actual error message in addition to the response body
+	if l > 8196+200 {
+		t.Fatalf("Expected error to be less than 8KB with a little padding, actual %d", l)
+	}
+	t.Log("Non JSON response length", l)
+}
+
+// Test that if a truss server receives a non-json request, we put that request
+// body in the error message. To allow for developers to see the request body in the errors.
+func TestNonJSONRequestBodyIsInError(t *testing.T) {
+	// Put some bad data into the body
+	req, err := http.NewRequest("POST", httpAddr+"/error/non/json", strings.NewReader(brokenHTTPRequest))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	var resp map[string]string
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
+	}
+
+	if !strings.Contains(resp["error"], brokenHTTPRequest) {
+		t.Fatalf("Expected error to contain `%s`; error is `%s`", brokenHTTPResponse, resp["error"])
+	}
+}
+
+// Test that if a non json request is received that is greater than 8KB, that
+// we only put the first 8KB error, as to not flood memory with huge errors.
+func TestNonJSONRequestBodyIsLessThan8KB(t *testing.T) {
+	// Put a 16kb of bad data into the body
+	badBody := make([]byte, 8196*2)
+	for i := 0; i < 8196*2; i++ {
+		badBody = append(badBody, byte(i%256))
+	}
+	req, err := http.NewRequest("POST", httpAddr+"/error/non/json", bytes.NewReader(badBody))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	var resp map[string]string
+	err = json.Unmarshal(respBytes, &resp)
+	if err != nil {
+		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
+	}
+
+	l := len(resp["error"])
+	// Add 200 for padding for the actual error message in addition to the response body
+	if l > 8196+200 {
+		t.Fatalf("Expected error to be less than 8KB with a little padding, actual %d", l)
+	}
+	t.Log("Non JSON request length", l)
+}
+
+func TestResponseContentType(t *testing.T) {
+	req, err := http.NewRequest("GET", httpAddr+"/content/type", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.Header.Get("Content-Type"), "application/json"
+	if !strings.HasPrefix(got, want) {
+		t.Fatalf("Expected content type to have `%s` got `%s`", want, got)
 	}
 }
 
@@ -462,13 +584,13 @@ func testHTTPRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not end http request")
+		return nil, errors.Wrap(err, "cannot make http request")
 	}
 	defer httpResp.Body.Close()
 
 	respBytes, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read http body")
+		return nil, errors.Wrap(err, "cannot read http body")
 	}
 
 	return respBytes, nil

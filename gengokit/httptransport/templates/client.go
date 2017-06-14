@@ -212,12 +212,25 @@ func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
 	// error and attempt to decode the specific error message from the response
 	// body. Primarily useful in a client.
 	func DecodeHTTP{{$method.Name}}Response(_ context.Context, r *http.Response) (interface{}, error) {
-		if r.StatusCode != http.StatusOK {
-			return nil, errorDecoder(r)
+		buf, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot read http body")
 		}
+
+		if len(buf) == 0 {
+			return nil, errors.New("response http body empty")
+		}
+
+		if r.StatusCode != http.StatusOK {
+			return nil, errors.Wrapf(errorDecoder(buf), "status code: '%d'", r.StatusCode)
+		}
+
 		var resp pb.{{GoName $method.ResponseType}}
-		err := json.NewDecoder(r.Body).Decode(&resp)
-		return &resp, err
+		if err = json.Unmarshal(buf, &resp); err != nil {
+			return nil, errorDecoder(buf)
+		}
+
+		return &resp, nil
 	}
 {{end}}
 
@@ -228,15 +241,20 @@ func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
 	{{end}}
 {{end}}
 
-func errorDecoder(r *http.Response) error {
+func errorDecoder(buf []byte) error {
 	var w errorWrapper
-	if err := json.NewDecoder(r.Body).Decode(&w); err != nil {
-		return err
+	if err := json.Unmarshal(buf, &w); err != nil {
+		const size = 8196
+		if len(buf) > size {
+			buf = buf[:size]
+		}
+		return fmt.Errorf("response body '%s': cannot parse non-json request body", buf)
 	}
+
 	return errors.New(w.Error)
 }
 
 type errorWrapper struct {
-	Error string ` + "`json:\"error\"`\n" + `
+	Error string ` + "`" + `json:"error"` + "`" + `
 }
 `
