@@ -9,26 +9,34 @@ var ServerDecodeTemplate = `
 	// body. Primarily useful in a server.
 	func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
 		var req pb.{{GoName $binding.Parent.RequestType}}
-		err := json.NewDecoder(r.Body).Decode(&req)
-		// err = io.EOF if r.Body was empty
-		if err != nil && err != io.EOF {
-			return nil, errors.Wrap(err, "decoding body of http request")
+		buf, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot read body of http request")
+		}
+		if len(buf) > 0 {
+			if err = json.Unmarshal(buf, &req); err != nil {
+				const size = 8196
+				if len(buf) > size {
+					buf = buf[:size]
+				}
+				return nil, fmt.Errorf("request body '%s': cannot parse non-json request body", buf)
+			}
 		}
 
 		pathParams, err := PathParams(r.URL.Path, "{{$binding.PathTemplate}}")
 		_ = pathParams
 		if err != nil {
-			return nil, errors.Wrap(err, "couldn't unmarshal path parameters")
+			return nil, errors.Wrap(err, "cannot unmarshal path parameters")
 		}
 
 		queryParams := r.URL.Query()
 		_ = queryParams
 
-	{{range $field := $binding.Fields}}
-		{{if ne $field.Location "body"}}
-			{{$field.GenQueryUnmarshaler}}
+		{{range $field := $binding.Fields}}
+			{{if ne $field.Location "body"}}
+				{{$field.GenQueryUnmarshaler}}
+			{{end}}
 		{{end}}
-	{{end}}
 		return &req, err
 	}
 {{- end -}}
@@ -54,7 +62,7 @@ func PathParams(url string, urlTmpl string) (map[string]string, error) {
 	expectedLen := len(strings.Split(strings.TrimRight(urlTmpl, "/"), "/"))
 	recievedLen := len(strings.Split(strings.TrimRight(url, "/"), "/"))
 	if expectedLen != recievedLen {
-		return nil, fmt.Errorf("Expected a path containing %d parts, provided path contains %d parts", expectedLen, recievedLen)
+		return nil, fmt.Errorf("expecting a path containing %d parts, provided path contains %d parts", expectedLen, recievedLen)
 	}
 
 	parts := strings.Split(url, "/")
@@ -161,6 +169,7 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
 			httptransport.ServerErrorEncoder(errorEncoder),
+			httptransport.ServerAfter(httptransport.SetContentType("application/json; charset=utf-8")),
 		}
 	{{- end }}
 	m := http.NewServeMux()
@@ -209,7 +218,7 @@ func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 }
 
 type errorWrapper struct {
-	Error string ` + "`json:\"error\"`\n" + `
+	Error string ` + "`" + `json:"error"` + "`" + `
 }
 
 // Server Decode

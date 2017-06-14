@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"net/http/httptest"
 	"os"
 	"strconv"
@@ -39,9 +40,12 @@ func TestMain(m *testing.M) {
 	getWithEnumPathE := svc.MakeGetWithEnumPathEndpoint(service)
 	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
+	errorRPCNonJSONE := svc.MakeErrorRPCNonJSONEndpoint(service)
+	errorRPCNonJSONLongE := svc.MakeErrorRPCNonJSONLongEndpoint(service)
 	X2AOddRPCNameE := svc.MakeX2AOddRPCNameEndpoint(service)
 	StatusCodeAndNilHeadersE := svc.MakeStatusCodeAndNilHeadersEndpoint(service)
 	StatusCodeAndHeadersE := svc.MakeStatusCodeAndHeadersEndpoint(service)
+	contentTypeTestE := svc.MakeContentTypeTestEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
@@ -54,9 +58,12 @@ func TestMain(m *testing.M) {
 		GetWithEnumPathEndpoint:           getWithEnumPathE,
 		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
+		ErrorRPCNonJSONEndpoint:           errorRPCNonJSONE,
+		ErrorRPCNonJSONLongEndpoint:       errorRPCNonJSONLongE,
 		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,
 		StatusCodeAndNilHeadersEndpoint:   StatusCodeAndNilHeadersE,
 		StatusCodeAndHeadersEndpoint:      StatusCodeAndHeadersE,
+		ContentTypeTestEndpoint:           contentTypeTestE,
 	}
 
 	ctx := context.Background()
@@ -79,5 +86,21 @@ func TestMain(m *testing.M) {
 
 	httpAddr = httpTestServer.URL
 	grpcAddr = ":" + strconv.Itoa(ln.Addr().(*net.TCPAddr).Port)
+
+	// Set up a http server that returns non JSON responses
+	bmux := http.NewServeMux()
+	// Simple non-json response
+	bmux.HandleFunc("/error/non/json", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(brokenHTTPResponse))
+	})
+	// Put 16KB of non-json data into the response body
+	bmux.HandleFunc("/error/non/json/long", func(w http.ResponseWriter, r *http.Request) {
+		for i := 0; i < 8196*2; i++ {
+			w.Write([]byte{byte(i % 256)})
+		}
+	})
+	nonJSONHTTPServer := httptest.NewServer(bmux)
+	nonJSONHTTPAddr = nonJSONHTTPServer.URL
+
 	os.Exit(m.Run())
 }

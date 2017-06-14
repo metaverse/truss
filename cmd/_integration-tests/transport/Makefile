@@ -23,5 +23,13 @@ test:
 	go test -v
 	$(MAKE) clean
 
+# Run this when you add a new rpc to the .proto file and it will update
+# handlers/handlers.go
+newrpc:
+	truss transport-test.proto
+	cp -r handlers transportpermutations-service
+	truss transport-test.proto
+	cp -r transportpermutations-service/handlers/handlers.go handlers
+
 clean:
 	rm -rf transportpermutations-service
