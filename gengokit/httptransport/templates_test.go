@@ -179,7 +179,10 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 			if len(buf) > size {
 				buf = buf[:size]
 			}
-			return nil, fmt.Errorf("request body '%s': cannot parse non-json request body", buf)
+			return nil, httpError{fmt.Errorf("request body '%s': cannot parse non-json request body", buf),
+				http.StatusBadRequest,
+				nil,
+			}
 		}
 	}
 

@@ -4,7 +4,8 @@ package handlers
 // implementation. It also includes service middlewares.
 
 import (
-	"errors"
+	"github.com/pkg/errors"
+	"net/http"
 
 	"golang.org/x/net/context"
 
@@ -144,4 +145,17 @@ func (s transportpermutationsService) ContentTypeTest(ctx context.Context, in *p
 	var resp pb.Empty
 	resp = pb.Empty{}
 	return &resp, nil
+}
+
+// StatusCodeAndNilHeaders implements Service.
+func (s transportpermutationsService) StatusCodeAndNilHeaders(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	return nil, httpError{errors.New("test error"), http.StatusTeapot, nil}
+}
+
+// StatusCodeAndHeaders implements Service.
+func (s transportpermutationsService) StatusCodeAndHeaders(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
+	return nil, httpError{errors.New("test error"), http.StatusTeapot, map[string][]string{
+		"Foo":  []string{"Bar"},
+		"Test": []string{"A", "B"},
+	}}
 }

@@ -339,7 +339,7 @@ func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
 	A = 12
 	path := fmt.Sprintf("/path/%d/", A)
 
-	httpReq, err := http.NewRequest("GET", httpAddr+path, strings.NewReader(""))
+	httpReq, err := http.NewRequest("GET", httpAddr+path, nil)
 	if err != nil {
 		t.Errorf("cannot create request", err)
 	}
@@ -504,7 +504,7 @@ func TestNonJSONRequestBodyIsLessThan8KB(t *testing.T) {
 }
 
 func TestResponseContentType(t *testing.T) {
-	req, err := http.NewRequest("GET", httpAddr+"/content/type", strings.NewReader(""))
+	req, err := http.NewRequest("GET", httpAddr+"/content/type", nil)
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -519,6 +519,90 @@ func TestResponseContentType(t *testing.T) {
 	got, want := httpResp.Header.Get("Content-Type"), "application/json"
 	if !strings.HasPrefix(got, want) {
 		t.Fatalf("Expected content type to have `%s` got `%s`", want, got)
+	}
+}
+
+func TestHTTPErrorStatusCodeAndNilHeaders(t *testing.T) {
+	// See handlers/handlers.go for implementation
+	// Returns status code http.StatusTeapot
+	req, err := http.NewRequest("GET", httpAddr+"/status/code", nil)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make end http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.StatusCode, http.StatusTeapot
+	if got != want {
+		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", want, got)
+	}
+}
+
+func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
+	// See handlers/handlers.go for implementation
+	// Returns status code http.StatusTeapot and headers
+	// Foo: Bar
+	// Test: A, B
+
+	req, err := http.NewRequest("GET", httpAddr+"/status/code/and/headers", nil)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make end http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.Header, map[string][]string{
+		"Foo":  []string{"Bar"},
+		"Test": []string{"A", "B"},
+	}
+
+	for k := range want {
+		_, ok := got[k]
+		if !ok {
+			t.Fatalf("Expected header `%s:%s`; Got no header with key: `%s`", k, want[k], k)
+		}
+
+		for i := range got[k] {
+			if got[k][i] != want[k][i] {
+				t.Fatalf("Expected Header `%s:%s`; Got `%s:%s`", k, want[k], k, got[k])
+			}
+		}
+	}
+
+	gotStatus, wantStatus := httpResp.StatusCode, http.StatusTeapot
+	if gotStatus != wantStatus {
+		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", wantStatus, gotStatus)
+	}
+}
+
+// Test that if a truss server receives a non-json request, that the status code is 400 http.StatusBadRequest
+// body in the error message. To allow for developers to see the request body in the errors.
+func TestNonJSONRequestBodyReturnsResponseWithStatusCode400(t *testing.T) {
+	// Put some bad data into the body
+	req, err := http.NewRequest("POST", httpAddr+"/error/non/json", strings.NewReader(brokenHTTPRequest))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.StatusCode, http.StatusBadRequest
+	if got != want {
+		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", want, got)
 	}
 }
 

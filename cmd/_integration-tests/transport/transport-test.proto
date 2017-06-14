@@ -82,6 +82,16 @@ service TransportPermutations {
       get: "/content/type"
     };
   }
+  rpc StatusCodeAndNilHeaders (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/status/code"
+    };
+  }
+  rpc StatusCodeAndHeaders (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/status/code/and/headers"
+    };
+  }
 }
 
 message Empty {}

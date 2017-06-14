@@ -54,3 +54,16 @@ func TestCtxToCtxViaGRPCMetadata(t *testing.T) {
 		t.Fatalf("Expect: %q, got %q", value, resp.V)
 	}
 }
+
+func TestHTTPErrorStatusCodeAndHeadersWithGRPC(t *testing.T) {
+	conn, err := grpc.Dial(grpcAddr, grpc.WithInsecure(), grpc.WithTimeout(time.Second))
+	svcgrpc, err := grpcclient.New(conn)
+	if err != nil {
+		t.Fatalf("failed to create grpcclient: %q", err)
+	}
+
+	_, err = svcgrpc.StatusCodeAndHeaders(context.Background(), &pb.Empty{})
+	if err == nil {
+		t.Fatalf("Expected error")
+	}
+}
