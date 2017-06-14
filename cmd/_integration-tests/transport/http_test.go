@@ -339,7 +339,7 @@ func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
 	A = 12
 	path := fmt.Sprintf("/path/%d/", A)
 
-	httpReq, err := http.NewRequest("GET", httpAddr+path, strings.NewReader(""))
+	httpReq, err := http.NewRequest("GET", httpAddr+path, nil)
 	if err != nil {
 		t.Errorf("cannot create request", err)
 	}
@@ -504,7 +504,7 @@ func TestNonJSONRequestBodyIsLessThan8KB(t *testing.T) {
 }
 
 func TestResponseContentType(t *testing.T) {
-	req, err := http.NewRequest("GET", httpAddr+"/content/type", strings.NewReader(""))
+	req, err := http.NewRequest("GET", httpAddr+"/content/type", nil)
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -525,7 +525,7 @@ func TestResponseContentType(t *testing.T) {
 func TestHTTPErrorStatusCodeAndNilHeaders(t *testing.T) {
 	// See handlers/handlers.go for implementation
 	// Returns status code http.StatusTeapot
-	req, err := http.NewRequest("GET", httpAddr+"/status/code", strings.NewReader(""))
+	req, err := http.NewRequest("GET", httpAddr+"/status/code", nil)
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
@@ -549,7 +549,7 @@ func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
 	// Foo: Bar
 	// Test: A, B
 
-	req, err := http.NewRequest("GET", httpAddr+"/status/code/and/headers", strings.NewReader(""))
+	req, err := http.NewRequest("GET", httpAddr+"/status/code/and/headers", nil)
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot construct http request"))
 	}
