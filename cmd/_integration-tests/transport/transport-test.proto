@@ -77,6 +77,11 @@ service TransportPermutations {
       get: "/oddrpcname"
     };
   }
+  rpc ContentTypeTest (Empty) returns (Empty) {
+    option (google.api.http) = {
+      get: "/content/type"
+    };
+  }
   rpc StatusCodeAndNilHeaders (Empty) returns (Empty) {
     option (google.api.http) = {
       get: "/status/code"
@@ -85,11 +90,6 @@ service TransportPermutations {
   rpc StatusCodeAndHeaders (Empty) returns (Empty) {
     option (google.api.http) = {
       get: "/status/code/and/headers"
-    };
-  }
-  rpc ContentTypeTest (Empty) returns (Empty) {
-    option (google.api.http) = {
-      get: "/content/type"
     };
   }
 }

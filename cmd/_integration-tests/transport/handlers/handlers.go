@@ -4,10 +4,9 @@ package handlers
 // implementation. It also includes service middlewares.
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 	"net/http"
 
-	"github.com/TuneLab/go-truss/truss"
 	"golang.org/x/net/context"
 
 	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/transport/transportpermutations-service"
@@ -150,13 +149,15 @@ func (s transportpermutationsService) ContentTypeTest(ctx context.Context, in *p
 
 // StatusCodeAndNilHeaders implements Service.
 func (s transportpermutationsService) StatusCodeAndNilHeaders(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
-	return nil, truss.HTTPError(errors.New("test error"), http.StatusTeapot, nil)
+	return nil, httpError{errors.New("test error"), http.StatusTeapot, nil}
 }
 
 // StatusCodeAndHeaders implements Service.
 func (s transportpermutationsService) StatusCodeAndHeaders(ctx context.Context, in *pb.Empty) (*pb.Empty, error) {
-	return nil, truss.HTTPError(errors.New("test error"), http.StatusOK, map[string][]string{
+	return nil, httpError{errors.New("test error"), http.StatusTeapot, map[string][]string{
 		"Foo":  []string{"Bar"},
 		"Test": []string{"A", "B"},
-	})
+	}}
 }
+
+// StatusCodeAndHeadersWithErrorWrapped implements Service.

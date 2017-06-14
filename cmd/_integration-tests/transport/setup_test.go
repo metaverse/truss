@@ -43,9 +43,9 @@ func TestMain(m *testing.M) {
 	errorRPCNonJSONE := svc.MakeErrorRPCNonJSONEndpoint(service)
 	errorRPCNonJSONLongE := svc.MakeErrorRPCNonJSONLongEndpoint(service)
 	X2AOddRPCNameE := svc.MakeX2AOddRPCNameEndpoint(service)
+	contentTypeTestE := svc.MakeContentTypeTestEndpoint(service)
 	StatusCodeAndNilHeadersE := svc.MakeStatusCodeAndNilHeadersEndpoint(service)
 	StatusCodeAndHeadersE := svc.MakeStatusCodeAndHeadersEndpoint(service)
-	contentTypeTestE := svc.MakeContentTypeTestEndpoint(service)
 
 	endpoints := svc.Endpoints{
 		GetWithQueryEndpoint:              getWithQueryE,
@@ -61,9 +61,9 @@ func TestMain(m *testing.M) {
 		ErrorRPCNonJSONEndpoint:           errorRPCNonJSONE,
 		ErrorRPCNonJSONLongEndpoint:       errorRPCNonJSONLongE,
 		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,
+		ContentTypeTestEndpoint:           contentTypeTestE,
 		StatusCodeAndNilHeadersEndpoint:   StatusCodeAndNilHeadersE,
 		StatusCodeAndHeadersEndpoint:      StatusCodeAndHeadersE,
-		ContentTypeTestEndpoint:           contentTypeTestE,
 	}
 
 	ctx := context.Background()

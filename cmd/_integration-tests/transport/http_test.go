@@ -545,7 +545,7 @@ func TestHTTPErrorStatusCodeAndNilHeaders(t *testing.T) {
 
 func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
 	// See handlers/handlers.go for implementation
-	// Returns status code http.StatusOk and headers
+	// Returns status code http.StatusTeapot and headers
 	// Foo: Bar
 	// Test: A, B
 
@@ -566,9 +566,11 @@ func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
 	}
 
 	for k := range want {
-		if len(got[k]) == 0 {
-			t.Fatalf("Expected Header `%s:%s`; Got not header with key: `%s`", k, want[k], k)
+		_, ok := got[k]
+		if !ok {
+			t.Fatalf("Expected header `%s:%s`; Got no header with key: `%s`", k, want[k], k)
 		}
+
 		for i := range got[k] {
 			if got[k][i] != want[k][i] {
 				t.Fatalf("Expected Header `%s:%s`; Got `%s:%s`", k, want[k], k, got[k])
@@ -576,7 +578,7 @@ func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
 		}
 	}
 
-	gotStatus, wantStatus := httpResp.StatusCode, http.StatusOK
+	gotStatus, wantStatus := httpResp.StatusCode, http.StatusTeapot
 	if gotStatus != wantStatus {
 		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", wantStatus, gotStatus)
 	}
