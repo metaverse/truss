@@ -213,12 +213,12 @@ func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
 	// body. Primarily useful in a client.
 	func DecodeHTTP{{$method.Name}}Response(_ context.Context, r *http.Response) (interface{}, error) {
 		buf, err := ioutil.ReadAll(r.Body)
-		if len(buf) == 0 {
-			return nil, errors.New("response http body empty")
-		}
-
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot read http body")
+		}
+
+		if len(buf) == 0 {
+			return nil, errors.New("response http body empty")
 		}
 
 		if r.StatusCode != http.StatusOK {
@@ -255,6 +255,6 @@ func errorDecoder(buf []byte) error {
 }
 
 type errorWrapper struct {
-	Error string ` + "`json:\"error\"`\n" + `
+	Error string ` + "`" + `json:"error"` + "`" + `
 }
 `
