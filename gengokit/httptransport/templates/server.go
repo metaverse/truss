@@ -19,7 +19,10 @@ var ServerDecodeTemplate = `
 				if len(buf) > size {
 					buf = buf[:size]
 				}
-				return nil, fmt.Errorf("request body '%s': cannot parse non-json request body", buf)
+				return nil, httpError{fmt.Errorf("request body '%s': cannot parse non-json request body", buf),
+					http.StatusBadRequest,
+					nil,
+				}
 			}
 		}
 
@@ -151,6 +154,8 @@ import (
 	pb "{{.PBImportPath -}}"
 )
 
+const contentType = "application/json; charset=utf-8"
+
 var (
 	_ = fmt.Sprint
 	_ = bytes.Compare
@@ -169,7 +174,7 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
 			httptransport.ServerErrorEncoder(errorEncoder),
-			httptransport.ServerAfter(httptransport.SetContentType("application/json; charset=utf-8")),
+			httptransport.ServerAfter(httptransport.SetContentType(contentType)),
 		}
 	{{- end }}
 	m := http.NewServeMux()
@@ -196,7 +201,6 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 // form of the error will be used. If the error implements StatusCoder, the
 // provided StatusCode will be used instead of 500.
 func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
-	contentType := "application/json; charset=utf-8"
 	body, _ := json.Marshal(errorWrapper{Error: err.Error()})
 	if marshaler, ok := err.(json.Marshaler); ok {
 		if jsonBody, marshalErr := marshaler.MarshalJSON(); marshalErr == nil {
@@ -219,6 +223,22 @@ func errorEncoder(_ context.Context, err error, w http.ResponseWriter) {
 
 type errorWrapper struct {
 	Error string ` + "`" + `json:"error"` + "`" + `
+}
+
+// httpError satisfies the Headerer and StatusCoder interfaces in
+// package github.com/go-kit/kit/transport/http.
+type httpError struct {
+	error
+	statusCode int
+	headers    map[string][]string
+}
+
+func (h httpError) StatusCode() int {
+	return h.statusCode
+}
+
+func (h httpError) Headers() http.Header {
+	return h.headers
 }
 
 // Server Decode

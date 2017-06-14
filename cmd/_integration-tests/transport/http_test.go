@@ -584,6 +584,28 @@ func TestHTTPErrorStatusCodeAndHeaders(t *testing.T) {
 	}
 }
 
+// Test that if a truss server receives a non-json request, that the status code is 400 http.StatusBadRequest
+// body in the error message. To allow for developers to see the request body in the errors.
+func TestNonJSONRequestBodyReturnsResponseWithStatusCode400(t *testing.T) {
+	// Put some bad data into the body
+	req, err := http.NewRequest("POST", httpAddr+"/error/non/json", strings.NewReader(brokenHTTPRequest))
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	client := &http.Client{}
+	httpResp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+	defer httpResp.Body.Close()
+
+	got, want := httpResp.StatusCode, http.StatusBadRequest
+	if got != want {
+		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", want, got)
+	}
+}
+
 // Helpers
 
 // Generic way to test that making an HTTP request returns the expected data,

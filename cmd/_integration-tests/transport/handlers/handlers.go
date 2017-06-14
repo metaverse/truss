@@ -159,5 +159,3 @@ func (s transportpermutationsService) StatusCodeAndHeaders(ctx context.Context, 
 		"Test": []string{"A", "B"},
 	}}
 }
-
-// StatusCodeAndHeadersWithErrorWrapped implements Service.
