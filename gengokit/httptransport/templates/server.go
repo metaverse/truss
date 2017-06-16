@@ -278,7 +278,7 @@ func HTTPDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) h
 		logger.Log("method", r.Method, "url", r.URL.String())
 		rv, err := next(ctx, r)
 		if err != nil {
-			logger.Log("method", r.Method, "url", r.URL.String(), "Error", err)
+			logger.Log("method", r.Method, "url", r.URL.String(), "err", err)
 		}
 		return rv, err
 	}
