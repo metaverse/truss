@@ -102,7 +102,7 @@ type LabeledMiddleware func(string, endpoint.Endpoint) endpoint.Endpoint
 // LabeledMiddleware, which will receive the name of the endpoint. See
 // LabeldMiddleware. See method WrapAllExept for details on excluded
 // functionality.
-func (e *Endpoints) WrapAllLabeledExcept(middleware LabeledMiddleware, excluded ...string) {
+func (e *Endpoints) WrapAllLabeledExcept(middleware func(string, endpoint.Endpoint) endpoint.Endpoint, excluded ...string) {
 	included := map[string]struct{}{
 		{{- range $i := .Service.Methods}}
 			"{{$i.Name}}": struct{}{},
