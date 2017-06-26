@@ -15,6 +15,7 @@ import (
 
 	"github.com/TuneLab/go-truss/truss"
 	"github.com/TuneLab/go-truss/truss/execprotoc"
+	"github.com/TuneLab/go-truss/truss/getstarted"
 	"github.com/TuneLab/go-truss/truss/parsesvcname"
 
 	"github.com/TuneLab/go-truss/deftree"
@@ -29,6 +30,7 @@ var (
 	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written. Trailing slash will create a NAME-service directory")
 	verboseFlag    = flag.BoolP("verbose", "v", false, "Verbose output")
 	helpFlag       = flag.BoolP("help", "h", false, "Print usage")
+	getStartedFlag = flag.BoolP("getstarted", "", false, "Output a 'getstarted.proto' protobuf file in ./")
 )
 
 var binName = filepath.Base(os.Args[0])
@@ -77,15 +79,23 @@ func main() {
 		os.Exit(0)
 	}
 
+	log.SetLevel(log.InfoLevel)
+	if *verboseFlag {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	if *getStartedFlag {
+		pkg := ""
+		if len(flag.Args()) > 0 {
+			pkg = flag.Args()[0]
+		}
+		os.Exit(getstarted.Do(pkg))
+	}
+
 	if len(flag.Args()) == 0 {
 		fmt.Fprintf(os.Stderr, "%s: missing .proto file(s)\n", binName)
 		flag.Usage()
 		os.Exit(1)
-	}
-
-	log.SetLevel(log.InfoLevel)
-	if *verboseFlag {
-		log.SetLevel(log.DebugLevel)
 	}
 
 	cfg, err := parseInput()
