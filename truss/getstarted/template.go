@@ -4,7 +4,7 @@ const starterProto = `
 syntax = "proto3";
 
 package {{.PackageName}};
- 
+
 import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
 
 service {{.ServiceName}} {
