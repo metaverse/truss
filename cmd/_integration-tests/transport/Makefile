@@ -21,6 +21,7 @@ test:
 	truss transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v
+	go test -run=XXX -bench=.
 	$(MAKE) clean
 
 # Run this when you add a new rpc to the .proto file and it will update
