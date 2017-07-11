@@ -1,4 +1,4 @@
-# Truss [![Build Status](https://travis-ci.org/TuneLab/go-truss.svg?branch=master)](https://travis-ci.org/TuneLab/go-truss)
+# Truss [![Build Status](https://travis-ci.org/TuneLab/truss.svg?branch=master)](https://travis-ci.org/TuneLab/truss)
 
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
@@ -29,8 +29,8 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 1. Install Truss with
 
 	```
-	go get -u -d github.com/TuneLab/go-truss
-	cd $GOPATH/src/github.com/TuneLab/go-truss
+	go get -u -d github.com/TuneLab/truss
+	cd $GOPATH/src/github.com/TuneLab/truss
 	make dependencies
 	make
 	```

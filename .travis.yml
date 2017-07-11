@@ -7,7 +7,7 @@ go:
   - 1.8.x
   - 1.7.x
 
-go_import_path: github.com/TuneLab/go-truss
+go_import_path: github.com/TuneLab/truss
 
 before_install:
   # protobuf

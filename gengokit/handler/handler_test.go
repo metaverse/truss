@@ -14,9 +14,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/gengokit"
-	helper "github.com/TuneLab/go-truss/gengokit/gentesthelper"
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/gengokit"
+	helper "github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 var gopath []string
@@ -38,7 +38,7 @@ func TestServerMethsTempl(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -98,7 +98,7 @@ func TestApplyServerTempl(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -122,8 +122,8 @@ func TestApplyServerTempl(t *testing.T) {
 		}
 	`
 	conf := gengokit.Config{
-		GoPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
-		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+		GoPackage: "github.com/TuneLab/truss/gengokit/general-service",
+		PBPackage: "github.com/TuneLab/truss/gengokit/general-service",
 	}
 	sd, err := svcdef.NewFromString(def, gopath)
 	if err != nil {
@@ -139,7 +139,7 @@ func TestApplyServerTempl(t *testing.T) {
 		import (
 			"golang.org/x/net/context"
 
-			pb "github.com/TuneLab/go-truss/gengokit/general-service"
+			pb "github.com/TuneLab/truss/gengokit/general-service"
 		)
 
 		// NewService returns a naïve, stateless implementation of Service.
@@ -190,7 +190,7 @@ func TestIsValidFunc(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -259,7 +259,7 @@ func TestPruneDecls(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -309,7 +309,7 @@ func TestPruneDecls(t *testing.T) {
 		import (
 			"golang.org/x/net/context"
 
-			pb "github.com/TuneLab/go-truss/gengokit/general-service"
+			pb "github.com/TuneLab/truss/gengokit/general-service"
 		)
 
 		// NewService returns a naïve, stateless implementation of Service.
@@ -386,7 +386,7 @@ func TestUpdateMethods(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -442,8 +442,8 @@ func TestUpdateMethods(t *testing.T) {
 	allMethods := svc.Methods
 
 	conf := gengokit.Config{
-		GoPackage: "github.com/TuneLab/go-truss/gengokit",
-		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+		GoPackage: "github.com/TuneLab/truss/gengokit",
+		PBPackage: "github.com/TuneLab/truss/gengokit/general-service",
 	}
 
 	te, err := gengokit.NewData(sd, conf)

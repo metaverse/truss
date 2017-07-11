@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TuneLab/go-truss/gengokit"
-	thelper "github.com/TuneLab/go-truss/gengokit/gentesthelper"
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/gengokit"
+	thelper "github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 var gopath []string
@@ -23,7 +23,7 @@ func TestNewServiceMiddleware(t *testing.T) {
 		package middlewares
 
 		import (
-		pb "github.com/TuneLab/go-truss/gengokit/general-service"
+		pb "github.com/TuneLab/truss/gengokit/general-service"
 		)
 
 		func WrapService(in pb.ProtoServiceServer) pb.ProtoServiceServer {
@@ -58,7 +58,7 @@ func TestRenderPrevService(t *testing.T) {
 		package middlewares
 
 		import (
-			pb "github.com/TuneLab/go-truss/gengokit/general-service"
+			pb "github.com/TuneLab/truss/gengokit/general-service"
 		)
 
 		func WrapService(in pb.ProtoServiceServer) pb.ProtoServiceServer {
@@ -100,7 +100,7 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 		import (
 			"github.com/go-kit/kit/endpoint"
-			"github.com/TuneLab/go-truss/gengokit/general-service/svc"
+			"github.com/TuneLab/truss/gengokit/general-service/svc"
 		)
 
 		// WrapEndpoint will be called individually for all endpoints defined in
@@ -171,7 +171,7 @@ func generalService() (*svcdef.Svcdef, *gengokit.Data, error) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -199,8 +199,8 @@ func generalService() (*svcdef.Svcdef, *gengokit.Data, error) {
 		return nil, nil, err
 	}
 	conf := gengokit.Config{
-		GoPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
-		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+		GoPackage: "github.com/TuneLab/truss/gengokit/general-service",
+		PBPackage: "github.com/TuneLab/truss/gengokit/general-service",
 	}
 
 	data, err := gengokit.NewData(sd, conf)

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 var gopath []string
@@ -21,7 +21,7 @@ func TestNewData(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -50,8 +50,8 @@ func TestNewData(t *testing.T) {
 	}
 
 	conf := Config{
-		GoPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
-		PBPackage: "github.com/TuneLab/go-truss/gengokit/general-service",
+		GoPackage: "github.com/TuneLab/truss/gengokit/general-service",
+		PBPackage: "github.com/TuneLab/truss/gengokit/general-service",
 	}
 
 	te, err := NewData(sd, conf)

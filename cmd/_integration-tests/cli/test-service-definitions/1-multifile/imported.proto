@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package multifile;
 
-import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 message BasicTypeRequest {
   double A = 1;

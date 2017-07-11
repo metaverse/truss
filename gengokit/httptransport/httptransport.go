@@ -15,8 +15,8 @@ import (
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/gengokit/httptransport/templates"
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/gengokit/httptransport/templates"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 // Helper is the base struct for the data structure containing all the

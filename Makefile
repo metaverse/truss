@@ -20,12 +20,12 @@ update-dependencies:
 
 # Generate go files containing the all template files in []byte form
 gobindata:
-	go generate github.com/TuneLab/go-truss/gengokit/template
+	go generate github.com/TuneLab/truss/gengokit/template
 
 # Install truss and protoc-gen-truss-protocast
 truss: gobindata
-	go install github.com/TuneLab/go-truss/cmd/protoc-gen-truss-protocast
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/go-truss/cmd/truss
+	go install github.com/TuneLab/truss/cmd/protoc-gen-truss-protocast
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/truss/cmd/truss
 
 # Run the go tests and the truss integration tests
 test: test-go test-integration

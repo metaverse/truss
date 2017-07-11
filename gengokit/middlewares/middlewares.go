@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/gengokit"
-	"github.com/TuneLab/go-truss/gengokit/middlewares/templates"
+	"github.com/TuneLab/truss/gengokit"
+	"github.com/TuneLab/truss/gengokit/middlewares/templates"
 )
 
 // EndpointsPath is the path to the Endpoints middleware file that package middlewares renders
