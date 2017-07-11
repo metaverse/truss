@@ -21,10 +21,10 @@ all: test
 test: clean test-transport test-middlewares test-cli
 
 truss:
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/go-truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/truss/cmd/truss
 
 protoc-gen-truss-protocast:
-	go build -o protoc-gen-truss-protocast github.com/TuneLab/go-truss/cmd/protoc-gen-truss-protocast
+	go build -o protoc-gen-truss-protocast github.com/TuneLab/truss/cmd/protoc-gen-truss-protocast
 
 test-transport: protoc-gen-truss-protocast truss
 	@which truss

@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
-	"github.com/TuneLab/go-truss/gengokit/httptransport/templates"
+	"github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/TuneLab/truss/gengokit/httptransport/templates"
 )
 
 // Test that rendering certain templates will ouput the code we expect. The

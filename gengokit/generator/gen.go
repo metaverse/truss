@@ -11,12 +11,12 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/gengokit"
-	"github.com/TuneLab/go-truss/gengokit/handler"
-	"github.com/TuneLab/go-truss/gengokit/middlewares"
-	templFiles "github.com/TuneLab/go-truss/gengokit/template"
+	"github.com/TuneLab/truss/gengokit"
+	"github.com/TuneLab/truss/gengokit/handler"
+	"github.com/TuneLab/truss/gengokit/middlewares"
+	templFiles "github.com/TuneLab/truss/gengokit/template"
 
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 // GenerateGokit returns a gokit service generated from a service definition (svcdef),

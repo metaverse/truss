@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/TuneLab/go-truss/svcdef"
-	"github.com/TuneLab/go-truss/truss/execprotoc"
+	"github.com/TuneLab/truss/svcdef"
+	"github.com/TuneLab/truss/truss/execprotoc"
 	"github.com/pkg/errors"
 )
 

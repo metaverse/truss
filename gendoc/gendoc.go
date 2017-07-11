@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/TuneLab/go-truss/deftree"
+	"github.com/TuneLab/truss/deftree"
 )
 
 func findServiceName(md *deftree.MicroserviceDefinition) string {

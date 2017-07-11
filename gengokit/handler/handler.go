@@ -14,8 +14,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/go-truss/gengokit"
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/gengokit"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 // NewService is an exported func that creates a new service

@@ -121,7 +121,7 @@ func TestBasicTypes(t *testing.T) {
 func TestBasicTypesWithPBOutFlag(t *testing.T) {
 	testEndToEnd("1-basic", "getbasic", t,
 		"--pbout",
-		"github.com/TuneLab/go-truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
+		"github.com/TuneLab/truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
 }
 
 func TestBasicTypesWithRelPBOutFlag(t *testing.T) {

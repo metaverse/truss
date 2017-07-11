@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
-	pb "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service"
-	handler "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
-	"github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/middlewares"
-	svc "github.com/TuneLab/go-truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
+	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service"
+	handler "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
+	"github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/middlewares"
+	svc "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
 )
 
 var middlewareEndpoints svc.Endpoints

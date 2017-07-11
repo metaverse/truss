@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/TuneLab/go-truss/gengokit/gentesthelper"
-	"github.com/TuneLab/go-truss/svcdef"
+	"github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/TuneLab/truss/svcdef"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -28,7 +28,7 @@ func TestNewMethod(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/go-truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;
