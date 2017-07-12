@@ -11,18 +11,24 @@ TRUSS_AGAIN_MSG=\n$(OK_COLOR)Running Truss... again, to test regeneration$(END_C
 
 all: test
 
-test:
+setup:
 	@echo -e '$(TRUSS_MSG)'
 	truss transport-test.proto
 	cp -r handlers transportpermutations-service
+
+test: setup
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	truss transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v
+	$(MAKE) clean
+
+bench: setup
 	go test -run=XXX -bench=.
 	$(MAKE) clean
+
 
 # Run this when you add a new rpc to the .proto file and it will update
 # handlers/handlers.go
