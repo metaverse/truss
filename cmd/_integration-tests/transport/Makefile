@@ -9,20 +9,33 @@ TEST_RUNNING_MSG=\n$(OK_COLOR)Running transport tests:$(END_COLOR_LINE)
 
 TRUSS_AGAIN_MSG=\n$(OK_COLOR)Running Truss... again, to test regeneration$(END_COLOR_LINE)
 
+# make test match=test_to_run
+match := $(match)
+ifndef match
+	match := .
+endif
+
+
 all: test
 
-test:
+setup:
 	@echo -e '$(TRUSS_MSG)'
 	truss transport-test.proto
 	cp -r handlers transportpermutations-service
+
+test: setup
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test -v
+	go test -run=$(match) -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	truss transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test -v
-	go test -run=XXX -bench=.
+	go test -run=$(match)-v
 	$(MAKE) clean
+
+bench: setup
+	go test -run=XXX -bench=$(match)
+	$(MAKE) clean
+
 
 # Run this when you add a new rpc to the .proto file and it will update
 # handlers/handlers.go

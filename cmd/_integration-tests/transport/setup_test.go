@@ -102,5 +102,9 @@ func TestMain(m *testing.M) {
 	nonJSONHTTPServer := httptest.NewServer(bmux)
 	nonJSONHTTPAddr = nonJSONHTTPServer.URL
 
+	mux := setupSimpleServer()
+	benchServer := httptest.NewServer(mux)
+	benchAddr = benchServer.URL
+
 	os.Exit(m.Run())
 }

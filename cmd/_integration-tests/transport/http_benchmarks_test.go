@@ -1,11 +1,17 @@
 package test
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	// 3d Party
 	"golang.org/x/net/context"
@@ -24,9 +30,7 @@ var assignval interface{}
 
 // See how fast it is to make a full RPC complete with actual (local) HTTP connection
 func BenchmarkGetWithQueryClient(b *testing.B) {
-	var req pb.GetWithQueryRequest
-	req.A = 12
-	req.B = 45360
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	svchttp, err := httpclient.New(httpAddr, httpclient.CtxValuesToSend("request-url", "transport"))
 	if err != nil {
@@ -34,6 +38,10 @@ func BenchmarkGetWithQueryClient(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
+		req := pb.GetWithQueryRequest{
+			A: r.Int63(),
+			B: r.Int63(),
+		}
 		resp, err := svchttp.GetWithQuery(context.Background(), &req)
 		if err != nil {
 			b.Fatalf("httpclient returned error: %q", err)
@@ -107,15 +115,73 @@ func BenchmarkClientEncoding(b *testing.B) {
 	}
 }
 
+var benchAddr string
+
 // This provides a baseline "minimum speed" benchmark
 func BenchmarkAddition(b *testing.B) {
-	A := "12"
-	B := "45360"
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		a, _ := strconv.Atoi(A)
-		b, _ := strconv.Atoi(B)
-
-		assignval = a + b
+		res, err := http.Get(benchAddr + fmt.Sprintf("/add?A=%d&B=%d", r.Int63(), r.Int63()))
+		if err != nil {
+			b.Fatalf("httpclient returned error: %q", err)
+		}
+		if res != nil {
+			res.Body.Close()
+		}
+		assignval = res
 	}
+}
+
+type tStruct struct {
+	foo string
+	bar string
+	baz int
+}
+
+// Called from TestMain
+func setupSimpleServer() *http.ServeMux {
+	add := func(w http.ResponseWriter, r *http.Request) {
+		vs := r.URL.Query()
+		a, _ := strconv.Atoi(vs.Get("a"))
+		b, _ := strconv.Atoi(vs.Get("b"))
+		enc := json.NewEncoder(w)
+		enc.SetEscapeHTML(false)
+		enc.Encode(&pb.GetWithQueryResponse{V: int64(a + b)})
+	}
+
+	decode := func(w http.ResponseWriter, r *http.Request) {
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+			return
+		}
+		var out tStruct
+		json.Unmarshal(body, &out)
+	}
+
+	encode := func(w http.ResponseWriter, r *http.Request) {
+		vs := r.URL.Query()
+		baz, _ := strconv.Atoi(vs.Get("baz"))
+		in := tStruct{
+			foo: vs.Get("foo"),
+			bar: vs.Get("bar"),
+			baz: baz,
+		}
+		_, err := json.Marshal(in)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+			return
+		}
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/add", add)
+	mux.HandleFunc("/json/decode", decode)
+	mux.HandleFunc("/json/encode", encode)
+
+	return mux
 }
