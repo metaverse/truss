@@ -9,6 +9,13 @@ TEST_RUNNING_MSG=\n$(OK_COLOR)Running transport tests:$(END_COLOR_LINE)
 
 TRUSS_AGAIN_MSG=\n$(OK_COLOR)Running Truss... again, to test regeneration$(END_COLOR_LINE)
 
+# make test match=test_to_run
+match := $(match)
+ifndef match
+	match := .
+endif
+
+
 all: test
 
 setup:
@@ -18,15 +25,15 @@ setup:
 
 test: setup
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test -v
+	go test -run=$(match) -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	truss transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test -v
+	go test -run=$(match)-v
 	$(MAKE) clean
 
 bench: setup
-	go test -run=XXX -bench=.
+	go test -run=XXX -bench=$(match)
 	$(MAKE) clean
 
 
