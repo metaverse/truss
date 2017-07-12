@@ -127,10 +127,9 @@ func BenchmarkAddition(b *testing.B) {
 		if err != nil {
 			b.Fatalf("httpclient returned error: %q", err)
 		}
-		if res != nil {
-			res.Body.Close()
-		}
-		assignval = res
+		ioutil.ReadAll(res.Body)
+		_ = res.Body.Close()
+		assignval = res.Body
 	}
 }
 

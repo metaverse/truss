@@ -33,7 +33,7 @@ test: setup
 	$(MAKE) clean
 
 bench: setup
-	go test -run=XXX -bench=$(match)
+	go test -run=XXX -bench=$(match) -benchmem
 	$(MAKE) clean
 
 
