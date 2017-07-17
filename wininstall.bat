@@ -21,6 +21,7 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`%DATE_FMT_CMD%`) DO (
 )
 
 @ECHO ON
+go get github.com/pauln/go-datefmt
 go get github.com/golang/protobuf/protoc-gen-go
 go get github.com/golang/protobuf/proto
 go get github.com/jteeuwen/go-bindata/...
