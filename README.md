@@ -34,6 +34,12 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 	make dependencies
 	make
 	```
+	On Windows, do the following instead:
+	```
+	go get -u -d github.com/TuneLab/truss
+	cd %GOPATH%/src/github.com/TuneLab/truss
+	wininstall.bat
+	```
 
 ## Usage
 
