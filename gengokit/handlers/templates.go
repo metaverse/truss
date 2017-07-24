@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 const serverMethsTempl = `
 {{ with $te := .}}

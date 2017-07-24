@@ -12,8 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/truss/gengokit"
-	"github.com/TuneLab/truss/gengokit/handler"
-	//"github.com/TuneLab/truss/gengokit/middlewares"
+	"github.com/TuneLab/truss/gengokit/handlers"
 	templFiles "github.com/TuneLab/truss/gengokit/template"
 
 	"github.com/TuneLab/truss/svcdef"
@@ -60,8 +59,8 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 	actualFP := templatePathToActual(templFP, data.Service.Name)
 
 	switch templFP {
-	case handler.ServerHandlerPath:
-		h, err := handler.New(data.Service, prevFile)
+	case handlers.ServerHandlerPath:
+		h, err := handlers.New(data.Service, prevFile)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot parse previous handler: %q", actualFP)
 		}
@@ -69,19 +68,19 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 		if genCode, err = h.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
-	case handler.HookPath:
-		hook := handler.NewHook(prevFile)
+	case handlers.HookPath:
+		hook := handlers.NewHook(prevFile)
 		if genCode, err = hook.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
-	case handler.EndpointsMiddlewarePath:
-		m := handler.NewMiddlewares()
+	case handlers.EndpointsMiddlewarePath:
+		m := handlers.NewMiddlewares()
 		m.LoadEndpoints(prevFile)
 		if genCode, err = m.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
-	case handler.ServiceMiddlewarePath:
-		m := handler.NewMiddlewares()
+	case handlers.ServiceMiddlewarePath:
+		m := handlers.NewMiddlewares()
 		m.LoadService(prevFile)
 		if genCode, err = m.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)

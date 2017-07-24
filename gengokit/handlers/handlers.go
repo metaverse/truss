@@ -1,6 +1,6 @@
-// Package handler manages the exported methods in the service handler code
+// Package handlers manages the exported methods in the service handler code
 // adding/removing exported methods to match the service definition.
-package handler
+package handlers
 
 import (
 	"bytes"

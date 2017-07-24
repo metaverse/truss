@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"io"
@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/truss/gengokit"
-	"github.com/TuneLab/truss/gengokit/handler/templates"
+	"github.com/TuneLab/truss/gengokit/handlers/templates"
 )
 
 // EndpointsMiddlewarePath is the path to the Endpoints middleware file that package middlewares renders
