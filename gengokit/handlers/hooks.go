@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/TuneLab/truss/gengokit"
+	"github.com/TuneLab/truss/gengokit/handlers/templates"
 )
 
 const HookPath = "handlers/hooks.gotemplate"
@@ -24,7 +25,7 @@ type HookRender struct {
 // a brand new copy from the template.
 func (h *HookRender) Render(_ string, _ *gengokit.Data) (io.Reader, error) {
 	if h.prev == nil {
-		return strings.NewReader(hookTempl), nil
+		return strings.NewReader(templates.Hook), nil
 	} else {
 		return h.prev, nil
 	}

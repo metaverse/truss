@@ -80,8 +80,7 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 |   ├── handlers
 |   │   ├── handlers.go
 |   │   ├── hooks.go
-|   │   ├── endpoint_middlewares.go
-|   │   └── service_middlewares.go
+|   │   └── middlewares.go
 |   └── svc
 |       └── ...
 └── echo.proto

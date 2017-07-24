@@ -35,7 +35,7 @@ func NewEndpoints() svc.Endpoints {
 	var service pb.{{GoName .Service.Name}}Server
 	{
 		service = handlers.NewService()
-		// Wrap Service with middlewares. See handlers/service_middlewares.go
+		// Wrap Service with middlewares. See handlers/middlewares.go
 		service = handlers.WrapService(service)
 	}
 
@@ -52,7 +52,7 @@ func NewEndpoints() svc.Endpoints {
 	{{end}}
 	}
 
-	// Wrap selected Endpoints with middlewares. See handlers/endpoint_middlewares.go
+	// Wrap selected Endpoints with middlewares. See handlers/middlewares.go
 	endpoints = handlers.WrapEndpoints(endpoints)
 
 	return endpoints

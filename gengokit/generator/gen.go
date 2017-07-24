@@ -73,15 +73,9 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 		if genCode, err = hook.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}
-	case handlers.EndpointsMiddlewarePath:
+	case handlers.MiddlewaresPath:
 		m := handlers.NewMiddlewares()
-		m.LoadEndpoints(prevFile)
-		if genCode, err = m.Render(templFP, data); err != nil {
-			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
-		}
-	case handlers.ServiceMiddlewarePath:
-		m := handlers.NewMiddlewares()
-		m.LoadService(prevFile)
+		m.Load(prevFile)
 		if genCode, err = m.Render(templFP, data); err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)
 		}

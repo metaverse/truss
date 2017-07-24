@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/truss/gengokit"
+	"github.com/TuneLab/truss/gengokit/handlers/templates"
 	"github.com/TuneLab/truss/svcdef"
 )
 
@@ -286,9 +287,9 @@ func exprString(e ast.Expr) string {
 
 func applyServerTempl(exec *gengokit.Data) (io.Reader, error) {
 	log.Debug("Rendering handler for the first time")
-	return exec.ApplyTemplate(serverTempl, "ServerTempl")
+	return exec.ApplyTemplate(templates.Handlers, "ServerTempl")
 }
 
 func applyServerMethsTempl(exec handlerData) (io.Reader, error) {
-	return gengokit.ApplyTemplate(serverMethsTempl, "ServerMethsTempl", exec, gengokit.FuncMap)
+	return gengokit.ApplyTemplate(templates.HandlerMethods, "ServerMethsTempl", exec, gengokit.FuncMap)
 }
