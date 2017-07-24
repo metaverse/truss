@@ -1,7 +1,7 @@
 package templates
 
 const EndpointsBase = `
-package middlewares
+package handlers
 
 import (
 	"{{.ImportPath -}} /svc"

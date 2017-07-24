@@ -16,6 +16,7 @@ func TestAlwaysWrapped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(resp)
 
 	if !resp.Always {
 		t.Error("Always middleware did not wrap AlwaysWrap endpoint")
@@ -33,6 +34,7 @@ func TestSometimesWrapped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(resp)
 
 	if !resp.Always {
 		t.Error("Always middleware did not wrap SometimesWrapped endpoint")
@@ -50,6 +52,7 @@ func TestWrapAllLabeledExcept(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fmt.Println(resp)
 
 	want := "LabeledTestHandler"
 	if resp.Name != want {

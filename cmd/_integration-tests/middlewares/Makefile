@@ -12,7 +12,6 @@ all: test
 test:
 	@echo -e '$(TRUSS_MSG)'
 	truss middlewares-test.proto
-	cp -r middlewares middlewarestest-service
 	cp -r handlers middlewarestest-service
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v

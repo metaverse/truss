@@ -9,11 +9,11 @@ import (
 	"github.com/TuneLab/truss/gengokit/handler/templates"
 )
 
-// EndpointsPath is the path to the Endpoints middleware file that package middlewares renders
-const MiddlewareEndpointsPath = "middlewares/endpoints.gotemplate"
+// EndpointsMiddlewarePath is the path to the Endpoints middleware file that package middlewares renders
+const EndpointsMiddlewarePath = "handlers/endpoint_middlewares.gotemplate"
 
-// ServicePath is the path to the Service middleware file that package middlewares renders
-const MiddlewareServicePath = "middlewares/service.gotemplate"
+// ServiceMiddlewarePath is the path to the Service middleware file that package middlewares renders
+const ServiceMiddlewarePath = "handlers/service_middlewares.gotemplate"
 
 // New returns a Middleware which can render EndpointsFile and ServiceFile as
 // well as read in previous versions of each respective file
@@ -47,12 +47,12 @@ func (m *Middlewares) LoadService(prev io.Reader) {
 // it passes that through
 func (m *Middlewares) Render(path string, data *gengokit.Data) (io.Reader, error) {
 	switch path {
-	case MiddlewareEndpointsPath:
+	case EndpointsMiddlewarePath:
 		if m.prevEndpoints != nil {
 			return m.prevEndpoints, nil
 		}
 		return data.ApplyTemplate(templates.EndpointsBase, "Endpoint")
-	case MiddlewareServicePath:
+	case ServiceMiddlewarePath:
 		if m.prevService != nil {
 			return m.prevService, nil
 		}

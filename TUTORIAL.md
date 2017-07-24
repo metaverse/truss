@@ -79,10 +79,9 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 |   ├── echo.pb.go
 |   ├── handlers
 |   │   ├── handlers.go
-|   │   └── hooks.go
-|   ├── middlewares
-|   │   ├── endpoints.go
-|   │   └── service.go
+|   │   ├── hooks.go
+|   │   ├── endpoint_middlewares.go
+|   │   └── service_middlewares.go
 |   └── svc
 |       └── ...
 └── echo.proto
@@ -91,14 +90,13 @@ From the top down, within `echo-service/`:
   - `docs/` contains the generated documentation of the service API
   - `svc/` contains the wiring and encoding protocols necessary for service communication (generated code)
   - `handlers/handlers.go` is populated with stubs where you will add the business logic
-  - `middlewares/` is where you can put the middlewares (NOP by default)
   - `cmd/echo/` contains the client side CLI (useful for testing)
   - `cmd/echo-server/` contains the service main, which you will build and run shortly
   - `echo.pb.go` contains the RPC interface definitions and supporting structures that have been translated from `echo.proto` to golang
 
 If you try to build and run your service now, it will respond with empty messages. There is no business logic yet! We shall add it in the next step.
 
-You can safely modify only the files in handlers/ and middlewares/. Changes to any other files will be lost the next time you re-generate the service with truss.
+You can safely modify only the files in handlers/. Changes to any other files will be lost the next time you re-generate the service with truss.
 
 ## Implement business logic
 

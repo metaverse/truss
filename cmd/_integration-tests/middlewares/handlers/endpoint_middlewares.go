@@ -1,4 +1,4 @@
-package middlewares
+package handlers
 
 import (
 	"github.com/go-kit/kit/endpoint"
