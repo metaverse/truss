@@ -405,6 +405,9 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 			return err
 		}
 
+		// ensure relPath is unix-style, so it matches what we look for later
+		relPath = filepath.ToSlash(relPath)
+
 		files[relPath] = file
 
 		return nil
