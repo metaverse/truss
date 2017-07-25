@@ -1,9 +1,10 @@
 package templates
 
-const EndpointsBase = `
-package middlewares
+const Middlewares = `
+package handlers
 
 import (
+	pb "{{.PBImportPath -}}"
 	"{{.ImportPath -}} /svc"
 )
 
@@ -30,6 +31,10 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	// How to apply a middleware to a single endpoint.
 	// in.ExampleEndpoint = authMiddleware(in.ExampleEndpoint)
 
+	return in
+}
+
+func WrapService(in pb.{{.Service.Name}}Server) pb.{{.Service.Name}}Server {
 	return in
 }
 `

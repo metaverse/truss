@@ -1,4 +1,4 @@
-package middlewares
+package handlers
 
 import (
 	"io/ioutil"
@@ -12,86 +12,8 @@ import (
 	"github.com/TuneLab/truss/svcdef"
 )
 
-var gopath []string
-
 func init() {
 	gopath = filepath.SplitList(os.Getenv("GOPATH"))
-}
-
-func TestNewServiceMiddleware(t *testing.T) {
-	var wantService = `
-		package middlewares
-
-		import (
-		pb "github.com/TuneLab/truss/gengokit/general-service"
-		)
-
-		func WrapService(in pb.ProtoServiceServer) pb.ProtoServiceServer {
-			return in
-		}
-	`
-
-	_, data, err := generalService()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	middleware := New()
-	service, err := middleware.Render(ServicePath, data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serviceBytes, err := ioutil.ReadAll(service)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	wantFormatted, serviceFormatted, diff := thelper.DiffGoCode(wantService, string(serviceBytes))
-	if wantFormatted != serviceFormatted {
-		t.Fatalf("Serivce middleware different than expected:\n\n%s", diff)
-	}
-}
-
-func TestRenderPrevService(t *testing.T) {
-	var wantService = `
-		package middlewares
-
-		import (
-			pb "github.com/TuneLab/truss/gengokit/general-service"
-		)
-
-		func WrapService(in pb.ProtoServiceServer) pb.ProtoServiceServer {
-			return in
-		}
-
-		func FooBar() error {
-			return nil
-		}
-	`
-	_, data, err := generalService()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	middleware := New()
-
-	middleware.LoadService(strings.NewReader(wantService))
-
-	service, err := middleware.Render(ServicePath, data)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	serviceBytes, err := ioutil.ReadAll(service)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	wantFormatted, serviceFormatted, diff := thelper.DiffGoCode(wantService, string(serviceBytes))
-	if wantFormatted != serviceFormatted {
-		t.Fatalf("Sevice middleware modified unexpectedly:\n\n%s", diff)
-	}
 }
 
 func TestRenderPrevEndpoints(t *testing.T) {
@@ -130,11 +52,11 @@ func TestRenderPrevEndpoints(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	middleware := New()
+	middleware := NewMiddlewares()
 
-	middleware.LoadEndpoints(strings.NewReader(wantEndpoints))
+	middleware.Load(strings.NewReader(wantEndpoints))
 
-	endpoints, err := middleware.Render(EndpointsPath, data)
+	endpoints, err := middleware.Render(MiddlewaresPath, data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,7 +78,7 @@ func TestRenderUnknownFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	middleware := New()
+	middleware := NewMiddlewares()
 
 	_, err = middleware.Render("not/valid/file.go", data)
 	if err == nil {

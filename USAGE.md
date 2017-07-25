@@ -1,7 +1,7 @@
 # Using truss
 ## Our Contract
 
-1. Modify ONLY the files in `handlers/` and `middlewares/`.
+1. Modify ONLY the files in `handlers/`.
 
  User logic can be imported and executed within the functions in the handlers. It can also be added as _unexported_ helper functions in the handler file.
 

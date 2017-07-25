@@ -20,7 +20,6 @@ import (
 	httpclient "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
 
 	"github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/handlers"
-	"github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/middlewares"
 	"github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc"
 
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -64,8 +63,8 @@ func BenchmarkGetWithQueryClient_NoNetwork(b *testing.B) {
 	var service pb.TransportPermutationsServer
 	{
 		service = handlers.NewService()
-		// Wrap Service with middlewares. See middlewares/service.go
-		service = middlewares.WrapService(service)
+		// Wrap Service with middlewares. See handlers/service_middlewares.go
+		service = handlers.WrapService(service)
 	}
 	var getwithqueryEndpoint = svc.MakeGetWithQueryEndpoint(service)
 	endpoints := svc.Endpoints{

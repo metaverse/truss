@@ -18,10 +18,9 @@ import (
 	"github.com/go-kit/kit/log"
 
 	// This Service
-	"{{.ImportPath -}} /handlers"
 	pb "{{.PBImportPath -}}"
 	"{{.ImportPath -}} /svc"
-	"{{.ImportPath -}} /middlewares"
+	"{{.ImportPath -}} /handlers"
 )
 
 // Config contains the required fields for running a server
@@ -31,18 +30,13 @@ type Config struct {
 	GRPCAddr string
 }
 
-// Run starts a new http server, gRPC server, and a debug server with the
-// passed config and logger
-func Run(cfg Config, logger log.Logger) {
-	logger.Log("msg", "hello")
-	defer logger.Log("msg", "goodbye")
-
+func NewEndpoints() svc.Endpoints {
 	// Business domain.
 	var service pb.{{GoName .Service.Name}}Server
 	{
 		service = handlers.NewService()
-		// Wrap Service with middlewares. See middlewares/service.go
-		service = middlewares.WrapService(service)
+		// Wrap Service with middlewares. See handlers/middlewares.go
+		service = handlers.WrapService(service)
 	}
 
 	// Endpoint domain.
@@ -58,8 +52,19 @@ func Run(cfg Config, logger log.Logger) {
 	{{end}}
 	}
 
-	// Wrap selected Endpoints with middlewares. See middlewares/endpoints.go
-	endpoints = middlewares.WrapEndpoints(endpoints)
+	// Wrap selected Endpoints with middlewares. See handlers/middlewares.go
+	endpoints = handlers.WrapEndpoints(endpoints)
+
+	return endpoints
+}
+
+// Run starts a new http server, gRPC server, and a debug server with the
+// passed config and logger
+func Run(cfg Config, logger log.Logger) {
+	logger.Log("msg", "hello")
+	defer logger.Log("msg", "goodbye")
+
+	endpoints := NewEndpoints()
 
 	// Mechanical domain.
 	errc := make(chan error)

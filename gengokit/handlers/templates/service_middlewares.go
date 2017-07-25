@@ -1,7 +1,7 @@
 package templates
 
 const ServiceBase = `
-package middlewares
+package handlers
 
 import (
 	pb "{{.PBImportPath -}}"

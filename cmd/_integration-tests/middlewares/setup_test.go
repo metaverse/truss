@@ -5,8 +5,7 @@ import (
 	"testing"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service"
-	handler "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
-	"github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/middlewares"
+	"github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
 	svc "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
 )
 
@@ -16,7 +15,7 @@ func TestMain(m *testing.M) {
 
 	var service pb.MiddlewaresTestServer
 	{
-		service = handler.NewService()
+		service = handlers.NewService()
 	}
 
 	// Endpoint domain.
@@ -30,7 +29,7 @@ func TestMain(m *testing.M) {
 		LabeledTestHandlerEndpoint: labeledTestHandler,
 	}
 
-	middlewareEndpoints = middlewares.WrapEndpoints(middlewareEndpoints)
+	middlewareEndpoints = handlers.WrapEndpoints(middlewareEndpoints)
 
 	os.Exit(m.Run())
 }
