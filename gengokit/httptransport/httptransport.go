@@ -24,7 +24,6 @@ import (
 // of a service. Helper must be built from a Svcdef.
 type Helper struct {
 	Methods           []*Method
-	PathParamsBuilder string
 	ServerTemplate    func(interface{}) (string, error)
 	ClientTemplate    func(interface{}) (string, error)
 }
@@ -35,9 +34,7 @@ type Helper struct {
 func NewHelper(svc *svcdef.Service) *Helper {
 	// The HTTPAssistFuncs global is a group of function literals defined
 	// within templates.go
-	pp := FormatCode(templates.HTTPAssistFuncs)
 	rv := Helper{
-		PathParamsBuilder: pp,
 		ServerTemplate:    GenServerTemplate,
 		ClientTemplate:    GenClientTemplate,
 	}
@@ -412,6 +409,7 @@ func LowCamelName(s string) string {
 // templates and used within those templates.
 var TemplateFuncs = template.FuncMap{
 	"ToLower":  strings.ToLower,
+	"ToUpper":  strings.ToUpper,
 	"Title":    strings.Title,
 	"GoName":   gogen.CamelCase,
 	"Contains": strings.Contains,
