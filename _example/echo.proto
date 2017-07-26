@@ -28,6 +28,14 @@ service Echo {
         body: "*"
       };
   }
+
+  // LouderGet is the same as Louder, but pulls fields other than Loudness (i.e. In) from query params instead of POST
+  rpc LouderGet (LouderRequest) returns (EchoResponse) {
+    option (google.api.http) = {
+        // Loudness is accepted in the http path
+        get: "/louder/{Loudness}"
+      };
+  }
 }
 
 message EchoRequest {
