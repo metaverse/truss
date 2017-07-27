@@ -1,0 +1,27 @@
+package: github.com/TuneLab/truss
+import:
+- package: github.com/pkg/errors
+  version: ~0.8.0
+- package: github.com/pmezard/go-difflib
+  version: ~1.0.0
+  subpackages:
+  - difflib
+- package: github.com/spf13/pflag
+  version: ~1.0.0
+- package: github.com/Sirupsen/logrus
+  version: ~0.10.0
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+  - protoc-gen-go/descriptor
+  - protoc-gen-go/generator
+  - protoc-gen-go/plugin
+- package: github.com/pauln/go-datefmt
+  version: ~1.0.0
+- package: github.com/jteeuwen/go-bindata
+  version: ~3.0.7
+testImport:
+- package: github.com/davecgh/go-spew
+  version: ~1.1.0
+  subpackages:
+  - spew

@@ -1,31 +1,34 @@
 # Makefile for Truss.
 #
-SHA := $(shell git rev-parse --short=10 HEAD)
 
-MAKEFILE_PATH := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-VERSION_DATE := $(shell $(MAKEFILE_PATH)/commit_date.sh)
+# Pre-install required binaries
+$(shell go get github.com/golang/protobuf/protoc-gen-go)
+$(shell go get github.com/jteeuwen/go-bindata/...)
+$(shell go get github.com/pauln/go-datefmt)
+
+# Get version Date
+SEMVER := $(shell cat VERSION)
+TAG_COMMIT := $(shell git rev-list -n 1 ${SEMVER})
+GIT_COMMIT_EPOC := $(shell git show -s --format=%ct ${TAG_COMMIT})
+VERSION_DATE := $(shell go-datefmt -ts ${GIT_COMMIT_EPOC} -fmt UnixDate -utc)
 
 # Build native Truss by default.
 default: truss
 
 dependencies:
-	go get github.com/golang/protobuf/protoc-gen-go
-	go get github.com/golang/protobuf/proto
-	go get github.com/jteeuwen/go-bindata/...
+	glide install
 
 update-dependencies:
-	go get -u github.com/golang/protobuf/protoc-gen-go
-	go get -u github.com/golang/protobuf/proto
-	go get -u github.com/jteeuwen/go-bindata/...
+	glide update
 
 # Generate go files containing the all template files in []byte form
 gobindata:
 	go generate github.com/TuneLab/truss/gengokit/template
 
 # Install truss and protoc-gen-truss-protocast
-truss: gobindata
+truss: gobindata dependencies
 	go install github.com/TuneLab/truss/cmd/protoc-gen-truss-protocast
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SEMVER)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/TuneLab/truss/cmd/truss
 
 # Run the go tests and the truss integration tests
 test: test-go test-integration
