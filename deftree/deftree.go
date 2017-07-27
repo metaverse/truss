@@ -72,7 +72,7 @@ type Describable interface {
 // documentation on these Methods.
 type Deftree interface {
 	Describable
-	SetComment([]string, string)
+	SetComment([]string, string) error
 	String() string
 }
 
@@ -142,17 +142,20 @@ func (self *MicroserviceDefinition) GetByName(name string) Describable {
 // on the result of the last call, beginning with this MicroserviceDefinition.
 // Once the final Describable object is found, the `description` field of that
 // struct is set to `comment_body`.
-func (self *MicroserviceDefinition) SetComment(namepath []string, comment_body string) {
+//
+// If a node cannot be found with the provided namepath, returns an error.
+func (self *MicroserviceDefinition) SetComment(namepath []string, comment_body string) error {
 	var cur_node Describable
 	cur_node = self
 	for _, name := range namepath {
 		new_node := cur_node.GetByName(name)
 		if new_node == nil {
-			panic(fmt.Sprintf("New node is nil, namepath: '%v' cur_node: '%v'\n", namepath, cur_node))
+			return fmt.Errorf("cannot find node with name %q in namepath %q on cur_node %q", name, namepath, cur_node)
 		}
 		cur_node = new_node
 	}
 	cur_node.SetDescription(comment_body)
+	return nil
 }
 
 // String kicks off the recursive call to `describe` within the tree of

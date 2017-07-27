@@ -266,7 +266,10 @@ func AssociateComments(dt Deftree, req *plugin.CodeGeneratorRequest) {
 					if err != nil {
 						log.Debugf("Couldn't place comment '%v' due to error traversing tree: %v", cleanStr(lead), err)
 					} else {
-						dt.SetComment(name_path, scrubComments(lead))
+						err = dt.SetComment(name_path, scrubComments(lead))
+						if err != nil && !strings.Contains(err.Error(), "cannot find node") {
+							log.Errorf("cannot set comment: %v", err)
+						}
 					}
 				}
 			}
