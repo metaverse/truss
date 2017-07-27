@@ -145,7 +145,7 @@ func New(instance string, options ...ClientOption) (pb.{{GoName .Service.Name}}S
 				var {{$binding.Label}}Endpoint endpoint.Endpoint
 				{
 					{{$binding.Label}}Endpoint = httptransport.NewClient(
-						"{{$binding.Verb}}",
+						"{{$binding.Verb | ToUpper}}",
 						copyURL(u, "{{$binding.BasePath}}"),
 						EncodeHTTP{{$binding.Label}}Request,
 						DecodeHTTP{{$method.Name}}Response,
