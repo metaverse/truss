@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/TuneLab/truss/gengokit/gentesthelper"
-	"github.com/TuneLab/truss/gengokit/httptransport/templates"
 )
 
 // Test that rendering certain templates will ouput the code we expect. The
@@ -186,11 +185,8 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 		}
 	}
 
-	pathParams, err := PathParams(r.URL.Path, "/sum/{a}")
+	pathParams := mux.Vars(r)
 	_ = pathParams
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot unmarshal path parameters")
-	}
 
 	queryParams := r.URL.Query()
 	_ = queryParams
@@ -217,23 +213,6 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 `
 	if got, want := strings.TrimSpace(str), strings.TrimSpace(desired); got != want {
 		t.Errorf("Generated code differs from result.\ngot = %s\nwant = %s", got, want)
-		t.Log(gentesthelper.DiffStrings(got, want))
-	}
-}
-
-// Test that all the templated source code is identical to the source code
-// found within the file 'embeddable_funcs.go'.
-func TestHTTPAssistFuncs(t *testing.T) {
-	tmplfncs := FormatCode(templates.HTTPAssistFuncs)
-	// Get the source code for all the functions in the same source file as
-	// the BuildParamMap function
-	source, err := AllFuncSourceCode(BuildParamMap)
-	if err != nil {
-		t.Fatalf("Couldn't get source code of functions: %v", err)
-	}
-
-	if got, want := tmplfncs, FormatCode(source); got != want {
-		t.Errorf("Assistant functions in templates differ from the source of those functions as they exist within the codebase")
 		t.Log(gentesthelper.DiffStrings(got, want))
 	}
 }
