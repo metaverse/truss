@@ -103,48 +103,6 @@ func TestNewMethod(t *testing.T) {
 	}
 }
 
-func TestPathParams(t *testing.T) {
-	var cases = []struct {
-		url, tmpl, field, want string
-	}{
-		{"/1234", "/{a}", "a", "1234"},
-		{"/v1/1234", "/v1/{a}", "a", "1234"},
-		{"/v1/user/5/home", "/v1/user/{userid}/home", "userid", "5"},
-		{"/blah/", "/{a}", "a", "blah"},
-	}
-
-	for _, test := range cases {
-		ret, err := PathParams(test.url, test.tmpl)
-		if err != nil {
-			t.Errorf("PathParams returned error '%v' on case '%+v'\n", err, test)
-		}
-		if got, ok := ret[test.field]; ok {
-			if got != test.want {
-				t.Errorf("PathParams got '%v', want '%v'\n", got, test.want)
-			}
-		} else {
-			t.Errorf("PathParams didn't return map containing field '%v'\n", test.field)
-		}
-	}
-}
-
-// Test that the PathParams function will correctly fail
-func TestPathParamsFailure(t *testing.T) {
-	var cases = []struct {
-		url, tmpl string
-	}{
-		{"/too/few/params", "/{a}/{b}/{c}/{d}"},
-		{"/way/too/many/params", "/{a}"},
-	}
-
-	for _, test := range cases {
-		_, err := PathParams(test.url, test.tmpl)
-		if err == nil {
-			t.Errorf("PathParams returned no error when it should have returned an error on case '%+v'\n", test)
-		}
-	}
-}
-
 func TestFuncSourceCode(t *testing.T) {
 	_, err := FuncSourceCode(PathParams)
 	if err != nil {

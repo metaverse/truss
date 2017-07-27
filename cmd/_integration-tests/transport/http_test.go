@@ -332,33 +332,6 @@ func TestGetWithEnumPathRequest(t *testing.T) {
 	// multi / golang style
 }
 
-// A manually created request verifying that the server properly responds with
-// an error if a request is made with incomplete path parameters.
-func TestGetWithPathParamsRequest_IncompletePath(t *testing.T) {
-	var A int64
-	A = 12
-	path := fmt.Sprintf("/path/%d/", A)
-
-	httpReq, err := http.NewRequest("GET", httpAddr+path, nil)
-	if err != nil {
-		t.Errorf("cannot create request", err)
-	}
-	respBytes, err := testHTTPRequest(httpReq)
-
-	var resp map[string]string
-	err = json.Unmarshal(respBytes, &resp)
-	if err != nil {
-		t.Fatalf("cannot unmarshal bytes: %s", respBytes)
-	}
-
-	want := map[string]string{
-		"error": "cannot unmarshal path parameters: expecting a path containing 4 parts, provided path contains 3 parts",
-	}
-	if !reflect.DeepEqual(resp, want) {
-		t.Fatalf("Expect: %v, got %v", want, resp)
-	}
-}
-
 func TestErrorRPCReturnsJSONError(t *testing.T) {
 	req, err := http.NewRequest("GET", httpAddr+"/"+"error", strings.NewReader(""))
 	if err != nil {
