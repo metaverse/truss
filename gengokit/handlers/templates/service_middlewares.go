@@ -1,6 +1,6 @@
 package templates
 
-const ServiceBase = `
+const bbb2306ServiceMiddlewares = `
 package handlers
 
 import (
@@ -11,3 +11,9 @@ func WrapService(in pb.{{.Service.Name}}Server) pb.{{.Service.Name}}Server {
 	return in
 }
 `
+
+var ServiceMiddlewares = map[string]map[string]string{
+	"bbb2306": {
+		"ServiceMiddlewares": bbb2306ServiceMiddlewares,
+	},
+}

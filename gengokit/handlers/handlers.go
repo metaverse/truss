@@ -16,6 +16,8 @@ import (
 
 	"github.com/TuneLab/truss/gengokit"
 	"github.com/TuneLab/truss/gengokit/handlers/templates"
+	"github.com/TuneLab/truss/gengokit/utils"
+	"github.com/TuneLab/truss/kit"
 	"github.com/TuneLab/truss/svcdef"
 )
 
@@ -23,8 +25,8 @@ import (
 // it will not be defined in the service definition but is required
 const ignoredFunc = "NewService"
 
-// ServerHadlerPath is the relative path to the server handler template file
-const ServerHandlerPath = "handlers/handlers.gotemplate"
+// ServerHandlerPath is the relative path to the server handler file
+const ServerHandlerPath = "handlers/handlers.go"
 
 // New returns a truss.Renderable capable of updating server handlers.
 // New should be passed the previous version of the server handler to parse.
@@ -74,7 +76,8 @@ type handlerData struct {
 // Render returns a go code server handler that has functions for all
 // ServiceMethods in the service definition.
 func (h *handler) Render(alias string, data *gengokit.Data) (io.Reader, error) {
-	if alias != ServerHandlerPath {
+	actualFP := utils.TemplatePathToActual(alias, data.Service.Name)
+	if actualFP != ServerHandlerPath {
 		return nil, errors.Errorf("cannot render unknown file: %q", alias)
 	}
 	if h.ast == nil {
@@ -247,7 +250,7 @@ func isValidFunc(f *ast.FuncDecl, m methodMap, svcName string) bool {
 func recvTypeToString(recv *ast.FieldList) string {
 	if recv == nil ||
 		recv.List[0].Type == nil {
-		log.Debug("Function has no reciever")
+		log.Debug("Function has no receiver")
 		return ""
 	}
 
@@ -287,9 +290,9 @@ func exprString(e ast.Expr) string {
 
 func applyServerTempl(exec *gengokit.Data) (io.Reader, error) {
 	log.Debug("Rendering handler for the first time")
-	return exec.ApplyTemplate(templates.Handlers, "ServerTempl")
+	return exec.ApplyTemplate(templates.Handlers[kit.Version]["Handlers"], "ServerTempl")
 }
 
 func applyServerMethsTempl(exec handlerData) (io.Reader, error) {
-	return gengokit.ApplyTemplate(templates.HandlerMethods, "ServerMethsTempl", exec, gengokit.FuncMap)
+	return gengokit.ApplyTemplate(templates.Handlers[kit.Version]["HandlerMethods"], "ServerMethsTempl", exec, gengokit.FuncMap)
 }

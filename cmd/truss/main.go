@@ -22,6 +22,7 @@ import (
 	"github.com/TuneLab/truss/gendoc"
 	ggkconf "github.com/TuneLab/truss/gengokit"
 	gengokit "github.com/TuneLab/truss/gengokit/generator"
+	"github.com/TuneLab/truss/kit"
 	"github.com/TuneLab/truss/svcdef"
 )
 
@@ -31,6 +32,7 @@ var (
 	verboseFlag    = flag.BoolP("verbose", "v", false, "Verbose output")
 	helpFlag       = flag.BoolP("help", "h", false, "Print usage")
 	getStartedFlag = flag.BoolP("getstarted", "", false, "Output a 'getstarted.proto' protobuf file in ./")
+	kitVersion     = flag.String("kitversion", "bbb2306", "The go-kit version to generate code for")
 )
 
 var binName = filepath.Base(os.Args[0])
@@ -213,6 +215,13 @@ func parseInput() (*truss.Config, error) {
 	}
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
+
+	if kit.VersionNotSupported(*kitVersion) {
+		return nil, errors.Errorf("Go-Kit version '%s' is not supported", *kitVersion)
+	} else {
+		kit.Version = *kitVersion
+	}
+	log.WithField("Go Kit Version", kit.Version).Debug()
 
 	return &cfg, nil
 }

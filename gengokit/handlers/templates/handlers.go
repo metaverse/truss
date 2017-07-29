@@ -1,6 +1,6 @@
 package templates
 
-const HandlerMethods = `
+const bbb2306HandlerMethods = `
 {{ with $te := .}}
 		{{range $i := .Methods}}
 		// {{.Name}} implements Service.
@@ -17,7 +17,7 @@ const HandlerMethods = `
 {{- end}}
 `
 
-const Handlers = `
+const bbb2306Handlers = `
 package handlers
 
 import (
@@ -48,3 +48,10 @@ type {{ToLower .Service.Name}}Service struct{}
 	{{end}}
 {{- end}}
 `
+
+var Handlers = map[string]map[string]string{
+	"bbb2306": {
+		"HandlerMethods": bbb2306HandlerMethods,
+		"Handlers":       bbb2306Handlers,
+	},
+}

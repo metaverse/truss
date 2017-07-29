@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/TuneLab/truss/gengokit/httptransport/templates"
+	"github.com/TuneLab/truss/kit"
 	"github.com/TuneLab/truss/svcdef"
 )
 
@@ -23,9 +24,9 @@ import (
 // information necessary to correctly template the HTTP transport functionality
 // of a service. Helper must be built from a Svcdef.
 type Helper struct {
-	Methods           []*Method
-	ServerTemplate    func(interface{}) (string, error)
-	ClientTemplate    func(interface{}) (string, error)
+	Methods        []*Method
+	ServerTemplate func(interface{}) (string, error)
+	ClientTemplate func(interface{}) (string, error)
 }
 
 // NewHelper builds a helper struct from a service declaration. The other
@@ -35,8 +36,8 @@ func NewHelper(svc *svcdef.Service) *Helper {
 	// The HTTPAssistFuncs global is a group of function literals defined
 	// within templates.go
 	rv := Helper{
-		ServerTemplate:    GenServerTemplate,
-		ClientTemplate:    GenClientTemplate,
+		ServerTemplate: GenServerTemplate,
+		ClientTemplate: GenClientTemplate,
 	}
 	for _, meth := range svc.Methods {
 		if len(meth.Bindings) > 0 {
@@ -138,7 +139,7 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 }
 
 func GenServerTemplate(exec interface{}) (string, error) {
-	code, err := ApplyTemplate("ServerTemplate", templates.ServerTemplate, exec, TemplateFuncs)
+	code, err := ApplyTemplate("ServerTemplate", templates.Server[kit.Version]["ServerTemplate"], exec, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -147,7 +148,7 @@ func GenServerTemplate(exec interface{}) (string, error) {
 }
 
 func GenClientTemplate(exec interface{}) (string, error) {
-	code, err := ApplyTemplate("ClientTemplate", templates.ClientTemplate, exec, TemplateFuncs)
+	code, err := ApplyTemplate("ClientTemplate", templates.Client[kit.Version]["ClientTemplate"], exec, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -158,7 +159,7 @@ func GenClientTemplate(exec interface{}) (string, error) {
 // GenServerDecode returns the generated code for the server-side decoding of
 // an http request into its request struct.
 func (b *Binding) GenServerDecode() (string, error) {
-	code, err := ApplyTemplate("ServerDecodeTemplate", templates.ServerDecodeTemplate, b, TemplateFuncs)
+	code, err := ApplyTemplate("ServerDecodeTemplate", templates.Server[kit.Version]["ServerDecodeTemplate"], b, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}
@@ -169,7 +170,7 @@ func (b *Binding) GenServerDecode() (string, error) {
 // GenClientEncode returns the generated code for the client-side encoding of
 // that clients request struct into the correctly formatted http request.
 func (b *Binding) GenClientEncode() (string, error) {
-	code, err := ApplyTemplate("ClientEncodeTemplate", templates.ClientEncodeTemplate, b, TemplateFuncs)
+	code, err := ApplyTemplate("ClientEncodeTemplate", templates.Client[kit.Version]["ClientEncodeTemplate"], b, TemplateFuncs)
 	if err != nil {
 		return "", err
 	}

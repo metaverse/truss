@@ -1,6 +1,6 @@
 package templates
 
-const Hook = `
+const bbb2306Hook = `
 package handlers
 
 import (
@@ -20,3 +20,9 @@ func InterruptHandler(errc chan<- error) {
 	errc <- terminateError
 }
 `
+
+var Hook = map[string]map[string]string{
+	"bbb2306": {
+		"Hook": bbb2306Hook,
+	},
+}

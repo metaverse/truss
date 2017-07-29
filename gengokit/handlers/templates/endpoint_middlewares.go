@@ -1,6 +1,6 @@
 package templates
 
-const EndpointsBase = `
+const bbb2306EndpointsBase = `
 package handlers
 
 import (
@@ -33,3 +33,9 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	return in
 }
 `
+
+var EndpointsBase = map[string]map[string]string{
+	"bbb2306": {
+		"EndpointsBase": bbb2306EndpointsBase,
+	},
+}
