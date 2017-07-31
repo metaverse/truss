@@ -103,6 +103,8 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger
 	{{- end }}
 	m := mux.NewRouter()
 
+	ctx = context.WithValue(ctx, "logger", logger)
+
 	{{range $method := .HTTPHelper.Methods}}
 		{{range $binding := $method.Bindings}}
 			m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").Handler(httptransport.NewServer(
