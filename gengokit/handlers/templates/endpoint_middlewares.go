@@ -38,4 +38,7 @@ var EndpointsBase = map[string]map[string]string{
 	"bbb2306": {
 		"EndpointsBase": bbb2306EndpointsBase,
 	},
+	"v0.5.0": {
+		"EndpointsBase": bbb2306EndpointsBase,
+	},
 }

@@ -25,4 +25,7 @@ var Hook = map[string]map[string]string{
 	"bbb2306": {
 		"Hook": bbb2306Hook,
 	},
+	"v0.5.0": {
+		"Hook": bbb2306Hook,
+	},
 }

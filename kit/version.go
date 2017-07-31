@@ -7,6 +7,7 @@ var Version = "bbb2306"
 // generate files for.
 var VersionsSupported = []string{
 	"bbb2306",
+	"v0.5.0",
 }
 
 // VersionNotSupported validates user input for go-kit supported versions

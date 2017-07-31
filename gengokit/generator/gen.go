@@ -15,9 +15,9 @@ import (
 	"github.com/TuneLab/truss/gengokit/handlers"
 	templFiles "github.com/TuneLab/truss/gengokit/template"
 
-	"github.com/TuneLab/truss/svcdef"
 	"github.com/TuneLab/truss/gengokit/utils"
 	"github.com/TuneLab/truss/kit"
+	"github.com/TuneLab/truss/svcdef"
 )
 
 // GenerateGokit returns a gokit service generated from a service definition (svcdef),

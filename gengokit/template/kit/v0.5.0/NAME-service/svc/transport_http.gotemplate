@@ -1,0 +1,2 @@
+{{/* See go-truss/gengokit/httptransport/templates.go for code */}}
+{{call .HTTPHelper.ServerTemplate .}}

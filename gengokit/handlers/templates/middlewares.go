@@ -4,7 +4,7 @@ const bbb2306Middlewares = `
 package handlers
 
 import (
-	pb "{{.PBImportPath -}}"
+	"{{.ImportPath -}} /handlers"
 	"{{.ImportPath -}} /svc"
 )
 
@@ -34,13 +34,16 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	return in
 }
 
-func WrapService(in pb.{{.Service.Name}}Server) pb.{{.Service.Name}}Server {
+func WrapService(in handlers.{{GoName .Service.Name}}Servicer) handlers.{{GoName .Service.Name}}Servicer {
 	return in
 }
 `
 
 var Middlewares = map[string]map[string]string{
 	"bbb2306": {
+		"Middlewares": bbb2306Middlewares,
+	},
+	"v0.5.0": {
 		"Middlewares": bbb2306Middlewares,
 	},
 }

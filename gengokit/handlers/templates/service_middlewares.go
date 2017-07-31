@@ -16,4 +16,7 @@ var ServiceMiddlewares = map[string]map[string]string{
 	"bbb2306": {
 		"ServiceMiddlewares": bbb2306ServiceMiddlewares,
 	},
+	"v0.5.0": {
+		"ServiceMiddlewares": bbb2306ServiceMiddlewares,
+	},
 }
