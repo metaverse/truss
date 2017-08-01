@@ -70,6 +70,48 @@ func Run(cfg Config) {
 
 	// Debug listener.
 	go func() {
+		log.Println("transport", "debug", "addr", cfg.DebugAddr)
+		errc <- RunDebug(cfg.DebugAddr)
+	}()
+
+	// HTTP transport.
+	go func() {
+		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
+		errc <- RunHTTP(ctx, endpoints, cfg.HTTPAddr)
+	}()
+
+	// gRPC transport.
+	go func() {
+		log.Println("transport", "gRPC","addr", cfg.GRPCAddr)
+		errc <- RunGRPC(ctx, endpoints, cfg.GRPCAddr)
+	}()
+
+	// Run!
+	log.Println("exit", <-errc)
+}
+
+// RunHTTP starts a HTTP server for the go-kit http transport of the service.
+func RunHTTP(ctx context.Context, endpoints svc.Endpoints, httpAddr string) error {
+	h := svc.MakeHTTPHandler(ctx, endpoints)
+	return http.ListenAndServe(httpAddr, h)
+}
+
+// RunGRPC starts a GRPC server for the go-kit grpc transport of the service.
+func RunGRPC(ctx context.Context, endpoints svc.Endpoints, grpcAddr string) error {
+	ln, err := net.Listen("tcp", grpcAddr)
+	if err != nil {
+		return err
+	}
+
+	srv := svc.MakeGRPCServer(ctx, endpoints)
+	s := grpc.NewServer()
+	pb.Register{{.Service.Name}}Server(s, srv)
+
+	return s.Serve(ln)
+}
+
+// RunDebug starts a pprof http server for the go-kit service.
+func RunDebug(debugAddr string) error {
 		m := http.NewServeMux()
 		m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 		m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
@@ -77,33 +119,5 @@ func Run(cfg Config) {
 		m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 		m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-		log.Println("transport", "debug", "addr", cfg.DebugAddr)
-		errc <- http.ListenAndServe(cfg.DebugAddr, m)
-	}()
-
-	// HTTP transport.
-	go func() {
-		h := svc.MakeHTTPHandler(ctx, endpoints)
-		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
-		errc <- http.ListenAndServe(cfg.HTTPAddr, h)
-	}()
-
-	// gRPC transport.
-	go func() {
-		ln, err := net.Listen("tcp", cfg.GRPCAddr)
-		if err != nil {
-			errc <- err
-			return
-		}
-
-		srv := svc.MakeGRPCServer(ctx, endpoints)
-		s := grpc.NewServer()
-		pb.Register{{.Service.Name}}Server(s, srv)
-
-		log.Println("transport", "gRPC","addr", cfg.GRPCAddr)
-		errc <- s.Serve(ln)
-	}()
-
-	// Run!
-	log.Println("exit", <-errc)
+		return http.ListenAndServe(debugAddr, m)
 }
