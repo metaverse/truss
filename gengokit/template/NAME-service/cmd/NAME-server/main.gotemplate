@@ -17,6 +17,5 @@ func main() {
 	// Update addresses if they have been overwritten by flags
 	flag.Parse()
 
-	// Logging domain.
 	server.Run(cli.Config)
 }
