@@ -15,6 +15,8 @@ import (
 	"github.com/TuneLab/truss/gengokit/handlers"
 	templFiles "github.com/TuneLab/truss/gengokit/template"
 
+	"github.com/TuneLab/truss/gengokit/utils"
+	"github.com/TuneLab/truss/kit"
 	"github.com/TuneLab/truss/svcdef"
 )
 
@@ -32,14 +34,19 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) (map[string]io.Reade
 	// Remove the suffix "-service" since it's added back in by templatePathToActual
 	svcname := strings.ToLower(sd.Service.Name)
 	for _, templPath := range templFiles.AssetNames() {
+		// Only render the files that match conf.KitVersion
+		templKitVersion := utils.GoKitTemplateFPVersion(templPath)
+		if kit.Version != templKitVersion {
+			continue
+		}
+
 		// Re-derive the actual path for this file based on the service output
 		// path provided by the truss main.go
-		actualPath := templatePathToActual(templPath, svcname)
-		file, err := generateResponseFile(templPath, data, conf.PreviousFiles[actualPath])
+		actualPath := utils.TemplatePathToActual(templPath, svcname)
+		file, err := generateResponseFile(templPath, actualPath, data, conf.PreviousFiles[actualPath])
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot render template")
 		}
-
 		codeGenFiles[actualPath] = file
 	}
 
@@ -51,14 +58,11 @@ func GenerateGokit(sd *svcdef.Svcdef, conf gengokit.Config) (map[string]io.Reade
 // template path to render, a templateExecutor to apply to the template, and a
 // map of paths to files for the previous generation. It returns a
 // io.Reader representing the generated file.
-func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reader) (io.Reader, error) {
+func generateResponseFile(templFP string, actualFP string, data *gengokit.Data, prevFile io.Reader) (io.Reader, error) {
 	var genCode io.Reader
 	var err error
 
-	// Get the actual path to the file rather than the template file path
-	actualFP := templatePathToActual(templFP, data.Service.Name)
-
-	switch templFP {
+	switch actualFP {
 	case handlers.ServerHandlerPath:
 		h, err := handlers.New(data.Service, prevFile)
 		if err != nil {
@@ -97,20 +101,7 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 	return bytes.NewReader(formattedCode), nil
 }
 
-// templatePathToActual accepts a templateFilePath and the svcName of the
-// service and returns what the relative file path of what should be written to
-// disk
-func templatePathToActual(templFilePath, svcName string) string {
-	// Switch "NAME" in path with svcName.
-	// i.e. for svcName = addsvc; /NAME-server -> /addsvc-service/addsvc-server
-	actual := strings.Replace(templFilePath, "NAME", svcName, -1)
-
-	actual = strings.TrimSuffix(actual, "template")
-
-	return actual
-}
-
-// applyTemplateFromPath calls applyTemplate with the template at templFilePath
+// applyTemplateFromPath calls applyTemplate with the template at templFP
 func applyTemplateFromPath(templFP string, data *gengokit.Data) (io.Reader, error) {
 	templBytes, err := templFiles.Asset(templFP)
 	if err != nil {

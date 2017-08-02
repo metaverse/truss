@@ -5,6 +5,9 @@
 # session
 Session.vi
 
+## Jetbrain IDEs
+.idea/
+
 # generated example services
 _example/*
 !_example/echo.proto

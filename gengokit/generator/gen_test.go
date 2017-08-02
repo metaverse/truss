@@ -16,7 +16,10 @@ import (
 	"github.com/TuneLab/truss/svcdef"
 
 	"github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/TuneLab/truss/gengokit/utils"
 )
+
+const KitCompatVersion = "bbb2306"
 
 var gopath []string
 
@@ -26,20 +29,6 @@ func init() {
 
 func init() {
 	log.SetLevel(log.DebugLevel)
-}
-
-func TestTemplatePathToActual(t *testing.T) {
-	pathToWants := map[string]string{
-		"NAME-service/":                "package-service/",
-		"NAME-service/test.gotemplate": "package-service/test.go",
-		"NAME-service/NAME-server":     "package-service/package-server",
-	}
-
-	for path, want := range pathToWants {
-		if got := templatePathToActual(path, "package"); got != want {
-			t.Fatalf("\n`%v` got\n`%v` wanted", got, want)
-		}
-	}
 }
 
 func TestApplyTemplateFromPath(t *testing.T) {
@@ -87,7 +76,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	end, err := applyTemplateFromPath("svc/endpoints.gotemplate", te)
+	end, err := applyTemplateFromPath(KitCompatVersion+"/NAME-service/svc/endpoints.gotemplate", te)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,7 +271,7 @@ func diff(a, b string) string {
 // addition this function will return an error if the code fails to format,
 // while generateResponseFile will not.
 func testGenerateResponseFile(templPath string, data *gengokit.Data, prev io.Reader) (string, error) {
-	code, err := generateResponseFile(templPath, data, prev)
+	code, err := generateResponseFile(templPath, utils.TemplatePathToActual(templPath, data.Service.Name), data, prev)
 	if err != nil {
 		return "", err
 	}

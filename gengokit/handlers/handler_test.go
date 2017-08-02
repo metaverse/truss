@@ -16,6 +16,7 @@ import (
 
 	"github.com/TuneLab/truss/gengokit"
 	helper "github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/TuneLab/truss/kit"
 	"github.com/TuneLab/truss/svcdef"
 )
 
@@ -520,7 +521,7 @@ func renderService(svc *svcdef.Service, prev string, data *gengokit.Data) (strin
 		return "", err
 	}
 
-	next, err := h.Render(ServerHandlerPath, data)
+	next, err := h.Render(fpPrefix(data.Service.Name)+ServerHandlerPath, data)
 	if err != nil {
 		return "", err
 	}
@@ -562,4 +563,9 @@ func parseFuncFromString(f string, t *testing.T) *ast.FuncDecl {
 		t.Fatalf("No function found in: %q", f)
 	}
 	return fnc
+}
+
+// Returns a service template prefix
+func fpPrefix(serviceName string) string {
+	return kit.Version + "/" + serviceName + "-service/"
 }

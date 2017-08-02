@@ -56,7 +56,7 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 	middleware.Load(strings.NewReader(wantEndpoints))
 
-	endpoints, err := middleware.Render(MiddlewaresPath, data)
+	endpoints, err := middleware.Render(fpPrefix(data.Service.Name)+MiddlewaresPath, data)
 	if err != nil {
 		t.Fatal(err)
 	}

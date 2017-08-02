@@ -7,10 +7,12 @@ import (
 
 	"github.com/TuneLab/truss/gengokit"
 	"github.com/TuneLab/truss/gengokit/handlers/templates"
+	"github.com/TuneLab/truss/gengokit/utils"
+	"github.com/TuneLab/truss/kit"
 )
 
 // MiddlewaresPath is the path to the middleware gotemplate file.
-const MiddlewaresPath = "handlers/middlewares.gotemplate"
+const MiddlewaresPath = "middlewares/middlewares.go"
 
 // NewMiddleware returns a Renderable that renders the middlewares.go file.
 func NewMiddlewares() *Middlewares {
@@ -34,11 +36,12 @@ func (m *Middlewares) Load(prev io.Reader) {
 // the templates, if there was a previous version loaded in, it passes that
 // through.
 func (m *Middlewares) Render(path string, data *gengokit.Data) (io.Reader, error) {
-	if path != MiddlewaresPath {
+	actualFP := utils.TemplatePathToActual(path, data.Service.Name)
+	if actualFP != MiddlewaresPath {
 		return nil, errors.Errorf("cannot render unknown file: %q", path)
 	}
 	if m.prev != nil {
 		return m.prev, nil
 	}
-	return data.ApplyTemplate(templates.Middlewares, "Middlewares")
+	return data.ApplyTemplate(templates.Middlewares[kit.Version]["Middlewares"], "Middlewares")
 }
