@@ -69,6 +69,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/go-kit/kit/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	httptransport "github.com/go-kit/kit/transport/http"
@@ -92,7 +93,7 @@ var (
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
-func MakeHTTPHandler(ctx context.Context, endpoints Endpoints) http.Handler {
+func MakeHTTPHandler(ctx context.Context, endpoints Endpoints, logger log.Logger) http.Handler {
 	{{- if .HTTPHelper.Methods}}
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
@@ -192,5 +193,16 @@ func headersToContext(ctx context.Context, r *http.Request) context.Context {
 	}
 
 	return ctx
+}
+
+func HTTPDecodeLogger(next httptransport.DecodeRequestFunc, logger log.Logger) httptransport.DecodeRequestFunc {
+	return func(ctx context.Context, r *http.Request) (interface{}, error) {
+		logger.Log("method", r.Method, "url", r.URL.String())
+		rv, err := next(ctx, r)
+		if err != nil {
+			logger.Log("method", r.Method, "url", r.URL.String(), "err", err)
+		}
+		return rv, err
+	}
 }
 `

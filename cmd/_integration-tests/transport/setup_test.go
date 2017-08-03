@@ -12,12 +12,18 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	// Go Kit
+	"github.com/go-kit/kit/log"
+
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
 	handler "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/handlers"
 	svc "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc"
 )
 
 func TestMain(m *testing.M) {
+	var logger log.Logger
+	logger = log.NewNopLogger()
+
 	var service pb.TransportPermutationsServer
 	{
 		service = handler.NewService()
@@ -63,7 +69,7 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 
 	// http test server
-	h := svc.MakeHTTPHandler(ctx, endpoints)
+	h := svc.MakeHTTPHandler(ctx, endpoints, logger)
 	httpTestServer := httptest.NewServer(h)
 
 	// grpc test server

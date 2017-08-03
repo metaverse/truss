@@ -6,7 +6,6 @@
 package server
 
 import (
-	"log"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -14,6 +13,9 @@ import (
 	// 3d Party
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	// Go Kit
+	"github.com/go-kit/kit/log"
 
 	// This Service
 	pb "{{.PBImportPath -}}"
@@ -58,7 +60,10 @@ func NewEndpoints() svc.Endpoints {
 
 // Run starts a new http server, gRPC server, and a debug server with the
 // passed config and logger
-func Run(cfg Config) {
+func Run(cfg Config, logger log.Logger) {
+	logger.Log("msg", "hello")
+	defer logger.Log("msg", "goodbye")
+
 	endpoints := NewEndpoints()
 
 	// Mechanical domain.
@@ -70,48 +75,8 @@ func Run(cfg Config) {
 
 	// Debug listener.
 	go func() {
-		log.Println("transport", "debug", "addr", cfg.DebugAddr)
-		errc <- RunDebug(cfg.DebugAddr)
-	}()
+		logger := log.NewContext(logger).With("transport", "debug")
 
-	// HTTP transport.
-	go func() {
-		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
-		errc <- RunHTTP(ctx, endpoints, cfg.HTTPAddr)
-	}()
-
-	// gRPC transport.
-	go func() {
-		log.Println("transport", "gRPC","addr", cfg.GRPCAddr)
-		errc <- RunGRPC(ctx, endpoints, cfg.GRPCAddr)
-	}()
-
-	// Run!
-	log.Println("exit", <-errc)
-}
-
-// RunHTTP starts a HTTP server for the go-kit http transport of the service.
-func RunHTTP(ctx context.Context, endpoints svc.Endpoints, httpAddr string) error {
-	h := svc.MakeHTTPHandler(ctx, endpoints)
-	return http.ListenAndServe(httpAddr, h)
-}
-
-// RunGRPC starts a GRPC server for the go-kit grpc transport of the service.
-func RunGRPC(ctx context.Context, endpoints svc.Endpoints, grpcAddr string) error {
-	ln, err := net.Listen("tcp", grpcAddr)
-	if err != nil {
-		return err
-	}
-
-	srv := svc.MakeGRPCServer(ctx, endpoints)
-	s := grpc.NewServer()
-	pb.Register{{.Service.Name}}Server(s, srv)
-
-	return s.Serve(ln)
-}
-
-// RunDebug starts a pprof http server for the go-kit service.
-func RunDebug(debugAddr string) error {
 		m := http.NewServeMux()
 		m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
 		m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
@@ -119,5 +84,36 @@ func RunDebug(debugAddr string) error {
 		m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 		m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-		return http.ListenAndServe(debugAddr, m)
+		logger.Log("addr", cfg.DebugAddr)
+		errc <- http.ListenAndServe(cfg.DebugAddr, m)
+	}()
+
+	// HTTP transport.
+	go func() {
+		logger := log.NewContext(logger).With("transport", "HTTP")
+		h := svc.MakeHTTPHandler(ctx, endpoints, logger)
+		logger.Log("addr", cfg.HTTPAddr)
+		errc <- http.ListenAndServe(cfg.HTTPAddr, h)
+	}()
+
+	// gRPC transport.
+	go func() {
+		logger := log.NewContext(logger).With("transport", "gRPC")
+
+		ln, err := net.Listen("tcp", cfg.GRPCAddr)
+		if err != nil {
+			errc <- err
+			return
+		}
+
+		srv := svc.MakeGRPCServer(ctx, endpoints)
+		s := grpc.NewServer()
+		pb.Register{{.Service.Name}}Server(s, srv)
+
+		logger.Log("addr", cfg.GRPCAddr)
+		errc <- s.Serve(ln)
+	}()
+
+	// Run!
+	logger.Log("exit", <-errc)
 }
