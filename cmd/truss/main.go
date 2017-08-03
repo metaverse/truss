@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"go/build"
 	"io"
@@ -108,7 +110,7 @@ func main() {
 	exitIfError(errors.Wrap(err, "cannot generate service"))
 
 	for path, file := range genFiles {
-		err := writeGenFile(file, path, cfg.ServicePath)
+		err := writeGenFile(file, filepath.Join(cfg.ServicePath, path))
 		if err != nil {
 			exitIfError(errors.Wrap(err, "cannot to write output"))
 		}
@@ -234,18 +236,6 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 		return nil, nil, errors.Wrap(err, "cannot create .pb.go files")
 	}
 
-	// Open all .pb.go files and store in map to be passed to svcdef.New()
-	openFiles := func(paths []string) (map[string]io.Reader, error) {
-		rv := map[string]io.Reader{}
-		for _, p := range paths {
-			reader, err := os.Open(p)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot open file %q", p)
-			}
-			rv[p] = reader
-		}
-		return rv, nil
-	}
 	// Get path names of .pb.go files
 	pbgoPaths := []string{}
 	for _, p := range protoDefPaths {
@@ -258,6 +248,7 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "cannot open all .pb.go files")
 	}
+
 	pbFiles, err := openFiles(protoDefPaths)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "cannot open all .proto files")
@@ -267,6 +258,11 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	sd, err := svcdef.New(pbgoFiles, pbFiles)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
+	}
+
+	// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
+	if err := rewritePBGoForContext(sd.Service.Name, pbgoPaths); err != nil {
+		return nil, nil, errors.Wrap(err, "cannot rewrite .pb.go files")
 	}
 
 	// Create the Deftree
@@ -286,6 +282,67 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	}
 
 	return dt, sd, nil
+}
+
+// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
+func rewritePBGoForContext(serviceName string, pbgoPaths []string) error {
+	pbgoFiles, err := openFiles(pbgoPaths)
+	if err != nil {
+		return errors.Wrap(err, "cannot open all .pb.go files")
+	}
+
+	const oldContextImport = `context "golang.org/x/net/context"`
+	const newContextImport = `newcontext "context"`
+	serverInterface := serviceName + "Server"
+
+	for path, f := range pbgoFiles {
+		newPBGoFile := bytes.NewBuffer(nil)
+		s := bufio.NewScanner(f)
+		var readingServerInterface bool
+
+		for s.Scan() {
+			line := s.Text()
+
+			// Add the `newcontext "context"` import if we are on the context
+			// import line
+			if strings.Contains(line, oldContextImport) {
+				line = line + "\n\t" + newContextImport
+			}
+
+			// If we are not reading the service interface check if we need to start
+			if !readingServerInterface {
+				// Found the start of the {{.Service.Name}}Server interface
+				if strings.HasPrefix(line, "type "+serverInterface+" interface {") {
+					readingServerInterface = true
+				}
+			}
+
+			// If we are reading the {{.Service.Name}}Server interface
+			if readingServerInterface {
+				// Replace `(context` with `(newcontext`
+				line = strings.Replace(line, "(context", "(newcontext", 1)
+
+				// Reached the end of the {{.Service.Name}}Server interface
+				if strings.HasPrefix(line, "}") {
+					readingServerInterface = false
+				}
+			}
+
+			// Write the line to the new file buffer
+			_, err := newPBGoFile.WriteString(line + "\n")
+			if err != nil {
+				return errors.Wrap(err, "cannot write to new .pb.go file")
+			}
+		}
+
+		// Write the rewritten .pb.go file
+		err = writeGenFile(newPBGoFile, path)
+		if err != nil {
+			return errors.Wrap(err, "cannot write new .pb.go file to disk")
+		}
+	}
+
+	return nil
 }
 
 // generateCode returns a map[string]io.Reader that represents a gokit
@@ -309,6 +366,18 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map
 	return combineFiles(genGokitFiles, genDocFiles), nil
 }
 
+func openFiles(paths []string) (map[string]io.Reader, error) {
+	rv := map[string]io.Reader{}
+	for _, p := range paths {
+		reader, err := os.Open(p)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot open file %q", p)
+		}
+		rv[p] = reader
+	}
+	return rv, nil
+}
+
 // combineFiles takes any number of map[string]io.Reader and combines them into one.
 func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
 	final := make(map[string]io.Reader)
@@ -325,24 +394,23 @@ func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
 	return final
 }
 
-// writeGenFile writes a file at relPath relative to serviceDir to the filesystem
-func writeGenFile(file io.Reader, relPath, serviceDir string) error {
-	fullPath := filepath.Join(serviceDir, relPath)
-	err := os.MkdirAll(filepath.Dir(fullPath), 0777)
+// writeGenFile writes a file at path to the filesystem
+func writeGenFile(file io.Reader, path string) error {
+	err := os.MkdirAll(filepath.Dir(path), 0777)
 	if err != nil {
 		return err
 	}
 
-	outFile, err := os.Create(fullPath)
+	outFile, err := os.Create(path)
 	if err != nil {
-		return errors.Wrapf(err, "cannot create file %v", fullPath)
+		return errors.Wrapf(err, "cannot create file %v", path)
 	}
 
 	_, err = io.Copy(outFile, file)
 	if err != nil {
-		return errors.Wrapf(err, "cannot write to %v", fullPath)
+		return errors.Wrapf(err, "cannot write to %v", path)
 	}
-	return nil
+	return outFile.Close()
 }
 
 // cleanProtofilePath returns the absolute filepath of a group of files
