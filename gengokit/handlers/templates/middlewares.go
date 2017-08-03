@@ -4,8 +4,8 @@ const Middlewares = `
 package handlers
 
 import (
-	pb "{{.PBImportPath -}}"
 	"{{.ImportPath -}} /svc"
+	pb "{{.PBImportPath -}}"
 )
 
 // WrapEndpoints accepts the service's entire collection of endpoints, so that a

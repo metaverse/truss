@@ -2,13 +2,12 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"encoding/xml"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"golang.org/x/net/context"
-	"golang.org/x/net/context/ctxhttp"
 
 	"github.com/go-kit/kit/endpoint"
 )
@@ -22,6 +21,7 @@ type Client struct {
 	dec            DecodeResponseFunc
 	before         []RequestFunc
 	after          []ClientResponseFunc
+	finalizer      ClientFinalizerFunc
 	bufferedStream bool
 }
 
@@ -61,14 +61,20 @@ func SetClient(client *http.Client) ClientOption {
 // ClientBefore sets the RequestFuncs that are applied to the outgoing HTTP
 // request before it's invoked.
 func ClientBefore(before ...RequestFunc) ClientOption {
-	return func(c *Client) { c.before = before }
+	return func(c *Client) { c.before = append(c.before, before...) }
 }
 
 // ClientAfter sets the ClientResponseFuncs applied to the incoming HTTP
 // request prior to it being decoded. This is useful for obtaining anything off
 // of the response and adding onto the context prior to decoding.
 func ClientAfter(after ...ClientResponseFunc) ClientOption {
-	return func(c *Client) { c.after = after }
+	return func(c *Client) { c.after = append(c.after, after...) }
+}
+
+// ClientFinalizer is executed at the end of every HTTP request.
+// By default, no finalizer is registered.
+func ClientFinalizer(f ClientFinalizerFunc) ClientOption {
+	return func(s *Client) { s.finalizer = f }
 }
 
 // BufferedStream sets whether the Response.Body is left open, allowing it
@@ -83,6 +89,20 @@ func (c Client) Endpoint() endpoint.Endpoint {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
+		var (
+			resp *http.Response
+			err  error
+		)
+		if c.finalizer != nil {
+			defer func() {
+				if resp != nil {
+					ctx = context.WithValue(ctx, ContextKeyResponseHeaders, resp.Header)
+					ctx = context.WithValue(ctx, ContextKeyResponseSize, resp.ContentLength)
+				}
+				c.finalizer(ctx, err)
+			}()
+		}
+
 		req, err := http.NewRequest(c.method, c.tgt.String(), nil)
 		if err != nil {
 			return nil, err
@@ -96,10 +116,12 @@ func (c Client) Endpoint() endpoint.Endpoint {
 			ctx = f(ctx, req)
 		}
 
-		resp, err := ctxhttp.Do(ctx, c.client, req)
+		resp, err = c.client.Do(req.WithContext(ctx))
+
 		if err != nil {
 			return nil, err
 		}
+
 		if !c.bufferedStream {
 			defer resp.Body.Close()
 		}
@@ -117,6 +139,14 @@ func (c Client) Endpoint() endpoint.Endpoint {
 	}
 }
 
+// ClientFinalizerFunc can be used to perform work at the end of a client HTTP
+// request, after the response is returned. The principal
+// intended use is for error logging. Additional response parameters are
+// provided in the context under keys with the ContextKeyResponse prefix.
+// Note: err may be nil. There maybe also no additional response parameters depending on
+// when an error occurs.
+type ClientFinalizerFunc func(ctx context.Context, err error)
+
 // EncodeJSONRequest is an EncodeRequestFunc that serializes the request as a
 // JSON object to the Request body. Many JSON-over-HTTP services can use it as
 // a sensible default. If the request implements Headerer, the provided headers
@@ -131,4 +161,19 @@ func EncodeJSONRequest(c context.Context, r *http.Request, request interface{}) 
 	var b bytes.Buffer
 	r.Body = ioutil.NopCloser(&b)
 	return json.NewEncoder(&b).Encode(request)
+}
+
+// EncodeXMLRequest is an EncodeRequestFunc that serializes the request as a
+// XML object to the Request body. If the request implements Headerer,
+// the provided headers will be applied to the request.
+func EncodeXMLRequest(c context.Context, r *http.Request, request interface{}) error {
+	r.Header.Set("Content-Type", "text/xml; charset=utf-8")
+	if headerer, ok := request.(Headerer); ok {
+		for k := range headerer.Headers() {
+			r.Header.Set(k, headerer.Headers().Get(k))
+		}
+	}
+	var b bytes.Buffer
+	r.Body = ioutil.NopCloser(&b)
+	return xml.NewEncoder(&b).Encode(request)
 }

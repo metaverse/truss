@@ -10,8 +10,8 @@ package svc
 
 import (
 	"net/http"
+	"context"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/metadata"
 
 	grpctransport "github.com/go-kit/kit/transport/grpc"
@@ -20,9 +20,8 @@ import (
 	pb "{{.PBImportPath -}}"
 )
 
-
-// MakeGRPCServer makes a set of endpoints available as a gRPC {{GoName .Service.Name}}Server.
-func MakeGRPCServer(ctx context.Context, endpoints Endpoints) pb.{{GoName .Service.Name}}Server {
+// MakeGRPCServer makes a set of endpoints available as a gRPC {{.Service.Name}}Server.
+func MakeGRPCServer(endpoints Endpoints) pb.{{.Service.Name}}Server {
 	serverOptions := []grpctransport.ServerOption{
 		 grpctransport.ServerBefore(metadataToContext),
 	}
@@ -30,7 +29,6 @@ func MakeGRPCServer(ctx context.Context, endpoints Endpoints) pb.{{GoName .Servi
 	// {{ ToLower .Service.Name }}
 	{{range $i := .Service.Methods}}
 		{{ToLower $i.Name}}: grpctransport.NewServer(
-			ctx,
 			endpoints.{{$i.Name}}Endpoint,
 			DecodeGRPC{{$i.Name}}Request,
 			EncodeGRPC{{$i.Name}}Response,
@@ -80,8 +78,8 @@ func EncodeGRPC{{$i.Name}}Response(_ context.Context, response interface{}) (int
 
 // Helpers
 
-func metadataToContext(ctx context.Context, md *metadata.MD) context.Context {
-	for k, v := range *md {
+func metadataToContext(ctx context.Context, md metadata.MD) context.Context {
+	for k, v := range md {
 		if v != nil {
 			// The key is added both in metadata format (k) which is all lower
 			// and the http.CanonicalHeaderKey of the key so that it can be

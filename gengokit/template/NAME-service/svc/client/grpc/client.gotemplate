@@ -7,7 +7,7 @@
 package grpc
 
 import (
-	"golang.org/x/net/context"
+	"context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"github.com/pkg/errors"
@@ -22,7 +22,7 @@ import (
 
 // New returns an service backed by a gRPC client connection. It is the
 // responsibility of the caller to dial, and later close, the connection.
-func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{GoName .Service.Name}}Server, error) {
+func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{.Service.Name}}Server, error) {
 	var cc clientConfig
 
 	for _, f := range options {
@@ -97,7 +97,7 @@ func CtxValuesToSend(keys ...string) ClientOption {
 	}
 }
 
-func contextValuesToGRPCMetadata(keys []string) grpctransport.RequestFunc {
+func contextValuesToGRPCMetadata(keys []string) grpctransport.ClientRequestFunc {
 	return func(ctx context.Context, md *metadata.MD) context.Context {
 		var pairs []string
 		for _, k := range keys {

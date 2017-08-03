@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"testing"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
@@ -60,10 +59,8 @@ func TestMain(m *testing.M) {
 		StatusCodeAndHeadersEndpoint:      StatusCodeAndHeadersE,
 	}
 
-	ctx := context.Background()
-
 	// http test server
-	h := svc.MakeHTTPHandler(ctx, endpoints)
+	h := svc.MakeHTTPHandler(endpoints)
 	httpTestServer := httptest.NewServer(h)
 
 	// grpc test server
