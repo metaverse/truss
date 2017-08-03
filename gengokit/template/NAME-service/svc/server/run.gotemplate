@@ -86,6 +86,7 @@ func Run(cfg Config) {
 	go func() {
 		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
 		h := svc.MakeHTTPHandler(ctx, endpoints)
+		h = handlers.WrapHTTPHandler(h)
 		errc <- http.ListenAndServe(cfg.HTTPAddr, h)
 	}()
 

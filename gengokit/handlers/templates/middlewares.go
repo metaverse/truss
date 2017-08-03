@@ -4,6 +4,8 @@ const Middlewares = `
 package handlers
 
 import (
+	"net/http"
+
 	pb "{{.PBImportPath -}}"
 	"{{.ImportPath -}} /svc"
 )
@@ -35,6 +37,12 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 }
 
 func WrapService(in pb.{{.Service.Name}}Server) pb.{{.Service.Name}}Server {
+	return in
+}
+
+// WrapHTTPHandler accepts the service's http.Handler, allowing middlewares to be wrapped
+// around it just before starting the HTTP server with http.ListenAndServe.
+func WrapHTTPHandler(in http.Handler) http.Handler {
 	return in
 }
 `
