@@ -5,10 +5,12 @@
 # session
 Session.vi
 
+## Jetbrains IDEs
+.idea/
+
 # generated example services
 _example/*
 !_example/echo.proto
 
-# Prevents accidentally including a problematic folder within the `vendor/`
-# folder.
-vendor/github.com/Sirupsen/logrus/examples/
+# Vendored libraries
+vendor
