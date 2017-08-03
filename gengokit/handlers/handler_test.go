@@ -137,7 +137,7 @@ func TestApplyServerTempl(t *testing.T) {
 		package handlers
 
 		import (
-			"golang.org/x/net/context"
+			"context"
 
 			pb "github.com/TuneLab/truss/gengokit/general-service"
 		)
@@ -307,7 +307,7 @@ func TestPruneDecls(t *testing.T) {
 		package handlers
 
 		import (
-			"golang.org/x/net/context"
+			"context"
 
 			pb "github.com/TuneLab/truss/gengokit/general-service"
 		)

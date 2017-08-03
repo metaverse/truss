@@ -71,7 +71,7 @@ func TestMain(m *testing.M) {
 		return
 	}
 	s := grpc.NewServer()
-	gs := svc.MakeGRPCServer(ctx, endpoints)
+	gs := svc.MakeGRPCServer(endpoints)
 	pb.RegisterTransportPermutationsServer(s, gs)
 	go s.Serve(ln)
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 	"google.golang.org/grpc"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"

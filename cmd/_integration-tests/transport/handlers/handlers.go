@@ -4,10 +4,9 @@ package handlers
 // implementation. It also includes service middlewares.
 
 import (
+	"context"
 	"github.com/pkg/errors"
 	"net/http"
-
-	"golang.org/x/net/context"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
 )

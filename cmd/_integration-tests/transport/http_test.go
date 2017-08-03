@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	// 3d Party
-	"golang.org/x/net/context"
+	"context"
 	// This Service
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
 	httpclient "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"

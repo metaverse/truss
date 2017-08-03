@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/go-kit/kit/endpoint"
-	"golang.org/x/net/context"
+	"context"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service"
 	svc "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
