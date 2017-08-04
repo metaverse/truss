@@ -67,7 +67,7 @@ import (
 	"strings"
 	"io"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
@@ -85,14 +85,14 @@ var (
 	_ = strconv.Atoi
 	_ = httptransport.NewServer
 	_ = ioutil.NopCloser
-	_ = pb.Register{{.Service.Name}}Server
+	_ = pb.New{{.Service.Name}}Client
 	_ = io.Copy
 	_ = errors.Wrap
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
-func MakeHTTPHandler(ctx context.Context, endpoints Endpoints) http.Handler {
+func MakeHTTPHandler(endpoints Endpoints) http.Handler {
 	{{- if .HTTPHelper.Methods}}
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
@@ -105,7 +105,6 @@ func MakeHTTPHandler(ctx context.Context, endpoints Endpoints) http.Handler {
 	{{range $method := .HTTPHelper.Methods}}
 		{{range $binding := $method.Bindings}}
 			m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").Handler(httptransport.NewServer(
-				ctx,
 				endpoints.{{$method.Name}}Endpoint,
 				DecodeHTTP{{$binding.Label}}Request,
 				EncodeHTTPGenericResponse,

@@ -12,7 +12,6 @@ import (
 	"net/http/pprof"
 
 	// 3d Party
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	// This Service
@@ -30,7 +29,7 @@ type Config struct {
 
 func NewEndpoints() svc.Endpoints {
 	// Business domain.
-	var service pb.{{GoName .Service.Name}}Server
+	var service pb.{{.Service.Name}}Server
 	{
 		service = handlers.NewService()
 		// Wrap Service with middlewares. See handlers/middlewares.go
@@ -63,7 +62,6 @@ func Run(cfg Config) {
 
 	// Mechanical domain.
 	errc := make(chan error)
-	ctx := context.Background()
 
 	// Interrupt handler.
 	go handlers.InterruptHandler(errc)
@@ -85,7 +83,7 @@ func Run(cfg Config) {
 	// HTTP transport.
 	go func() {
 		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
-		h := svc.MakeHTTPHandler(ctx, endpoints)
+		h := svc.MakeHTTPHandler(endpoints)
 		errc <- http.ListenAndServe(cfg.HTTPAddr, h)
 	}()
 
@@ -98,7 +96,7 @@ func Run(cfg Config) {
 			return
 		}
 
-		srv := svc.MakeGRPCServer(ctx, endpoints)
+		srv := svc.MakeGRPCServer(endpoints)
 		s := grpc.NewServer()
 		pb.Register{{.Service.Name}}Server(s, srv)
 

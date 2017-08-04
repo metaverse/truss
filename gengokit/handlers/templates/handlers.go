@@ -21,7 +21,7 @@ const Handlers = `
 package handlers
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	pb "{{.PBImportPath -}}"
 )

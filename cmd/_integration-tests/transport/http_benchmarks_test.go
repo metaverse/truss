@@ -14,7 +14,7 @@ import (
 	"time"
 
 	// 3d Party
-	"golang.org/x/net/context"
+	"context"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
 	httpclient "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
@@ -74,7 +74,6 @@ func BenchmarkGetWithQueryClient_NoNetwork(b *testing.B) {
 	ctx = context.WithValue(ctx, "transport", "HTTPJSON")
 	server := httptransport.NewServer(
 		// This is definitely a hack
-		ctx,
 		endpoints.GetWithQueryEndpoint,
 		svc.DecodeHTTPGetWithQueryZeroRequest,
 		svc.EncodeHTTPGenericResponse,

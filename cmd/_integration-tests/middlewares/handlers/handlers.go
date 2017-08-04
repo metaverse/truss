@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"golang.org/x/net/context"
+	"context"
 
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service"
 )

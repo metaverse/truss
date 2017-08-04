@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 	"google.golang.org/grpc"
 
 	"github.com/pkg/errors"
@@ -98,7 +98,7 @@ func submain() int {
 	flag.Parse()
 
 	var (
-		service pb.{{GoName .Service.Name}}Server
+		service pb.{{.Service.Name}}Server
 		err     error
 	)
 
