@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
@@ -228,9 +229,15 @@ func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef
 			case *ast.InterfaceType:
 				// Each service will have two interfaces ("{SVCNAME}Server" and
 				// "{SVCNAME}Client") each containing the same information that we
-				// care about, but structured a bit differently. For simplicity,
-				// skip the "Client" interface.
-				if strings.HasSuffix("Client", t.Name.Name) {
+				// care about, but structured a bit differently. Additionally,
+				// oneof fields generate an interface which is not a service - so
+				// for simplicity, only process the "Server" interface.
+				if !strings.HasSuffix(t.Name.Name, "Server") {
+					if !strings.HasSuffix(t.Name.Name, "Client") {
+						// This interface isn't either Server or Client; it may be a oneof
+						// field, which isn't currently supported.  Warn the user and skip.
+						log.Warnf("Unexpected interface %s found; skipping", t.Name.Name)
+					}
 					break
 				}
 				nsvc, err := NewService(t, debugInfo)
