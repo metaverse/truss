@@ -173,7 +173,7 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 		return nil, errors.Wrapf(err, "cannot read body of http request")
 	}
 	if len(buf) > 0 {
-		if err = json.Unmarshal(buf, &req); err != nil {
+		if err = jsonpb.UnmarshalString(string(buf), &req); err != nil {
 			const size = 8196
 			if len(buf) > size {
 				buf = buf[:size]

@@ -14,7 +14,7 @@ var ServerDecodeTemplate = `
 			return nil, errors.Wrapf(err, "cannot read body of http request")
 		}
 		if len(buf) > 0 {
-			if err = json.Unmarshal(buf, &req); err != nil {
+			if err = jsonpb.UnmarshalString(string(buf), &req); err != nil {
 				const size = 8196
 				if len(buf) > size {
 					buf = buf[:size]
@@ -66,6 +66,9 @@ import (
 	"strconv"
 	"strings"
 	"io"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 
 	"context"
 
@@ -173,9 +176,12 @@ func (h httpError) Headers() http.Header {
 // EncodeHTTPGenericResponse is a transport/http.EncodeResponseFunc that encodes
 // the response as JSON to the response writer. Primarily useful in a server.
 func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
-	encoder := json.NewEncoder(w)
-	encoder.SetEscapeHTML(false)
-	return encoder.Encode(response)
+	marshaller := jsonpb.Marshaler{
+		EnumsAsInts:  true,
+		EmitDefaults: true,
+	}
+
+	return marshaller.Marshal(w, response.(proto.Message))
 }
 
 // Helper functions

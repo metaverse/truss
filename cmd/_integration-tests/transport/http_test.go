@@ -17,6 +17,7 @@ import (
 	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
 	httpclient "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/pkg/errors"
 )
 
@@ -606,7 +607,21 @@ func testHTTP(
 		t.Fatal(errors.Wrap(err, "cannot make http request"))
 	}
 
-	err = json.Unmarshal(respBytes, &resp)
+	switch v := resp.(type) {
+	case *pb.GetWithQueryResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
+	case *pb.GetWithRepeatedQueryResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
+	case *pb.GetWithEnumQueryResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
+	case *pb.PostWithNestedMessageBodyResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
+	case *pb.MetaResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
+	default:
+		t.Fatalf("Unknown response type: %T", v)
+	}
+
 	if err != nil {
 		t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
 	}
