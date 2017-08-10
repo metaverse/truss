@@ -14,7 +14,11 @@ var ServerDecodeTemplate = `
 			return nil, errors.Wrapf(err, "cannot read body of http request")
 		}
 		if len(buf) > 0 {
-			if err = jsonpb.UnmarshalString(string(buf), &req); err != nil {
+			// AllowUnknownFields stops the unmarshaler from failing if the JSON contains unknown fields.
+			unmarshaller := jsonpb.Unmarshaler{
+				AllowUnknownFields: true,
+			}
+			if err = unmarshaller.Unmarshal(bytes.NewBuffer(buf), &req); err != nil {
 				const size = 8196
 				if len(buf) > size {
 					buf = buf[:size]
