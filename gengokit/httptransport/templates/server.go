@@ -13,7 +13,19 @@ var ServerDecodeTemplate = `
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot read body of http request")
 		}
-		if len(buf) > 0 {
+		if r.Header.Get("content-type") == "application/x-www-form-urlencoded" {
+			err = r.ParseForm()
+			if err != nil {
+				return nil, errors.Wrapf(err, "cannot read form of http request")
+			}
+			formParams := r.PostForm
+			_ = formParams
+			{{range $field := $binding.Fields}}
+				{{if $field.Location "body"}}
+					{{$field.PostFormUnmarshaler}}
+				{{end}}
+			{{end}}
+		} else if len(buf) > 0 {
 			if err = json.Unmarshal(buf, &req); err != nil {
 				const size = 8196
 				if len(buf) > size {
