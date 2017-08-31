@@ -85,11 +85,65 @@ type Method struct {
 type HTTPBinding struct {
 	Description string
 	Fields      []*Field
+	// CustomHTTPPattern contains the fields for a `custom` HTTP verb. It's
+	// name comes from the name for this construct in the http annotations
+	// protobuf file. The following is an example of a protobuf service with
+	// custom http verbs and the equivelent HTTPBinding literal:
+	//
+	// Protobuf code:
+	//
+	// service ExmplService {
+	//   rpc ExmplMethod (RequestStrct) returns (ResponseStrct) {
+	//     option (google.api.http) = {
+	//       custom {
+	//         // The verb itself goes in the "kind" field
+	//         kind: "MYVERBHERE"
+	//         // Likewise, path goes in the "path" field. As always, the path
+	//         // may have parameters within it.
+	//         path: "/foo/bar/{SomeFieldName}"
+	//       }
+	//       // This 'body' field is optional
+	//       body: "*"
+	//     };
+	//   }
+	// }
+	//
+	// Resulting HTTPBinding:
+	//
+	// HTTPBinding{
+	//     Fields: []*Field{
+	//         &Field{
+	//             Description: "// This 'body' field is optional\n",
+	//             Name:  "body",
+	//             Kind:  "body",
+	//             Value: "*",
+	//         },
+	//     },
+	//     CustomHTTPPattern: []*Field{
+	//         &Field{
+	//             Description: "// The verb itself goes in the \"kind\" field\n",
+	//             Name:        "kind",
+	//             Kind:        "kind",
+	//             Value:       "MYVERBHERE",
+	//         },
+	//         &Field{
+	//             Description: "// Likewise, path goes in the \"path\" field. As always, the path\n\t\t\t\t\t// may have parameters within it.\n",
+	//             Name:  "path",
+	//             Kind:  "path",
+	//             Value: "/foo/bar/{SomeFieldName}",
+	//         },
+	//     },
+	// },
+	CustomHTTPPattern []*Field
 }
 
 // Field holds information extracted by the parser about each field within each
 // HTTP binding.
 type Field struct {
+	// Name acts as an 'alias' for the Field. Usually, it has the same value as
+	// "Kind", though there are no guaruntees that they'll be the same. Name
+	// should never be used as part of "business logic" it is purely as a
+	// human-readable decorative field.
 	Name        string
 	Description string
 	Kind        string
@@ -283,11 +337,12 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 		if err != nil {
 			return nil, err
 		}
-		fields, err := ParseBindingFields(lex)
+		fields, custom, err := ParseBindingFields(lex)
 		if err != nil {
 			return nil, err
 		}
 		new_opt.Fields = fields
+		new_opt.CustomHTTPPattern = custom
 		good_position := lex.GetPosition()
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
@@ -305,7 +360,7 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 				rv = append(rv, more_bindings...)
 				good_position = lex.GetPosition()
 			} else if tk == EOF || tk == ILLEGAL {
-				return nil, parseErr("non-illegal token while parsing HttpBindings", lex.GetLineNumber(), fmt.Sprintf("(%v) of type %v", val, tk))
+				return nil, parseErr("legal token while parsing HttpBindings", lex.GetLineNumber(), fmt.Sprintf("(%v) of type %v", val, tk))
 			} else {
 				return nil, parseErr("close brace or comment while parsing http bindings", lex.GetLineNumber(), tk.String()+val)
 			}
@@ -316,11 +371,12 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 		if err != nil {
 			return nil, err
 		}
-		fields, err := ParseBindingFields(lex)
+		fields, custom, err := ParseBindingFields(lex)
 		if err != nil {
 			return nil, err
 		}
 		new_opt.Fields = fields
+		new_opt.CustomHTTPPattern = custom
 		err = fastForwardTill(lex, "}")
 		if err != nil {
 			return nil, err
@@ -336,9 +392,9 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 	return nil, optErr
 }
 
-func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
-
+func ParseBindingFields(lex *SvcLexer) ([]*Field, []*Field, error) {
 	rv := make([]*Field, 0)
+	var custom []*Field
 	field := &Field{}
 	for {
 		tk, val := lex.GetTokenIgnoreWhitespace()
@@ -347,7 +403,7 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
 				field.Description = val
 				tk, val = lex.GetTokenIgnoreWhitespace()
 			} else if tk == EOF || tk == ILLEGAL {
-				return nil, parseErr("non-illegal token whil parsing binding fields", lex.GetLineNumber(), val)
+				return nil, nil, parseErr("legal token while parsing binding fields", lex.GetLineNumber(), val)
 			} else {
 				break
 			}
@@ -360,23 +416,40 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
 			lex.UnGetToken()
 			break
 		}
+		// Use recursion to parse custom HTTP verb sections
+		if val == "custom" {
+			err := fastForwardTill(lex, "{")
+			if err != nil {
+				return nil, nil, err
+			}
+			c, _, err := ParseBindingFields(lex)
+			if err != nil {
+				return nil, nil, err
+			}
+			custom = c
+			err = fastForwardTill(lex, "}")
+			if err != nil {
+				return nil, nil, err
+			}
+			continue
+		}
 
 		field.Kind = val
 		field.Name = val
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != SYMBOL || val != ":" {
-			return nil, parseErr("symbol ':'", lex.GetLineNumber(), val)
+			return nil, nil, parseErr("symbol ':'", lex.GetLineNumber(), val)
 		}
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != STRING_LITERAL {
-			return nil, parseErr("string literal", lex.GetLineNumber(), val)
+			return nil, nil, parseErr("string literal", lex.GetLineNumber(), val)
 		}
 
 		noqoute, err := strconv.Unquote(val)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		field.Value = noqoute
 
@@ -384,5 +457,5 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
 		field = &Field{}
 	}
 
-	return rv, nil
+	return rv, custom, nil
 }
