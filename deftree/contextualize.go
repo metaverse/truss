@@ -51,6 +51,16 @@ func contextualizeBinding(meth *ServiceMethod, binding *MethodHttpBinding) error
 
 // Get's the verb of binding. Currently doesn't support "custom" verbs.
 func getVerb(binding *MethodHttpBinding) (verb string, path string) {
+	if binding.CustomHTTPPattern != nil {
+		for _, field := range binding.CustomHTTPPattern {
+			if field.Kind == "kind" {
+				verb = field.Value
+			} else if field.Kind == "path" {
+				path = field.Value
+			}
+		}
+		return verb, path
+	}
 	for _, field := range binding.Fields {
 		switch field.Kind {
 		case "get", "put", "post", "delete", "patch":

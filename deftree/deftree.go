@@ -510,12 +510,13 @@ func (self *ServiceMethod) GetByName(name string) Describable {
 
 type MethodHttpBinding struct {
 	Describable
-	Name        string
-	Description string
-	Verb        string
-	Path        string
-	Fields      []*BindingField
-	Params      []*HttpParameter
+	Name              string
+	Description       string
+	Verb              string
+	Path              string
+	Fields            []*BindingField
+	CustomHTTPPattern []*BindingField
+	Params            []*HttpParameter
 }
 
 func (self *MethodHttpBinding) GetName() string {

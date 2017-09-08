@@ -83,6 +83,8 @@ type Method struct {
 // HTTPBinding holds information extracted by the parser about each HTTP
 // binding within each method.
 type HTTPBinding struct {
+	// At this time, the way to provide a "description" of an HTTP binding is
+	// to write a comment directly above the "option" statement in an rpc.
 	Description string
 	Fields      []*Field
 	// CustomHTTPPattern contains the fields for a `custom` HTTP verb. It's
@@ -141,7 +143,7 @@ type HTTPBinding struct {
 // HTTP binding.
 type Field struct {
 	// Name acts as an 'alias' for the Field. Usually, it has the same value as
-	// "Kind", though there are no guaruntees that they'll be the same. Name
+	// "Kind", though there are no guarantees that they'll be the same. Name
 	// should never be used as part of "business logic" it is purely as a
 	// human-readable decorative field.
 	Name        string

@@ -403,6 +403,15 @@ func convertSvcparse(parsedSvc *svcparse.Service) (*ProtoService, error) {
 				}
 				b.Fields = append(b.Fields, f)
 			}
+			for _, pc := range pb.CustomHTTPPattern {
+				f := &BindingField{
+					Name:        pc.Name,
+					Description: scrubComments(pc.Description),
+					Kind:        pc.Kind,
+					Value:       pc.Value,
+				}
+				b.CustomHTTPPattern = append(b.CustomHTTPPattern, f)
+			}
 			m.HttpBindings = append(m.HttpBindings, b)
 		}
 		rv.Methods = append(rv.Methods, m)
