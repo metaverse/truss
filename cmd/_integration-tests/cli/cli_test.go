@@ -441,11 +441,6 @@ func removeTestFiles(defDir string) {
 	os.RemoveAll(filepath.Join(defDir, "test-service"))
 	// where the binaries are compiled to
 	os.RemoveAll(filepath.Join(defDir, "bin"))
-	// test pbout
-	os.RemoveAll(filepath.Join(defDir, "pbout"))
-	// So that the directory exists for pbout
-	// TODO: Make pbout create the directory if it does not exist
-	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)
 }
 
 // FindFreePort returns an open TCP port. That port could be taken in the time

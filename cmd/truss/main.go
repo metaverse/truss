@@ -198,8 +198,27 @@ func parseInput() (*truss.Config, error) {
 	}
 
 	// PBGoPackage
-	cfg.PBPackage = cfg.ServicePackage
-	cfg.PBPath = cfg.ServicePath
+	//
+	// It used to be the case that the package where the .pb.go files would be
+	// placed by default was into the newly-generated truss service. However,
+	// we now want to keep our .pb.go files directly next to our .proto files,
+	// so that's where we're going to place them by default. This implies an
+	// assumption that our .proto files exist within our GOPATH.
+	//
+	// Also, if they've passed in multiple protobuf files, we're going to use
+	// the base path of the first file as the basis for deriving the go-package
+	// path and actual disk path of the future .pb.go file.
+	protoDir := filepath.Dir(cfg.DefPaths[0])
+	p, err := build.Default.ImportDir(protoDir, build.FindOnly)
+	if err != nil {
+		return nil, err
+	}
+	if p.Root == "" {
+		return nil, errors.New("proto files not in GOPATH")
+	}
+
+	cfg.PBPackage = p.ImportPath
+	cfg.PBPath = p.Dir
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
