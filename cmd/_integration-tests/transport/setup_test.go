@@ -11,7 +11,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
+	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/proto"
 	handler "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/handlers"
 	svc "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc"
 )
