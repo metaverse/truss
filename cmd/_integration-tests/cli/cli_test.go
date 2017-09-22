@@ -118,22 +118,6 @@ func TestBasicTypes(t *testing.T) {
 	testEndToEnd("1-basic", "getbasic", t)
 }
 
-func TestBasicTypesWithPBOutFlag(t *testing.T) {
-	path := filepath.Join(basePath, "1-basic")
-	removeTestFiles(path)
-	testEndToEnd("1-basic", "getbasic", t,
-		"--pbout",
-		"github.com/TuneLab/truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
-}
-
-func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
-	path := filepath.Join(basePath, "1-basic")
-	removeTestFiles(path)
-	testEndToEnd("1-basic", "getbasic", t,
-		"--pbout",
-		"./pbout")
-}
-
 func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
 	svcOut := "./tunelab"
 	path := filepath.Join(basePath, "1-basic")
