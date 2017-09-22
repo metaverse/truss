@@ -441,6 +441,13 @@ func removeTestFiles(defDir string) {
 	os.RemoveAll(filepath.Join(defDir, "test-service"))
 	// where the binaries are compiled to
 	os.RemoveAll(filepath.Join(defDir, "bin"))
+	// Remove all the .pb.go files which may remain
+	dirs, _ := ioutil.ReadDir(defDir)
+	for _, d := range dirs {
+		if strings.HasSuffix(d.Name(), ".pb.go") {
+			os.RemoveAll(filepath.Join(defDir, d.Name()))
+		}
+	}
 }
 
 // FindFreePort returns an open TCP port. That port could be taken in the time
