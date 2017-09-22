@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 type optionParseErr struct {
@@ -40,9 +42,14 @@ func optionalParseErr(expected string, line int, val string) error {
 	}
 }
 
-func parseErr(expected string, line int, val string) error {
-	err := fmt.Errorf("parser expected %v in line '%v', instead found '%v'", expected, line, val)
-	return err
+type parserErr struct {
+	expected string
+	line     int
+	val      string
+}
+
+func (pe parserErr) Error() string {
+	return fmt.Sprintf("parser expected %v in line '%v', instead found '%v'", pe.expected, pe.line, pe.val)
 }
 
 // fastForwardTill moves the lexer forward till a token with a certain value
@@ -160,20 +167,32 @@ func ParseService(lex *SvcLexer) (*Service, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	if tk != IDENT && val != "service" {
-		return nil, parseErr("'service' identifier", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'service' identifier",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret := &Service{}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
-		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 	toret.Name = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
-		return nil, parseErr("'{'", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'{'",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	// Recursively parse the methods of this service
@@ -212,7 +231,11 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	case tk == CLOSE_BRACE:
 		return nil, nil
 	case tk != IDENT || val != "rpc":
-		return nil, parseErr("identifier 'rpc'", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "identifier 'rpc'",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret := &Method{}
@@ -220,7 +243,11 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
-		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 	toret.Name = val
 
@@ -229,7 +256,11 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_PAREN {
-		return nil, parseErr("'('", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'('",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -239,24 +270,40 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 		tk, val = lex.GetTokenIgnoreWhitespace()
 	}
 	if tk != IDENT {
-		return nil, parseErr("a string identifier in first argument to method", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier in first argument to method",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret.RequestType = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
-		return nil, parseErr("')'", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "')'",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT || val != "returns" {
-		return nil, parseErr("'returns' keyword", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'returns' keyword",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_PAREN {
-		return nil, parseErr("'('", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'('",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -266,19 +313,31 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 		tk, val = lex.GetTokenIgnoreWhitespace()
 	}
 	if tk != IDENT {
-		return nil, parseErr("a string identifier in return argument to method", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier in return argument to method",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret.ResponseType = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
-		return nil, parseErr("')' after declaration of return type to method", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "')' after declaration of return type to method",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
-		return nil, parseErr("'{' after declaration of method signature", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'{' after declaration of method signature",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	bindings, err := ParseHttpBindings(lex)
@@ -295,12 +354,20 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	// declarations, which we should check for
 	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
 	if tk != SYMBOL || val != ";" {
-		return nil, parseErr("';' after declaration of http options", lex.GetLineNumber(), val+tk.String())
+		return nil, parserErr{
+			expected: "';' after declaration of http options",
+			line:     lex.GetLineNumber(),
+			val:      val + tk.String(),
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
 	if tk != CLOSE_BRACE {
-		return nil, parseErr("'}' after declaration of http options marking end of rpc declarations", lex.GetLineNumber(), val+tk.String())
+		return nil, parserErr{
+			expected: "'}' after declaration of http options marking end of rpc declarations",
+			line:     lex.GetLineNumber(),
+			val:      val + tk.String(),
+		}
 	}
 
 	return toret, nil
@@ -327,7 +394,11 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 			new_opt.Description = val
 			tk, val = lex.GetTokenIgnoreWhitespace()
 		} else if tk == EOF || tk == ILLEGAL {
-			return nil, parseErr("non-illegal input", lex.GetLineNumber(), tk.String())
+			return nil, parserErr{
+				expected: "non-illegal input",
+				line:     lex.GetLineNumber(),
+				val:      tk.String(),
+			}
 		} else {
 			break
 		}
@@ -362,9 +433,17 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 				rv = append(rv, more_bindings...)
 				good_position = lex.GetPosition()
 			} else if tk == EOF || tk == ILLEGAL {
-				return nil, parseErr("legal token while parsing HttpBindings", lex.GetLineNumber(), fmt.Sprintf("(%v) of type %v", val, tk))
+				return nil, parserErr{
+					expected: "legal token while parsing HttpBindings",
+					line:     lex.GetLineNumber(),
+					val:      fmt.Sprintf("(%v) of type %v", val, tk),
+				}
 			} else {
-				return nil, parseErr("close brace or comment while parsing http bindings", lex.GetLineNumber(), tk.String()+val)
+				return nil, parserErr{
+					expected: "close brace or comment while parsing http bindings",
+					line:     lex.GetLineNumber(),
+					val:      tk.String() + val,
+				}
 			}
 			tk, val = lex.GetTokenIgnoreWhitespace()
 		}
@@ -394,9 +473,7 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 	return nil, optErr
 }
 
-func ParseBindingFields(lex *SvcLexer) ([]*Field, []*Field, error) {
-	rv := make([]*Field, 0)
-	var custom []*Field
+func ParseBindingFields(lex *SvcLexer) (fields []*Field, custom []*Field, err error) {
 	field := &Field{}
 	for {
 		tk, val := lex.GetTokenIgnoreWhitespace()
@@ -405,7 +482,11 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, []*Field, error) {
 				field.Description = val
 				tk, val = lex.GetTokenIgnoreWhitespace()
 			} else if tk == EOF || tk == ILLEGAL {
-				return nil, nil, parseErr("legal token while parsing binding fields", lex.GetLineNumber(), val)
+				return nil, nil, parserErr{
+					expected: "legal token while parsing binding fields",
+					line:     lex.GetLineNumber(),
+					val:      val,
+				}
 			} else {
 				break
 			}
@@ -422,16 +503,18 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, []*Field, error) {
 		if val == "custom" {
 			err := fastForwardTill(lex, "{")
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, errors.Wrap(err, "cannot fastforward till opening brace")
 			}
+			// Since there cannot be a custom within a custom, we ignore custom
+			// values returned from a recursive parsing of more fields
 			c, _, err := ParseBindingFields(lex)
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, errors.Wrap(err, "cannot parse custom binding fields")
 			}
 			custom = c
 			err = fastForwardTill(lex, "}")
 			if err != nil {
-				return nil, nil, err
+				return nil, nil, errors.Wrap(err, "cannot fastforward to closing brace")
 			}
 			continue
 		}
@@ -441,23 +524,31 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, []*Field, error) {
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != SYMBOL || val != ":" {
-			return nil, nil, parseErr("symbol ':'", lex.GetLineNumber(), val)
+			return nil, nil, parserErr{
+				expected: "symbol ':'",
+				line:     lex.GetLineNumber(),
+				val:      val,
+			}
 		}
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != STRING_LITERAL {
-			return nil, nil, parseErr("string literal", lex.GetLineNumber(), val)
+			return nil, nil, parserErr{
+				expected: "string literal",
+				line:     lex.GetLineNumber(),
+				val:      val,
+			}
 		}
 
 		noqoute, err := strconv.Unquote(val)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, errors.Wrapf(err, "cannot unquote value %q", val)
 		}
 		field.Value = noqoute
 
-		rv = append(rv, field)
+		fields = append(fields, field)
 		field = &Field{}
 	}
 
-	return rv, custom, nil
+	return fields, custom, nil
 }
