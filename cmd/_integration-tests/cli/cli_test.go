@@ -119,12 +119,16 @@ func TestBasicTypes(t *testing.T) {
 }
 
 func TestBasicTypesWithPBOutFlag(t *testing.T) {
+	path := filepath.Join(basePath, "1-basic")
+	removeTestFiles(path)
 	testEndToEnd("1-basic", "getbasic", t,
 		"--pbout",
 		"github.com/TuneLab/truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
 }
 
 func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
+	path := filepath.Join(basePath, "1-basic")
+	removeTestFiles(path)
 	testEndToEnd("1-basic", "getbasic", t,
 		"--pbout",
 		"./pbout")
@@ -191,7 +195,7 @@ func TestAdditionalBindings(t *testing.T) {
 
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
-	err := createTrussService(path)
+	err := createTrussService(path, trussOptions...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +233,6 @@ func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...st
 }
 
 func createTrussService(path string, trussFlags ...string) error {
-
 	trussOut, err := truss(path, trussFlags...)
 
 	// If truss fails, test error and skip communication
