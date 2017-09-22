@@ -28,7 +28,6 @@ import (
 )
 
 var (
-	pbPackageFlag  = flag.String("pbout", "", "Go package path where the protoc-gen-go .pb.go files will be written")
 	svcPackageFlag = flag.String("svcout", "", "Go package path where the generated Go service will be written. Trailing slash will create a NAME-service directory")
 	verboseFlag    = flag.BoolP("verbose", "v", false, "Verbose output")
 	helpFlag       = flag.BoolP("help", "h", false, "Print usage")
@@ -199,20 +198,8 @@ func parseInput() (*truss.Config, error) {
 	}
 
 	// PBGoPackage
-	if *pbPackageFlag == "" {
-		cfg.PBPackage = cfg.ServicePackage
-		cfg.PBPath = cfg.ServicePath
-	} else {
-		p, err := build.Default.Import(*pbPackageFlag, wd, build.FindOnly)
-		if err != nil {
-			return nil, err
-		}
-		if !fileExists(p.Dir) {
-			return nil, errors.Errorf("specified package path for .pb.go output directory does not exist: %q", p.Dir)
-		}
-		cfg.PBPackage = p.ImportPath
-		cfg.PBPath = p.Dir
-	}
+	cfg.PBPackage = cfg.ServicePackage
+	cfg.PBPath = cfg.ServicePath
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
