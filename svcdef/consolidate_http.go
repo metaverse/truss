@@ -107,10 +107,22 @@ func assembleHTTPParams(svc *Service, httpsvc *svcparse.Service) error {
 	return nil
 }
 
-// getVerb returns the verb of a svcparse.HTTPBinding. If the binding does not
-// contain a field with a verb, returns two empty strings. Currently doesn't
-// support "custom" verbs.
+// getVerb returns the verb of a svcparse.HTTPBinding. The verb is found by
+// first checking if there's a 'customHTTPPattern' for a binding and using
+// that. If there's no custom verb defined, then we search through the defined
+// fields for a 'standard' field such as 'get', 'post', etc. If the binding
+// does not contain a field with a verb, returns two empty strings.
 func getVerb(binding *svcparse.HTTPBinding) (verb string, path string) {
+	if binding.CustomHTTPPattern != nil {
+		for _, field := range binding.CustomHTTPPattern {
+			if field.Kind == "kind" {
+				verb = field.Value
+			} else if field.Kind == "path" {
+				path = field.Value
+			}
+		}
+		return verb, path
+	}
 	for _, field := range binding.Fields {
 		switch field.Kind {
 		case "get", "put", "post", "delete", "patch":

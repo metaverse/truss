@@ -29,7 +29,7 @@ test: setup
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	truss transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test -run=$(match)-v
+	go test -run=$(match) -v
 	$(MAKE) clean
 
 bench: setup

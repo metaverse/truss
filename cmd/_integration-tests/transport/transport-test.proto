@@ -92,6 +92,14 @@ service TransportPermutations {
       get: "/status/code/and/headers"
     };
   }
+  rpc CustomVerb (GetWithQueryRequest) returns (GetWithQueryResponse) {
+    option (google.api.http) = {
+      custom {
+        kind: "CUSTOMVERB"
+        path: "/customverb"
+      }
+    };
+  }
 }
 
 message Empty {}
