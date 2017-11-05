@@ -20,14 +20,16 @@ all: test
 
 setup:
 	@echo -e '$(TRUSS_MSG)'
-	truss transport-test.proto
+	mkdir -p transportpermutations-service
+	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r handlers transportpermutations-service
 
 test: setup
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -run=$(match) -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
-	truss transport-test.proto
+	mkdir -p transportpermutations-service
+	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -run=$(match)-v
 	$(MAKE) clean
@@ -40,10 +42,12 @@ bench: setup
 # Run this when you add a new rpc to the .proto file and it will update
 # handlers/handlers.go
 newrpc:
-	truss transport-test.proto
+	mkdir -p transportpermutations-service
+	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r handlers transportpermutations-service
-	truss transport-test.proto
+	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r transportpermutations-service/handlers/handlers.go handlers
 
 clean:
 	rm -rf transportpermutations-service
+	rm -f ./proto/transport-test.pb.go

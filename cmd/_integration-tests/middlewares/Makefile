@@ -11,7 +11,8 @@ all: test
 
 test:
 	@echo -e '$(TRUSS_MSG)'
-	truss middlewares-test.proto
+	mkdir -p middlewarestest-service
+	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service proto/middlewares-test.proto
 	cp -r handlers middlewarestest-service
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v
@@ -19,3 +20,4 @@ test:
 
 clean:
 	rm -rf middlewarestest-service
+	rm -f ./proto/middlewares-test.pb.go

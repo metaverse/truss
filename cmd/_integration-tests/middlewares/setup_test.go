@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service"
 	"github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
 	svc "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
+	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/proto"
 )
 
 var middlewareEndpoints svc.Endpoints
