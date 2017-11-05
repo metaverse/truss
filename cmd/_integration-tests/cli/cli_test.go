@@ -177,6 +177,11 @@ func TestAdditionalBindings(t *testing.T) {
 	testEndToEnd("6-additional_bindings", "getadditional", t)
 }
 
+func TestCustomHTTPVerbs(t *testing.T) {
+	testEndToEnd("7-custom_http_verb", "getadditional", t)
+	testEndToEnd("7-custom_http_verb", "postadditional", t)
+}
+
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
 	err := createTrussService(path, trussOptions...)

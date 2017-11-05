@@ -158,3 +158,11 @@ func (s transportpermutationsService) StatusCodeAndHeaders(ctx context.Context, 
 		"Test": []string{"A", "B"},
 	}}
 }
+
+// CustomVerb implements Service
+func (s transportpermutationsService) CustomVerb(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+	response := pb.GetWithQueryResponse{
+		V: in.A + in.B,
+	}
+	return &response, nil
+}

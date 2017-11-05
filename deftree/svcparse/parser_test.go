@@ -9,12 +9,20 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 )
 
-func DiffStrings(a, b string) string {
+func DiffStrings(a, b string, names ...string) string {
+	labels := []string{"A", "B"}
+	for i, v := range names {
+		if i >= len(labels) {
+			break
+		} else {
+			labels[i] = v
+		}
+	}
 	t := difflib.UnifiedDiff{
 		A:        difflib.SplitLines(a),
 		B:        difflib.SplitLines(b),
-		FromFile: "A",
-		ToFile:   "B",
+		FromFile: labels[0],
+		ToFile:   labels[1],
 		Context:  5,
 	}
 	text, _ := difflib.GetUnifiedDiffString(t)
@@ -113,7 +121,7 @@ service Example_Service {
 		},
 	}
 	if got, want := meth.HTTPBindings, bindings; !reflect.DeepEqual(got, want) {
-		t.Log(DiffStrings(spew.Sdump(got), spew.Sdump(want)))
+		t.Log(DiffStrings(spew.Sdump(got), spew.Sdump(want), "got", "want"))
 		t.Errorf("Http binding contents = %#v, want = %#v\n", got, want)
 	}
 }
@@ -571,5 +579,151 @@ service FlowCombination {
 	}
 	if svc == nil {
 		t.Fatalf("Returned service is nil\n")
+	}
+}
+
+// Test that that the order of 'body' fields and 'custom' HTTP verb fields
+// yields equivalent parsing results.
+func TestCustomHTTPPatternFieldOrder(t *testing.T) {
+	// A service definition with a 'custom' HTTP pattern coming before a 'body' field
+	const customVerbAboveBody string = `
+	service ExmplService {
+		rpc ExmplMethod (RequestStrct) returns (ResponseStrct) {
+			option (google.api.http) = {
+				custom {
+					// The verb itself goes in the "kind" field
+					kind: "MYVERBHERE"
+					// Likewise, path goes in the "path" field. As always, the path
+					// may have parameters within it.
+					path: "/foo/bar/{SomeFieldName}"
+				}
+				// This 'body' field is optional
+				body: "*"
+			};
+		}
+	}`
+
+	// A service definition with a 'custom' HTTP pattern coming after a 'body' field
+	const customVerbBelowBody string = `
+	service ExmplService {
+		rpc ExmplMethod (RequestStrct) returns (ResponseStrct) {
+			option (google.api.http) = {
+				// This 'body' field is optional
+				body: "*"
+				custom {
+					// The verb itself goes in the "kind" field
+					kind: "MYVERBHERE"
+					// Likewise, path goes in the "path" field. As always, the path
+					// may have parameters within it.
+					path: "/foo/bar/{SomeFieldName}"
+				}
+			};
+		}
+	}`
+	r := strings.NewReader(customVerbBelowBody)
+	lex := NewSvcLexer(r)
+	below, err := ParseService(lex)
+	if err != nil {
+		t.Error(err)
+	}
+
+	r = strings.NewReader(customVerbAboveBody)
+	lex = NewSvcLexer(r)
+	above, err := ParseService(lex)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !reflect.DeepEqual(below, above) {
+		t.Log(DiffStrings(spew.Sdump(below), spew.Sdump(above), "below", "above"))
+		t.Errorf("Custom HTTP verb declaration below = %#v, above = %#v\n", below, above)
+	}
+}
+
+// Test that comments in and arround a 'custom' HTTP pattern are parsed
+// correctly and do not yield errors.
+func TestCustomHTTPPatternWithComments(t *testing.T) {
+	const customVerbWithComments string = `
+	service ExmplService {
+		rpc ExmplMethod (RequestStrct) returns (ResponseStrct) {
+			option (google.api.http) = {
+				// This 'body' field is optional
+				body: "*"
+				// Comment directly above a custom declaration
+				custom /* does this break? */ { /* how about this? */
+					// I hope this breaks something :)
+					kind: "MYVERBHERE" // may comments go here?
+					// Likewise, we must know if this breaks anything
+					path: "/foo/bar/{SomeFieldName}" /* can comment be here */
+					/* after path declaration */
+				}/* immediately following our closing brace for custom */
+			};
+		}
+	}`
+
+	r := strings.NewReader(customVerbWithComments)
+	lex := NewSvcLexer(r)
+	_, err := ParseService(lex)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+// Test that parsing of a custom HTTP pattern returns a correct and expected HTTPBinding struct.
+func TestCustomHTTPPatternOutputExample(t *testing.T) {
+	const customVerb string = `
+	service ExmplService {
+		rpc ExmplMethod (RequestStrct) returns (ResponseStrct) {
+			option (google.api.http) = {
+				custom {
+					// The verb itself goes in the "kind" field
+					kind: "MYVERBHERE"
+					// Likewise, path goes in the "path" field. As always, the path
+					// may have parameters within it.
+					path: "/foo/bar/{SomeFieldName}"
+				}
+				// This 'body' field is optional
+				body: "*"
+			};
+		}
+	}`
+
+	r := strings.NewReader(customVerb)
+	lex := NewSvcLexer(r)
+	svc, err := ParseService(lex)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectedBinding := []*HTTPBinding{
+		&HTTPBinding{
+			Fields: []*Field{
+				&Field{
+					Description: "// This 'body' field is optional\n",
+					Name:        "body",
+					Kind:        "body",
+					Value:       "*",
+				},
+			},
+			CustomHTTPPattern: []*Field{
+				&Field{
+					Description: "// The verb itself goes in the \"kind\" field\n",
+					Name:        "kind",
+					Kind:        "kind",
+					Value:       "MYVERBHERE",
+				},
+				&Field{
+					Description: "// Likewise, path goes in the \"path\" field. As always, the path\n\t\t\t\t\t// may have parameters within it.\n",
+					Name:        "path",
+					Kind:        "path",
+					Value:       "/foo/bar/{SomeFieldName}",
+				},
+			},
+		},
+	}
+
+	if got, want := svc.Methods[0].HTTPBindings, expectedBinding; !reflect.DeepEqual(got, want) {
+		t.Log(DiffStrings(spew.Sdump(got), spew.Sdump(want), "got", "want"))
+		t.Errorf("Custom HTTP verb declaration got = %#v, want = %#v\n", got, want)
 	}
 }
