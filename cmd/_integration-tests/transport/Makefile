@@ -31,7 +31,7 @@ test: setup
 	mkdir -p transportpermutations-service
 	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
-	go test -run=$(match)-v
+	go test -run=$(match) -v
 	$(MAKE) clean
 
 bench: setup

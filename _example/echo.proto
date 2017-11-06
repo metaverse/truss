@@ -14,32 +14,38 @@ service Echo {
   // Echo "echos" the incoming string
   rpc Echo (EchoRequest) returns (EchoResponse) {
     option (google.api.http) = {
-        // All fields (In) are query parameters of the http request unless otherwise specified
-        get: "/echo"
+      // All fields (In) are query parameters of the http request unless otherwise specified
+      get: "/echo"
 
-        additional_bindings {
-          // Trailing slashes are different routes
-          get: "/echo/"
-        }
-      };
+      additional_bindings {
+        // Trailing slashes are different routes
+        get: "/echo/"
+      }
+    };
   }
 
   // Louder "echos" the incoming string with `Loudness` additional exclamation marks
   rpc Louder (LouderRequest) returns (EchoResponse) {
     option (google.api.http) = {
+      custom {
+        kind: "HEAD"
         // Loudness is accepted in the http path
+        path: "/louder/{Loudness}"
+      }
+      additional_bindings {
         post: "/louder/{Loudness}"
         // All other fields (In) are located in the body of the http/json request
         body: "*"
-      };
+      }
+    };
   }
 
   // LouderGet is the same as Louder, but pulls fields other than Loudness (i.e. In) from query params instead of POST
   rpc LouderGet (LouderRequest) returns (EchoResponse) {
     option (google.api.http) = {
-        // Loudness is accepted in the http path
-        get: "/louder/{Loudness}"
-      };
+      // Loudness is accepted in the http path
+      get: "/louder/{Loudness}"
+    };
   }
 }
 
