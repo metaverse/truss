@@ -8,7 +8,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
+	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/proto"
 	grpcclient "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/grpc"
 )
 

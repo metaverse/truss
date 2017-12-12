@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/pkg/errors"
 )
 
 type optionParseErr struct {
@@ -40,9 +42,14 @@ func optionalParseErr(expected string, line int, val string) error {
 	}
 }
 
-func parseErr(expected string, line int, val string) error {
-	err := fmt.Errorf("parser expected %v in line '%v', instead found '%v'", expected, line, val)
-	return err
+type parserErr struct {
+	expected string
+	line     int
+	val      string
+}
+
+func (pe parserErr) Error() string {
+	return fmt.Sprintf("parser expected %v in line '%v', instead found '%v'", pe.expected, pe.line, pe.val)
 }
 
 // fastForwardTill moves the lexer forward till a token with a certain value
@@ -83,13 +90,69 @@ type Method struct {
 // HTTPBinding holds information extracted by the parser about each HTTP
 // binding within each method.
 type HTTPBinding struct {
+	// At this time, the way to provide a "description" of an HTTP binding is
+	// to write a comment directly above the "option" statement in an rpc.
 	Description string
 	Fields      []*Field
+	// CustomHTTPPattern contains the fields for a `custom` HTTP verb. It's
+	// name comes from the name for this construct in the http annotations
+	// protobuf file. The following is an example of a protobuf service with
+	// custom http verbs and the equivelent HTTPBinding literal:
+	//
+	// Protobuf code:
+	//
+	// service ExmplService {
+	//   rpc ExmplMethod (RequestStrct) returns (ResponseStrct) {
+	//     option (google.api.http) = {
+	//       custom {
+	//         // The verb itself goes in the "kind" field
+	//         kind: "MYVERBHERE"
+	//         // Likewise, path goes in the "path" field. As always, the path
+	//         // may have parameters within it.
+	//         path: "/foo/bar/{SomeFieldName}"
+	//       }
+	//       // This 'body' field is optional
+	//       body: "*"
+	//     };
+	//   }
+	// }
+	//
+	// Resulting HTTPBinding:
+	//
+	// HTTPBinding{
+	//     Fields: []*Field{
+	//         &Field{
+	//             Description: "// This 'body' field is optional\n",
+	//             Name:  "body",
+	//             Kind:  "body",
+	//             Value: "*",
+	//         },
+	//     },
+	//     CustomHTTPPattern: []*Field{
+	//         &Field{
+	//             Description: "// The verb itself goes in the \"kind\" field\n",
+	//             Name:        "kind",
+	//             Kind:        "kind",
+	//             Value:       "MYVERBHERE",
+	//         },
+	//         &Field{
+	//             Description: "// Likewise, path goes in the \"path\" field. As always, the path\n\t\t\t\t\t// may have parameters within it.\n",
+	//             Name:  "path",
+	//             Kind:  "path",
+	//             Value: "/foo/bar/{SomeFieldName}",
+	//         },
+	//     },
+	// },
+	CustomHTTPPattern []*Field
 }
 
 // Field holds information extracted by the parser about each field within each
 // HTTP binding.
 type Field struct {
+	// Name acts as an 'alias' for the Field. Usually, it has the same value as
+	// "Kind", though there are no guarantees that they'll be the same. Name
+	// should never be used as part of "business logic" it is purely as a
+	// human-readable decorative field.
 	Name        string
 	Description string
 	Kind        string
@@ -104,20 +167,32 @@ func ParseService(lex *SvcLexer) (*Service, error) {
 		return nil, io.ErrUnexpectedEOF
 	}
 	if tk != IDENT && val != "service" {
-		return nil, parseErr("'service' identifier", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'service' identifier",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret := &Service{}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
-		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 	toret.Name = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
-		return nil, parseErr("'{'", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'{'",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	// Recursively parse the methods of this service
@@ -156,7 +231,11 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	case tk == CLOSE_BRACE:
 		return nil, nil
 	case tk != IDENT || val != "rpc":
-		return nil, parseErr("identifier 'rpc'", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "identifier 'rpc'",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret := &Method{}
@@ -164,7 +243,11 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT {
-		return nil, parseErr("a string identifier", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 	toret.Name = val
 
@@ -173,7 +256,11 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_PAREN {
-		return nil, parseErr("'('", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'('",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -183,24 +270,40 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 		tk, val = lex.GetTokenIgnoreWhitespace()
 	}
 	if tk != IDENT {
-		return nil, parseErr("a string identifier in first argument to method", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier in first argument to method",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret.RequestType = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
-		return nil, parseErr("')'", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "')'",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != IDENT || val != "returns" {
-		return nil, parseErr("'returns' keyword", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'returns' keyword",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_PAREN {
-		return nil, parseErr("'('", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'('",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
@@ -210,19 +313,31 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 		tk, val = lex.GetTokenIgnoreWhitespace()
 	}
 	if tk != IDENT {
-		return nil, parseErr("a string identifier in return argument to method", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "a string identifier in return argument to method",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	toret.ResponseType = val
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != CLOSE_PAREN {
-		return nil, parseErr("')' after declaration of return type to method", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "')' after declaration of return type to method",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
 	if tk != OPEN_BRACE {
-		return nil, parseErr("'{' after declaration of method signature", lex.GetLineNumber(), val)
+		return nil, parserErr{
+			expected: "'{' after declaration of method signature",
+			line:     lex.GetLineNumber(),
+			val:      val,
+		}
 	}
 
 	bindings, err := ParseHttpBindings(lex)
@@ -239,12 +354,20 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	// declarations, which we should check for
 	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
 	if tk != SYMBOL || val != ";" {
-		return nil, parseErr("';' after declaration of http options", lex.GetLineNumber(), val+tk.String())
+		return nil, parserErr{
+			expected: "';' after declaration of http options",
+			line:     lex.GetLineNumber(),
+			val:      val + tk.String(),
+		}
 	}
 
 	tk, val = lex.GetTokenIgnoreCommentAndWhitespace()
 	if tk != CLOSE_BRACE {
-		return nil, parseErr("'}' after declaration of http options marking end of rpc declarations", lex.GetLineNumber(), val+tk.String())
+		return nil, parserErr{
+			expected: "'}' after declaration of http options marking end of rpc declarations",
+			line:     lex.GetLineNumber(),
+			val:      val + tk.String(),
+		}
 	}
 
 	return toret, nil
@@ -271,7 +394,11 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 			new_opt.Description = val
 			tk, val = lex.GetTokenIgnoreWhitespace()
 		} else if tk == EOF || tk == ILLEGAL {
-			return nil, parseErr("non-illegal input", lex.GetLineNumber(), tk.String())
+			return nil, parserErr{
+				expected: "non-illegal input",
+				line:     lex.GetLineNumber(),
+				val:      tk.String(),
+			}
 		} else {
 			break
 		}
@@ -283,11 +410,12 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 		if err != nil {
 			return nil, err
 		}
-		fields, err := ParseBindingFields(lex)
+		fields, custom, err := ParseBindingFields(lex)
 		if err != nil {
 			return nil, err
 		}
 		new_opt.Fields = fields
+		new_opt.CustomHTTPPattern = custom
 		good_position := lex.GetPosition()
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
@@ -305,9 +433,17 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 				rv = append(rv, more_bindings...)
 				good_position = lex.GetPosition()
 			} else if tk == EOF || tk == ILLEGAL {
-				return nil, parseErr("non-illegal token while parsing HttpBindings", lex.GetLineNumber(), fmt.Sprintf("(%v) of type %v", val, tk))
+				return nil, parserErr{
+					expected: "legal token while parsing HttpBindings",
+					line:     lex.GetLineNumber(),
+					val:      fmt.Sprintf("(%v) of type %v", val, tk),
+				}
 			} else {
-				return nil, parseErr("close brace or comment while parsing http bindings", lex.GetLineNumber(), tk.String()+val)
+				return nil, parserErr{
+					expected: "close brace or comment while parsing http bindings",
+					line:     lex.GetLineNumber(),
+					val:      tk.String() + val,
+				}
 			}
 			tk, val = lex.GetTokenIgnoreWhitespace()
 		}
@@ -316,11 +452,12 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 		if err != nil {
 			return nil, err
 		}
-		fields, err := ParseBindingFields(lex)
+		fields, custom, err := ParseBindingFields(lex)
 		if err != nil {
 			return nil, err
 		}
 		new_opt.Fields = fields
+		new_opt.CustomHTTPPattern = custom
 		err = fastForwardTill(lex, "}")
 		if err != nil {
 			return nil, err
@@ -336,9 +473,7 @@ func ParseHttpBindings(lex *SvcLexer) ([]*HTTPBinding, error) {
 	return nil, optErr
 }
 
-func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
-
-	rv := make([]*Field, 0)
+func ParseBindingFields(lex *SvcLexer) (fields []*Field, custom []*Field, err error) {
 	field := &Field{}
 	for {
 		tk, val := lex.GetTokenIgnoreWhitespace()
@@ -347,7 +482,11 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
 				field.Description = val
 				tk, val = lex.GetTokenIgnoreWhitespace()
 			} else if tk == EOF || tk == ILLEGAL {
-				return nil, parseErr("non-illegal token whil parsing binding fields", lex.GetLineNumber(), val)
+				return nil, nil, parserErr{
+					expected: "legal token while parsing binding fields",
+					line:     lex.GetLineNumber(),
+					val:      val,
+				}
 			} else {
 				break
 			}
@@ -360,29 +499,56 @@ func ParseBindingFields(lex *SvcLexer) ([]*Field, error) {
 			lex.UnGetToken()
 			break
 		}
+		// Use recursion to parse custom HTTP verb sections
+		if val == "custom" {
+			err := fastForwardTill(lex, "{")
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "cannot fastforward till opening brace")
+			}
+			// Since there cannot be a custom within a custom, we ignore custom
+			// values returned from a recursive parsing of more fields
+			c, _, err := ParseBindingFields(lex)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "cannot parse custom binding fields")
+			}
+			custom = c
+			err = fastForwardTill(lex, "}")
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "cannot fastforward to closing brace")
+			}
+			continue
+		}
 
 		field.Kind = val
 		field.Name = val
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != SYMBOL || val != ":" {
-			return nil, parseErr("symbol ':'", lex.GetLineNumber(), val)
+			return nil, nil, parserErr{
+				expected: "symbol ':'",
+				line:     lex.GetLineNumber(),
+				val:      val,
+			}
 		}
 
 		tk, val = lex.GetTokenIgnoreWhitespace()
 		if tk != STRING_LITERAL {
-			return nil, parseErr("string literal", lex.GetLineNumber(), val)
+			return nil, nil, parserErr{
+				expected: "string literal",
+				line:     lex.GetLineNumber(),
+				val:      val,
+			}
 		}
 
 		noqoute, err := strconv.Unquote(val)
 		if err != nil {
-			return nil, err
+			return nil, nil, errors.Wrapf(err, "cannot unquote value %q", val)
 		}
 		field.Value = noqoute
 
-		rv = append(rv, field)
+		fields = append(fields, field)
 		field = &Field{}
 	}
 
-	return rv, nil
+	return fields, custom, nil
 }

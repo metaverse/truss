@@ -14,7 +14,7 @@ import (
 	// 3d Party
 	"context"
 	// This Service
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
+	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/proto"
 	httpclient "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
 
 	"github.com/pkg/errors"
@@ -576,6 +576,43 @@ func TestNonJSONRequestBodyReturnsResponseWithStatusCode400(t *testing.T) {
 	got, want := httpResp.StatusCode, http.StatusBadRequest
 	if got != want {
 		t.Fatalf("Expected status code:`%d`, Got status code: `%d`", want, got)
+	}
+}
+
+// Manually test that we can make HTTP requests with a custom verb
+func TestCustomVerbRequest(t *testing.T) {
+	var resp pb.GetWithQueryResponse
+
+	var A, B int64
+	A = 12
+	B = 45360
+	expects := pb.GetWithQueryResponse{
+		V: A + B,
+	}
+
+	testHTTP(t, &resp, &expects, nil, "CUSTOMVERB", "customverb?%s=%d&%s=%d", "A", A, "B", B)
+}
+
+// Test that we can use the generated client to make requests to methods which
+// use custom verbs.
+func TestCustomVerbClient(t *testing.T) {
+	var req pb.GetWithQueryRequest
+	req.A = 12
+	req.B = 45360
+	want := req.A + req.B
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.CustomVerb(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	if resp.V != want {
+		t.Fatalf("Expect: %d, got %d", want, resp.V)
 	}
 }
 

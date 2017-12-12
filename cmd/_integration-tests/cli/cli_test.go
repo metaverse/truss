@@ -118,18 +118,6 @@ func TestBasicTypes(t *testing.T) {
 	testEndToEnd("1-basic", "getbasic", t)
 }
 
-func TestBasicTypesWithPBOutFlag(t *testing.T) {
-	testEndToEnd("1-basic", "getbasic", t,
-		"--pbout",
-		"github.com/TuneLab/truss/cmd/_integration-tests/cli/test-service-definitions/1-basic/pbout")
-}
-
-func TestBasicTypesWithRelPBOutFlag(t *testing.T) {
-	testEndToEnd("1-basic", "getbasic", t,
-		"--pbout",
-		"./pbout")
-}
-
 func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
 	svcOut := "./tunelab"
 	path := filepath.Join(basePath, "1-basic")
@@ -189,9 +177,22 @@ func TestAdditionalBindings(t *testing.T) {
 	testEndToEnd("6-additional_bindings", "getadditional", t)
 }
 
+func TestCustomHTTPVerbs(t *testing.T) {
+	testEndToEnd("7-custom_http_verb", "getadditional", t)
+	testEndToEnd("7-custom_http_verb", "postadditional", t)
+}
+
+func TestMessageOnly(t *testing.T) {
+	path := filepath.Join(basePath, "8-message_only")
+	err := createTrussService(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
-	err := createTrussService(path)
+	err := createTrussService(path, trussOptions...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +230,6 @@ func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...st
 }
 
 func createTrussService(path string, trussFlags ...string) error {
-
 	trussOut, err := truss(path, trussFlags...)
 
 	// If truss fails, test error and skip communication
@@ -454,11 +454,13 @@ func removeTestFiles(defDir string) {
 	os.RemoveAll(filepath.Join(defDir, "test-service"))
 	// where the binaries are compiled to
 	os.RemoveAll(filepath.Join(defDir, "bin"))
-	// test pbout
-	os.RemoveAll(filepath.Join(defDir, "pbout"))
-	// So that the directory exists for pbout
-	// TODO: Make pbout create the directory if it does not exist
-	os.MkdirAll(filepath.Join(defDir, "pbout"), 0777)
+	// Remove all the .pb.go files which may remain
+	dirs, _ := ioutil.ReadDir(defDir)
+	for _, d := range dirs {
+		if strings.HasSuffix(d.Name(), ".pb.go") {
+			os.RemoveAll(filepath.Join(defDir, d.Name()))
+		}
+	}
 }
 
 // FindFreePort returns an open TCP port. That port could be taken in the time

@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"net/http"
 
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service"
+	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/proto"
 )
 
 // NewService returns a naïve, stateless implementation of Service.
@@ -157,4 +157,12 @@ func (s transportpermutationsService) StatusCodeAndHeaders(ctx context.Context, 
 		"Foo":  []string{"Bar"},
 		"Test": []string{"A", "B"},
 	}}
+}
+
+// CustomVerb implements Service
+func (s transportpermutationsService) CustomVerb(ctx context.Context, in *pb.GetWithQueryRequest) (*pb.GetWithQueryResponse, error) {
+	response := pb.GetWithQueryResponse{
+		V: in.A + in.B,
+	}
+	return &response, nil
 }
