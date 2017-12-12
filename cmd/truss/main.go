@@ -154,51 +154,49 @@ func parseInput() (*truss.Config, error) {
 		log.Warn("No valid service is defined")
 		log.Info("pb.go file will still be generated")
 		cfg.NoService = true
-		if err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GoPath, "."); err != nil {
-			return nil, errors.Wrap(err, "cannot create .pb.go files")
-		}
-		return &cfg, nil
 	}
 
 	svcDirName := svcName + "-service"
 
-	if *svcPackageFlag == "" {
-		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
-		// NOTE: This line is unhappy with a blank svcPath!!!!
-		p, err := build.Default.ImportDir(svcPath, build.FindOnly)
-		if err != nil {
-			return nil, err
-		}
-		if p.Root == "" {
-			return nil, errors.New("proto files path not in GOPATH")
-		}
-
-		cfg.ServicePackage = p.ImportPath
-		cfg.ServicePath = p.Dir
-	} else {
-		p, err := build.Default.Import(*svcPackageFlag, wd, build.FindOnly)
-		if err != nil {
-			return nil, err
-		}
-		if p.Root == "" {
-			return nil, errors.New("svcout not in GOPATH")
-		}
-
-		cfg.ServicePath = p.Dir
-		cfg.ServicePackage = p.ImportPath
-
-		// If the package flag ends in a seperator, file will be "".
-		// In this case, append the svcDirName to the path and package
-		_, file := filepath.Split(*svcPackageFlag)
-		if file == "" {
-			cfg.ServicePath = filepath.Join(cfg.ServicePath, svcDirName)
-			cfg.ServicePackage = filepath.Join(cfg.ServicePackage, svcDirName)
-		}
-
-		if !fileExists(cfg.ServicePath) {
-			err := os.MkdirAll(cfg.ServicePath, 0777)
+	if !cfg.NoService {
+		if *svcPackageFlag == "" {
+			svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
+			// NOTE: This line is unhappy with a blank svcPath!!!!
+			p, err := build.Default.ImportDir(svcPath, build.FindOnly)
 			if err != nil {
-				return nil, errors.Errorf("specified package path for service output directory cannot be created: %q", p.Dir)
+				return nil, err
+			}
+			if p.Root == "" {
+				return nil, errors.New("proto files path not in GOPATH")
+			}
+
+			cfg.ServicePackage = p.ImportPath
+			cfg.ServicePath = p.Dir
+		} else {
+			p, err := build.Default.Import(*svcPackageFlag, wd, build.FindOnly)
+			if err != nil {
+				return nil, err
+			}
+			if p.Root == "" {
+				return nil, errors.New("svcout not in GOPATH")
+			}
+
+			cfg.ServicePath = p.Dir
+			cfg.ServicePackage = p.ImportPath
+
+			// If the package flag ends in a seperator, file will be "".
+			// In this case, append the svcDirName to the path and package
+			_, file := filepath.Split(*svcPackageFlag)
+			if file == "" {
+				cfg.ServicePath = filepath.Join(cfg.ServicePath, svcDirName)
+				cfg.ServicePackage = filepath.Join(cfg.ServicePackage, svcDirName)
+			}
+
+			if !fileExists(cfg.ServicePath) {
+				err := os.MkdirAll(cfg.ServicePath, 0777)
+				if err != nil {
+					return nil, errors.Errorf("specified package path for service output directory cannot be created: %q", p.Dir)
+				}
 			}
 		}
 	}
