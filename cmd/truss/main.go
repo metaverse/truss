@@ -103,6 +103,11 @@ func main() {
 	cfg, err := parseInput()
 	exitIfError(errors.Wrap(err, "cannot parse input"))
 
+	// If there was no service found in parseInput, the rest can be omitted.
+	if cfg.NoService {
+		return
+	}
+
 	dt, sd, err := parseServiceDefinition(cfg)
 	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
@@ -146,12 +151,21 @@ func parseInput() (*truss.Config, error) {
 	svcName, err := parsesvcname.FromPaths(cfg.GoPath, cfg.DefPaths)
 	svcName = strings.ToLower(svcName)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
+		log.Warn(errors.Wrap(err, "cannot generate service"))
+		log.Warn("No valid service is defined")
+		log.Info("pb.go file will still be generated")
+		cfg.NoService = true
+		if err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GoPath, "."); err != nil {
+			return nil, errors.Wrap(err, "cannot create .pb.go files")
+		}
+		return &cfg, nil
 	}
+
 	svcDirName := svcName + "-service"
 
 	if *svcPackageFlag == "" {
 		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
+		// NOTE: This line is unhappy with a blank svcPath!!!!
 		p, err := build.Default.ImportDir(svcPath, build.FindOnly)
 		if err != nil {
 			return nil, err
@@ -199,7 +213,7 @@ func parseInput() (*truss.Config, error) {
 	}
 
 	// PBGoPackage
-	if *pbPackageFlag == "" {
+	if *pbPackageFlag == "" && !cfg.NoService {
 		cfg.PBPackage = cfg.ServicePackage
 		cfg.PBPath = cfg.ServicePath
 	} else {
@@ -216,12 +230,17 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
+	if err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GoPath, cfg.PBPath); err != nil {
+		return nil, errors.Wrap(err, "cannot create .pb.go files")
+	}
+
 	return &cfg, nil
 }
 
 // parseServiceDefinition returns a deftree which contains all necessary
 // information for generating a truss service and its documentation.
 func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef, error) {
+
 	protoDefPaths := cfg.DefPaths
 	// Create the ServicePath so the .pb.go files may be place within it
 	if cfg.PrevGen == nil {
@@ -229,11 +248,6 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "cannot create service directory")
 		}
-	}
-
-	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GoPath, cfg.PBPath)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot create .pb.go files")
 	}
 
 	// Get path names of .pb.go files

@@ -63,7 +63,15 @@ func FromPaths(gopath []string, protoDefPaths []string) (string, error) {
 		return "", errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
-	return sd.Service.Name, nil
+	if sd.Service != nil {
+		if sd.Service.Name != "" {
+			return sd.Service.Name, nil
+		}
+
+		return "", errors.New("no Service.Name found in svcdef")
+	}
+
+	return "", errors.New("no Service returned from svcdef")
 }
 
 func FromReaders(gopath []string, protoDefReaders []io.Reader) (string, error) {
