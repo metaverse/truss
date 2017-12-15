@@ -102,6 +102,11 @@ func main() {
 	cfg, err := parseInput()
 	exitIfError(errors.Wrap(err, "cannot parse input"))
 
+	// If there was no service found in parseInput, the rest can be omitted.
+	if cfg == nil {
+		return
+	}
+
 	dt, sd, err := parseServiceDefinition(cfg)
 	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
@@ -137,12 +142,34 @@ func parseInput() (*truss.Config, error) {
 	}
 	log.WithField("DefPaths", cfg.DefPaths).Debug()
 
+	protoDir := filepath.Dir(cfg.DefPaths[0])
+	p, err := build.Default.ImportDir(protoDir, build.FindOnly)
+	if err != nil {
+		return nil, err
+	}
+	if p.Root == "" {
+		return nil, errors.New("proto files not in GOPATH")
+	}
+
+	cfg.PBPackage = p.ImportPath
+	cfg.PBPath = p.Dir
+	log.WithField("PB Package", cfg.PBPackage).Debug()
+	log.WithField("PB Path", cfg.PBPath).Debug()
+
+	if err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GoPath, cfg.PBPath); err != nil {
+		return nil, errors.Wrap(err, "cannot create .pb.go files")
+	}
+
 	// Service Path
 	svcName, err := parsesvcname.FromPaths(cfg.GoPath, cfg.DefPaths)
-	svcName = strings.ToLower(svcName)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
+		log.Warn("No valid service is defined; exiting now.")
+		log.Info(".pb.go generation with protoc-gen-go was successful.")
+		return nil, nil
 	}
+
+	svcName = strings.ToLower(svcName)
+
 	svcDirName := svcName + "-service"
 	log.WithField("svcDirName", svcDirName).Debug()
 
@@ -176,7 +203,7 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrapf(err, "cannot create svcPath directory: %s", svcPath)
 	}
 
-	p, err := build.Default.ImportDir(svcPath, build.FindOnly)
+	p, err = build.Default.ImportDir(svcPath, build.FindOnly)
 	if err != nil {
 		log.WithError(err).Error()
 		return nil, err
@@ -196,31 +223,6 @@ func parseInput() (*truss.Config, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot read previously generated files")
 	}
-
-	// PBGoPackage
-	//
-	// It used to be the case that the package where the .pb.go files would be
-	// placed by default was into the newly-generated truss service. However,
-	// we now want to keep our .pb.go files directly next to our .proto files,
-	// so that's where we're going to place them by default. This implies an
-	// assumption that our .proto files exist within our GOPATH.
-	//
-	// Also, if they've passed in multiple protobuf files, we're going to use
-	// the base path of the first file as the basis for deriving the go-package
-	// path and actual disk path of the future .pb.go file.
-	protoDir := filepath.Dir(cfg.DefPaths[0])
-	p, err = build.Default.ImportDir(protoDir, build.FindOnly)
-	if err != nil {
-		return nil, err
-	}
-	if p.Root == "" {
-		return nil, errors.New("proto files not in GOPATH")
-	}
-
-	cfg.PBPackage = p.ImportPath
-	cfg.PBPath = p.Dir
-	log.WithField("PB Package", cfg.PBPackage).Debug()
-	log.WithField("PB Path", cfg.PBPath).Debug()
 
 	return &cfg, nil
 }
@@ -244,11 +246,6 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "cannot create service directory")
 		}
-	}
-
-	err := execprotoc.GeneratePBDotGo(cfg.DefPaths, cfg.GoPath, cfg.PBPath)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot create .pb.go files")
 	}
 
 	// Get path names of .pb.go files

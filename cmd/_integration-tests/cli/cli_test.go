@@ -182,6 +182,14 @@ func TestCustomHTTPVerbs(t *testing.T) {
 	testEndToEnd("7-custom_http_verb", "postadditional", t)
 }
 
+func TestMessageOnly(t *testing.T) {
+	path := filepath.Join(basePath, "8-message_only")
+	err := createTrussService(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...string) {
 	path := filepath.Join(basePath, defDir)
 	err := createTrussService(path, trussOptions...)

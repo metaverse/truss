@@ -63,6 +63,10 @@ func FromPaths(gopath []string, protoDefPaths []string) (string, error) {
 		return "", errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
+	if sd.Service == nil {
+		return "", errors.New("no service defined")
+	}
+
 	return sd.Service.Name, nil
 }
 
