@@ -225,7 +225,7 @@ func parseInput() (*truss.Config, error) {
 	return &cfg, nil
 }
 
-// parseSVCOout handles the difference between relative paths and go package
+// parseSVCOut handles the difference between relative paths and go package
 // paths
 func parseSVCOut(svcOut string, GOPATH string) (string, error) {
 	if build.IsLocalImport(svcOut) {
