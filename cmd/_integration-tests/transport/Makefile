@@ -21,7 +21,7 @@ all: test
 setup:
 	@echo -e '$(TRUSS_MSG)'
 	mkdir -p transportpermutations-service
-	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
+	truss -v --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r handlers transportpermutations-service
 
 test: setup
@@ -29,7 +29,7 @@ test: setup
 	go test -run=$(match) -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	mkdir -p transportpermutations-service
-	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
+	truss -v --svcout github.com/TuneLab/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -run=$(match) -v
 	$(MAKE) clean
