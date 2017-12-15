@@ -255,6 +255,7 @@ func truss(path string, options ...string) (string, error) {
 	}
 
 	args := append(options, protofiles...)
+	args = append(args, "-v")
 	trussExec := exec.Command(
 		"truss",
 		args...,
