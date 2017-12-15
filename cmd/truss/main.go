@@ -120,12 +120,6 @@ func main() {
 // service definition files.
 func parseInput() (*truss.Config, error) {
 	var cfg truss.Config
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Warn(errors.Wrap(err, "cannot get working directory"))
-		log.Warn("Flags will only work with non relative directories")
-		wd = ""
-	}
 
 	// GOPATH
 	cfg.GoPath = filepath.SplitList(os.Getenv("GOPATH"))
@@ -135,11 +129,13 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("GOPATH", cfg.GoPath).Debug()
 
 	// DefPaths
+	var err error
 	rawDefinitionPaths := flag.Args()
 	cfg.DefPaths, err = cleanProtofilePath(rawDefinitionPaths)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse input arguments")
 	}
+	log.WithField("DefPaths", cfg.DefPaths).Debug()
 
 	// Service Path
 	svcName, err := parsesvcname.FromPaths(cfg.GoPath, cfg.DefPaths)
@@ -148,46 +144,50 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrap(err, "cannot parse service name from the provided definition files")
 	}
 	svcDirName := svcName + "-service"
+	log.WithField("svcDirName", svcDirName).Debug()
 
-	if *svcPackageFlag == "" {
-		svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
-		p, err := build.Default.ImportDir(svcPath, build.FindOnly)
-		if err != nil {
-			return nil, err
-		}
-		if p.Root == "" {
-			return nil, errors.New("proto files path not in GOPATH")
-		}
+	svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
 
-		cfg.ServicePackage = p.ImportPath
-		cfg.ServicePath = p.Dir
-	} else {
-		p, err := build.Default.Import(*svcPackageFlag, wd, build.FindOnly)
-		if err != nil {
-			return nil, err
-		}
-		if p.Root == "" {
-			return nil, errors.New("svcout not in GOPATH")
-		}
-
-		cfg.ServicePath = p.Dir
-		cfg.ServicePackage = p.ImportPath
+	if *svcPackageFlag != "" {
+		svcOut := *svcPackageFlag
+		log.WithField("svcPackageFlag", svcOut).Debug()
 
 		// If the package flag ends in a seperator, file will be "".
-		// In this case, append the svcDirName to the path and package
-		_, file := filepath.Split(*svcPackageFlag)
-		if file == "" {
-			cfg.ServicePath = filepath.Join(cfg.ServicePath, svcDirName)
-			cfg.ServicePackage = filepath.Join(cfg.ServicePackage, svcDirName)
+		_, file := filepath.Split(svcOut)
+		seperator := file == ""
+		log.WithField("seperator", seperator)
+
+		svcPath, err = parseSVCOut(svcOut, cfg.GoPath[0])
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot parse svcout: %s", svcOut)
 		}
 
-		if !fileExists(cfg.ServicePath) {
-			err := os.MkdirAll(cfg.ServicePath, 0777)
-			if err != nil {
-				return nil, errors.Errorf("specified package path for service output directory cannot be created: %q", p.Dir)
-			}
+		// Join the svcDirName as a svcout ending with `/` should create it
+		if seperator {
+			svcPath = filepath.Join(svcPath, svcDirName)
 		}
 	}
+
+	log.WithField("svcPath", svcPath).Debug()
+
+	// Create svcPath for the case that it does not exist
+	err = os.MkdirAll(svcPath, 0777)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot create svcPath directory: %s", svcPath)
+	}
+
+	p, err := build.Default.ImportDir(svcPath, build.FindOnly)
+	if err != nil {
+		log.WithError(err).Error()
+		return nil, err
+	}
+	if p.Root == "" {
+		return nil, errors.New("proto files path not in GOPATH")
+	}
+
+	cfg.ServicePackage = p.ImportPath
+	cfg.ServicePath = p.Dir
+
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
 	log.WithField("Service Path", cfg.ServicePath).Debug()
 
@@ -209,7 +209,7 @@ func parseInput() (*truss.Config, error) {
 	// the base path of the first file as the basis for deriving the go-package
 	// path and actual disk path of the future .pb.go file.
 	protoDir := filepath.Dir(cfg.DefPaths[0])
-	p, err := build.Default.ImportDir(protoDir, build.FindOnly)
+	p, err = build.Default.ImportDir(protoDir, build.FindOnly)
 	if err != nil {
 		return nil, err
 	}
@@ -223,6 +223,15 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
 	return &cfg, nil
+}
+
+// parseSVCOut handles the difference between relative paths and go package
+// paths
+func parseSVCOut(svcOut string, GOPATH string) (string, error) {
+	if build.IsLocalImport(svcOut) {
+		return filepath.Abs(svcOut)
+	}
+	return filepath.Join(GOPATH, "src", svcOut), nil
 }
 
 // parseServiceDefinition returns a deftree which contains all necessary
@@ -426,10 +435,12 @@ func cleanProtofilePath(rawPaths []string) ([]string, error) {
 
 	// Parsed passed file paths
 	for _, def := range rawPaths {
+		log.WithField("rawDefPath", def).Debug()
 		full, err := filepath.Abs(def)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot get working directory of truss")
 		}
+		log.WithField("fullDefPath", full)
 
 		fullPaths = append(fullPaths, full)
 
