@@ -20,6 +20,13 @@ service TEST {
   }
 }
 
+enum TestType {
+  TEST1 = 0;
+  TEST2 = 1;
+  TEST3 = 2;
+}
+
+
 message RepeatedTypeRequest {
   repeated double A = 1;
   repeated float B = 2;
@@ -35,6 +42,7 @@ message RepeatedTypeRequest {
   repeated bool L = 12;
   repeated string M = 13;
   repeated bytes N = 14;
+  repeated TestType O = 15;
 }
 
 
@@ -53,5 +61,6 @@ message RepeatedTypeResponse {
   repeated bool L = 12;
   repeated string M = 13;
   repeated bytes N = 14;
+  repeated TestType O = 15;
 }
 
