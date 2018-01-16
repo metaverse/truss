@@ -276,7 +276,7 @@ func createDecodeConvertFunc(f Field) (string, bool) {
 		needsErrorCheck = false
 	}
 
-	if f.IsEnum {
+	if f.IsEnum && !f.Repeated {
 		fType = "%s, err := strconv.ParseInt(%s, 10, 32)"
 		return fmt.Sprintf(fType, f.LocalName, f.LocalName+"Str"), true
 	}
@@ -308,6 +308,7 @@ if err != nil {
 }
 {{- end}}
 err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})`
+
 		errorCheckingTmpl := `
 if err != nil {
 	return nil, errors.Wrapf(err, "couldn't decode {{.LocalName}} from %v", {{.LocalName}}Str)
