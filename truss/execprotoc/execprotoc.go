@@ -86,7 +86,7 @@ func getProtocOutput(protoPaths, gopath []string) ([]byte, error) {
 	}
 	defer os.RemoveAll(protocOutDir)
 
-	pluginCall := filepath.Join("--truss-protocast_out=", protocOutDir)
+	pluginCall := "--truss-protocast_out="+protocOutDir
 
 	err = protoc(protoPaths, gopath, pluginCall)
 	if err != nil {
