@@ -1,12 +1,10 @@
 # Truss [![Build Status](https://travis-ci.org/TuneLab/truss.svg?branch=master)](https://travis-ci.org/TuneLab/truss)
 
+**Migration Notice: This repo will be moving to [github.com/tuneinc/truss](https://github.com/tuneinc) on 2018/04/15
+Services built with truss may need to update their imports in their service.proto and re-run with a post-migration version of truss**
+
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
-
-**Please note that Truss is currently pre-release software, and may change
-drastically with no notice. There is no versioning, no guarantees, no stability
-at this time. However, if you want to play around, make suggestions, or submit
-changes, we welcome issues and pull requests!**
 
 ![Everything all the time forever](http://i.imgur.com/FtvVeBG.jpg)
 
