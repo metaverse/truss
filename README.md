@@ -1,7 +1,7 @@
 # Truss [![Build Status](https://travis-ci.org/TuneLab/truss.svg?branch=master)](https://travis-ci.org/TuneLab/truss)
 
 **Migration Notice: This repo will be moving to [github.com/tuneinc/truss](https://github.com/tuneinc) on 2018/04/15
-Services built with truss may need to update their imports in their service.proto or simply re-run with a post-migration version of truss**
+Services built with truss may need to update their imports in their service.proto and re-run with a post-migration version of truss**
 
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
