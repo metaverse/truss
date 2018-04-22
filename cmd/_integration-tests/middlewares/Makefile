@@ -12,7 +12,7 @@ all: test
 test:
 	@echo -e '$(TRUSS_MSG)'
 	mkdir -p middlewarestest-service
-	truss --svcout github.com/TuneLab/truss/cmd/_integration-tests/middlewares/middlewarestest-service proto/middlewares-test.proto
+	truss --svcout github.com/tuneinc/truss/cmd/_integration-tests/middlewares/middlewarestest-service proto/middlewares-test.proto
 	cp -r handlers middlewarestest-service
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -v

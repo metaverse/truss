@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/TuneLab/truss/deftree"
+	"github.com/tuneinc/truss/deftree"
 )
 
 // prindent is a utility function for creating a formatted string with a given

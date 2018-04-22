@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TuneLab/truss/gengokit"
-	thelper "github.com/TuneLab/truss/gengokit/gentesthelper"
-	"github.com/TuneLab/truss/svcdef"
+	"github.com/tuneinc/truss/gengokit"
+	thelper "github.com/tuneinc/truss/gengokit/gentesthelper"
+	"github.com/tuneinc/truss/svcdef"
 )
 
 func init() {
@@ -22,7 +22,7 @@ func TestRenderPrevEndpoints(t *testing.T) {
 
 		import (
 			"github.com/go-kit/kit/endpoint"
-			"github.com/TuneLab/truss/gengokit/general-service/svc"
+			"github.com/tuneinc/truss/gengokit/general-service/svc"
 		)
 
 		// WrapEndpoint will be called individually for all endpoints defined in
@@ -93,7 +93,7 @@ func generalService() (*svcdef.Svcdef, *gengokit.Data, error) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/tuneinc/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -121,8 +121,8 @@ func generalService() (*svcdef.Svcdef, *gengokit.Data, error) {
 		return nil, nil, err
 	}
 	conf := gengokit.Config{
-		GoPackage: "github.com/TuneLab/truss/gengokit/general-service",
-		PBPackage: "github.com/TuneLab/truss/gengokit/general-service",
+		GoPackage: "github.com/tuneinc/truss/gengokit/general-service",
+		PBPackage: "github.com/tuneinc/truss/gengokit/general-service",
 	}
 
 	data, err := gengokit.NewData(sd, conf)

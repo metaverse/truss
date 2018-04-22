@@ -15,16 +15,16 @@ import (
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 
-	"github.com/TuneLab/truss/truss"
-	"github.com/TuneLab/truss/truss/execprotoc"
-	"github.com/TuneLab/truss/truss/getstarted"
-	"github.com/TuneLab/truss/truss/parsesvcname"
+	"github.com/tuneinc/truss/truss"
+	"github.com/tuneinc/truss/truss/execprotoc"
+	"github.com/tuneinc/truss/truss/getstarted"
+	"github.com/tuneinc/truss/truss/parsesvcname"
 
-	"github.com/TuneLab/truss/deftree"
-	"github.com/TuneLab/truss/gendoc"
-	ggkconf "github.com/TuneLab/truss/gengokit"
-	gengokit "github.com/TuneLab/truss/gengokit/generator"
-	"github.com/TuneLab/truss/svcdef"
+	"github.com/tuneinc/truss/deftree"
+	"github.com/tuneinc/truss/gendoc"
+	ggkconf "github.com/tuneinc/truss/gengokit"
+	gengokit "github.com/tuneinc/truss/gengokit/generator"
+	"github.com/tuneinc/truss/svcdef"
 )
 
 var (
@@ -546,7 +546,7 @@ Do you want to automatically run 'make' and rerun command:
 	return false
 }
 
-const trussImportPath = "github.com/TuneLab/truss"
+const trussImportPath = "github.com/tuneinc/truss"
 
 // makeAndRunTruss installs truss by running make in trussImportPath.
 // It then passes through args to newly installed truss.

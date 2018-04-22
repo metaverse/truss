@@ -1,7 +1,4 @@
-# Truss [![Build Status](https://travis-ci.org/TuneLab/truss.svg?branch=master)](https://travis-ci.org/TuneLab/truss)
-
-**Migration Notice: This repo will be moving to [github.com/tuneinc/truss](https://github.com/tuneinc) on 2018/04/15
-Services built with truss may need to update their imports in their service.proto and re-run with a post-migration version of truss**
+# Truss [![Build Status](https://travis-ci.org/tuneinc/truss.svg?branch=master)](https://travis-ci.org/tuneinc/truss)
 
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
@@ -27,15 +24,15 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 1. Install Truss with
 
 	```
-	go get -u -d github.com/TuneLab/truss
-	cd $GOPATH/src/github.com/TuneLab/truss
+	go get -u -d github.com/tuneinc/truss
+	cd $GOPATH/src/github.com/tuneinc/truss
 	make dependencies
 	make
 	```
 	On Windows, do the following instead:
 	```
-	go get -u -d github.com/TuneLab/truss
-	cd %GOPATH%/src/github.com/TuneLab/truss
+	go get -u -d github.com/tuneinc/truss
+	cd %GOPATH%/src/github.com/tuneinc/truss
 	wininstall.bat
 	```
 

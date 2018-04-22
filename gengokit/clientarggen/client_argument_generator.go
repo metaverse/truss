@@ -14,7 +14,7 @@ import (
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/truss/svcdef"
+	"github.com/tuneinc/truss/svcdef"
 )
 
 // A collection of the necessary information for generating basic business
