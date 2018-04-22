@@ -8,7 +8,7 @@ go:
   - 1.10.x
   - 1.9.x
 
-go_import_path: github.com/TuneLab/truss
+go_import_path: github.com/tuneinc/truss
 
 before_install:
   # protobuf

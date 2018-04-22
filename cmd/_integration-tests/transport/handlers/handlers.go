@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"net/http"
 
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/transport/proto"
+	pb "github.com/tuneinc/truss/cmd/_integration-tests/transport/proto"
 )
 
 // NewService returns a naïve, stateless implementation of Service.

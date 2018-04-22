@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	pb "github.com/TuneLab/truss/cmd/_integration-tests/middlewares/proto"
+	pb "github.com/tuneinc/truss/cmd/_integration-tests/middlewares/proto"
 )
 
 // NewService returns a naïve, stateless implementation of Service.

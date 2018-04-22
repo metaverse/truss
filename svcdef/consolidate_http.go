@@ -11,7 +11,7 @@ import (
 
 	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
 
-	"github.com/TuneLab/truss/deftree/svcparse"
+	"github.com/tuneinc/truss/deftree/svcparse"
 )
 
 type optional interface {

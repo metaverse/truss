@@ -8,8 +8,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/TuneLab/truss/gengokit/gentesthelper"
-	"github.com/TuneLab/truss/svcdef"
+	"github.com/tuneinc/truss/gengokit/gentesthelper"
+	"github.com/tuneinc/truss/svcdef"
 )
 
 var (
@@ -31,7 +31,7 @@ func TestNewClientServiceArgs(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/TuneLab/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/tuneinc/truss/deftree/googlethirdparty/annotations.proto";
 
 		message SumRequest {
 			repeated int64 a = 1;

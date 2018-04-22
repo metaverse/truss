@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/TuneLab/truss/gengokit"
-	"github.com/TuneLab/truss/gengokit/handlers/templates"
+	"github.com/tuneinc/truss/gengokit"
+	"github.com/tuneinc/truss/gengokit/handlers/templates"
 )
 
 // MiddlewaresPath is the path to the middleware gotemplate file.

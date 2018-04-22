@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TuneLab/truss/gengokit/gentesthelper"
+	"github.com/tuneinc/truss/gengokit/gentesthelper"
 )
 
 // Test that rendering certain templates will ouput the code we expect. The
