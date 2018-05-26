@@ -32,12 +32,12 @@ func TestCommentedEnum(t *testing.T) {
 		}
 	`
 	dt, err := NewFromString(defStr, gopath)
-	md := dt.(*MicroserviceDefinition)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if md == nil {
+	md, ok := dt.(*MicroserviceDefinition)
+	if md == nil || !ok {
 		t.Fatalf("The returned Deftree is nil")
 	}
 	got := md.Files[0].Enums[0].Values[0].Description
@@ -55,7 +55,7 @@ func TestCommentedImport(t *testing.T) {
 		syntax = "proto3";
 
 		// This comment should not cause any problems
-		
+
 		// This comment should not cause any problems
 		package general;
 
@@ -77,12 +77,12 @@ func TestCommentedImport(t *testing.T) {
 		}
 	`
 	dt, err := NewFromString(defStr, gopath)
-	md := dt.(*MicroserviceDefinition)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if md == nil {
+	md, ok := dt.(*MicroserviceDefinition)
+	if md == nil || !ok {
 		t.Fatalf("The returned Deftree is nil")
 	}
 }

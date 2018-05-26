@@ -23,7 +23,7 @@ func main() {
 	}
 
 	filesOut := req.GetFileToGenerate()
-	//fmt.Fprintln(os.Stderr, "test")
+	fmt.Fprintln(os.Stderr, "test")
 
 	fileName := filesOut[0]
 	protocOut := string(input)
@@ -40,6 +40,12 @@ func main() {
 	}
 
 	buf, err := proto.Marshal(output)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	fmt.Fprintln(os.Stderr, "bufsize:", len(buf))
 
 	if _, err := os.Stdout.Write(buf); err != nil {
 		os.Exit(1)

@@ -4,6 +4,7 @@ package execprotoc
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -84,9 +85,9 @@ func getProtocOutput(protoPaths, gopath []string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create temp directory")
 	}
-	defer os.RemoveAll(protocOutDir)
+	//defer os.RemoveAll(protocOutDir)
 
-	pluginCall := "--truss-protocast_out="+protocOutDir
+	pluginCall := "--truss-protocast_out=" + protocOutDir
 
 	err = protoc(protoPaths, gopath, pluginCall)
 	if err != nil {
@@ -132,12 +133,14 @@ func protoc(protoPaths, gopath []string, plugin string) error {
 		cmdArgs...,
 	)
 
+	log.Println(protocExec.Args)
 	outBytes, err := protocExec.CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err,
 			"protoc exec failed.\nprotoc output:\n\n%v\nprotoc arguments:\n\n%v\n\n",
 			string(outBytes), protocExec.Args)
 	}
+	log.Println(string(outBytes))
 
 	return nil
 }
