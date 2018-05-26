@@ -272,6 +272,9 @@ func NewMessage(m *ast.TypeSpec) (*Message, error) {
 
 	strct := m.Type.(*ast.StructType)
 	for _, f := range strct.Fields.List {
+		if strings.HasPrefix(f.Names[0].Name, "XXX_") {
+			continue
+		}
 		nfield, err := NewField(f)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot create field %q while creating message %q", f.Names[0].Name, rv.Name)
