@@ -1,0 +1,108 @@
+project_name: truss
+
+release:
+  github:
+    owner: metaverse
+    name: truss
+  name_template: '{{.Tag}}'
+
+# .goreleaser.yml
+brews:
+  -
+    # Name template of the recipe
+    # Default to project name
+    name: truss
+
+    # GitHub/GitLab repository to push the formula to
+    # Gitea is not supported yet, but the support coming
+    tap:
+      owner: metaverse
+      name: homebrew-tap
+
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+
+    # Caveats for the user of your binary.
+    # Default is empty.
+    caveats: "To leverage truss's annotations you'll need to clone truss into your $(go env GOPATH)"
+
+    homepage: "https://github.com/metaverse/truss"
+
+    description: "Truss helps you build go-kit microservices without having to worry about writing or maintaining boilerplate code"
+
+    # Packages your package depends on.
+    dependencies:
+      - name: protobuf
+      - name: protoc-gen-gogofaster
+
+    # So you can `brew test` your formula.
+    # Default is empty.
+    test: |
+      system "#{bin}/truss --version"
+      protofile = testpath/"proto3.proto"
+      protofile.write <<~EOS
+        syntax = "proto3";
+        package proto3;
+
+        service Echo {
+          rpc Echo(Request) returns (Request) { }
+        }
+        message Request {
+          string text = 1;
+        }
+      EOS
+      system "#{bin}/truss", "proto3.proto"
+      assert_predicate testpath/"proto3.pb.go", :exist?
+      assert_predicate testpath/echo-service, :exist?
+      refute_predicate (testpath/"proto3.pb.go").size, :zero?
+
+    # Custom install script for brew.
+    # Default is 'bin.install "program"'.
+    install: |
+      bin.install "truss"
+
+builds:
+  - goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - "386"
+    env:
+      - CGO_ENABLED=0
+    main: cmd/truss/main.go
+    ldflags: -s -w -X main.version={{.Version}} -X main.date={{.Date}}
+    binary: truss
+
+archives:
+  -
+    format: tar.gz
+    replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    wrap_in_directory: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}"
+
+changelog:
+  sort: asc
+  filters:
+    # commit messages matching the regexp listed here will be removed from
+    # the changelog
+    # Default is empty
+    exclude:
+      - '^\(docs\)'
+      - '^\(actions\)'
+      - '^\(ci\)'
+      - '^\(coverage\)'
+      - '^\(tests?'
+      - '^Merge pull request'

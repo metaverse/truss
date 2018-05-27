@@ -6,12 +6,12 @@
 # which would be fine if Truss were a self-contained executable, but protoc
 # has difficulty running on a scratch image. Using Alpine Linux alleviates
 # these issues and only increases image size by about 5 MB.
-FROM golang:alpine3.5
-MAINTAINER lab@tune.com
+FROM golang:alpine3.12
+LABEL maintainer="zaquestion@gmail.com"
 
 RUN apk update && apk upgrade && apk add --no-cache protobuf git
 
-RUN go version && go get -u -v github.com/gogo/protobuf/protoc-gen-go
+RUN go version && go get -u -v github.com/gogo/protobuf/protoc-gen-gogofaster
 
 COPY ./ $GOPATH/src/github.com/metaverse/truss
 
