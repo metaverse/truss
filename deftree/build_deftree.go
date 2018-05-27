@@ -18,7 +18,7 @@ import (
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"github.com/pkg/errors"
 
-	"github.com/tuneinc/truss/deftree/svcparse"
+	"github.com/tuneinc/truss/svcdef/svcparse"
 	"github.com/tuneinc/truss/truss/execprotoc"
 )
 

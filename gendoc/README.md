@@ -1,3 +1,5 @@
+## NOTE: Unused.
+## Hopefully in the future we can use something like swagger to generate docs
 
 # `gendocs`
 

@@ -35,6 +35,9 @@ func GeneratePBDotGo(protoPaths, gopath []string, outDir string) error {
 
 // CodeGeneratorRequest returns a protoc CodeGeneratorRequest from running
 // protoc on protoPaths
+// TODO: replace getProtocOutput with some other way of getting the protoc ast.
+// i.e. the binary data that will allow proto.Unmarshal to Unmashal the
+// .proto file into a *plugin.CodeGeneratorRequest
 func CodeGeneratorRequest(protoPaths, gopath []string) (*plugin.CodeGeneratorRequest, error) {
 	protocOut, err := getProtocOutput(protoPaths, gopath)
 	if err != nil {
@@ -49,31 +52,9 @@ func CodeGeneratorRequest(protoPaths, gopath []string) (*plugin.CodeGeneratorReq
 	return req, nil
 }
 
-// ServiceFile returns the file in req that contains a service declaration.
-func ServiceFile(req *plugin.CodeGeneratorRequest, protoFileDir string) (*os.File, error) {
-	var svcFileName string
-	for _, file := range req.GetProtoFile() {
-		if len(file.GetService()) > 0 {
-			svcFileName = file.GetName()
-		}
-	}
-
-	if svcFileName == "" {
-		return nil, errors.New("passed protofiles contain no service")
-	}
-
-	svc, err := os.Open(filepath.Join(protoFileDir, svcFileName))
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "cannot open service file: %v\n in path: %v",
-			protoFileDir, svcFileName)
-	}
-
-	return svc, nil
-}
-
-// getProtocOutput executes protoc with the passed protofiles and the
-// protoc-gen-truss-protocast plugin and returns the output of protoc
+// TODO: getProtocOutput is broken because golang protoc plugins no longer can
+// have UTF-8 in the output. This caused protoc-gen-truss-protocast to fail to
+// output its the protoc AST.
 func getProtocOutput(protoPaths, gopath []string) ([]byte, error) {
 	_, err := exec.LookPath("protoc-gen-truss-protocast")
 	if err != nil {
@@ -86,7 +67,7 @@ func getProtocOutput(protoPaths, gopath []string) ([]byte, error) {
 	}
 	defer os.RemoveAll(protocOutDir)
 
-	pluginCall := "--truss-protocast_out="+protocOutDir
+	pluginCall := "--truss-protocast_out=" + protocOutDir
 
 	err = protoc(protoPaths, gopath, pluginCall)
 	if err != nil {
