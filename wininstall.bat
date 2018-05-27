@@ -25,6 +25,7 @@ go get github.com/pauln/go-datefmt
 go get github.com/gogo/protobuf/protoc-gen-gogo
 go get github.com/gogo/protobuf/proto
 go get github.com/jteeuwen/go-bindata/...
-go generate github.com/metaverse/truss/gengokit/template
-go install -ldflags "-X 'main.Version=%SHA%' -X 'main.VersionDate=%HEAD_DATE%'" github.com/metaverse/truss/cmd/truss
+go generate github.com/tuneinc/truss/gengokit/template
+
+go install -ldflags "-X 'main.version=%SHA%' -X 'main.date=%HEAD_DATE%'" github.com/tuneinc/truss/cmd/truss
 @ECHO OFF

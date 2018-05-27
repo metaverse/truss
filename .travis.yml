@@ -3,6 +3,9 @@ language: go
 # use containers which run faster and have cache
 sudo: false
 
+notifications:
+  email: false
+
 go:
   - tip
   - 1.11.x
@@ -28,8 +31,19 @@ install:
   - make dependencies
   - make
 
-script:
-  - make test
+jobs:
+  include:
+    - stage: test
+      script: make test
+    - stage: deploy
+      go: 1.10.x
+      script: curl -sL https://git.io/goreleaser | bash
 
-notifications:
-  email: false
+matrix:
+  allow_failures:
+    - go: master
+  fast_finish: true
+
+env:
+  global:
+    secure: FrCjiFQN28yw9m7EYbMNK5hVYV9W9nmgnoDn1NUamuAnvE4ewhLsbBmebMvlm0YvkrBsinYmaCfzg38hEop8O8R0YlxCUcmi/qWDii4hfA8Sz5ALn7fBcpEC5lMOTEZ0aN3rT+x/GtRetbvujDMNfm2dh1Jmthy1qW6VtKNDqdPpeAyX3cqB16cZYSj4VKW77zDAcVq1se2nTpqDFE9hDZL+AyTOulaNKXDb1++AwGx8Tsdop5Pf2hQy5/95w3P+/4vAkx0/HYn2KKO0qrNb9omVYGWfZMrSz6LZXymZQqJBNUyG/Pv7cdVtq0XGnVJIXe4Ny1z/9b+V8/IObwQFAOMuxocc6PUGws+T1cbAPzluFoSw81yWwvCZYeX4ig4nTFPwN0Hh32edbJcu5pauFpSZzr15FKMDyMBsQ1e2qlEyzWK9rEk3lE1rjRn+pMJ7yR1hI7QO5bTukQp1lCKQ7dpicw5KzAB2sF7BOHeYUaVvgoJEXfVXQIn0rPnKSvGEAJPhs3vZwk4joK7l+Cyf9ML205BOExo9hbC9QL/whqOpCcDmtf7YwEMNnk09xSencCbSKzKZMcBV4L7DDOAAF62TcNZCulIUSnxapMRoTdWuLLwVzRLAqCjsLrzWSa5rMAe2TmKbj4CayfRj3YS3jPykw7emCkHeYxHtAVdQQgY=
