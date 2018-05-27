@@ -20,8 +20,6 @@ import (
 	"github.com/tuneinc/truss/truss/getstarted"
 	"github.com/tuneinc/truss/truss/parsesvcname"
 
-	"github.com/tuneinc/truss/deftree"
-	"github.com/tuneinc/truss/gendoc"
 	ggkconf "github.com/tuneinc/truss/gengokit"
 	gengokit "github.com/tuneinc/truss/gengokit/generator"
 	"github.com/tuneinc/truss/svcdef"
@@ -107,10 +105,10 @@ func main() {
 		return
 	}
 
-	dt, sd, err := parseServiceDefinition(cfg)
+	sd, err := parseServiceDefinition(cfg)
 	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
 
-	genFiles, err := generateCode(cfg, dt, sd)
+	genFiles, err := generateCode(cfg, sd)
 	exitIfError(errors.Wrap(err, "cannot generate service"))
 
 	for path, file := range genFiles {
@@ -236,15 +234,15 @@ func parseSVCOut(svcOut string, GOPATH string) (string, error) {
 	return filepath.Join(GOPATH, "src", svcOut), nil
 }
 
-// parseServiceDefinition returns a deftree which contains all necessary
-// information for generating a truss service and its documentation.
-func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef, error) {
+// parseServiceDefinition returns a svcdef which contains all necessary
+// information for generating a truss service.
+func parseServiceDefinition(cfg *truss.Config) (*svcdef.Svcdef, error) {
 	protoDefPaths := cfg.DefPaths
 	// Create the ServicePath so the .pb.go files may be place within it
 	if cfg.PrevGen == nil {
 		err := os.MkdirAll(cfg.ServicePath, 0777)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "cannot create service directory")
+			return nil, errors.Wrap(err, "cannot create service directory")
 		}
 	}
 
@@ -258,42 +256,26 @@ func parseServiceDefinition(cfg *truss.Config) (deftree.Deftree, *svcdef.Svcdef,
 	}
 	pbgoFiles, err := openFiles(pbgoPaths)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot open all .pb.go files")
+		return nil, errors.Wrap(err, "cannot open all .pb.go files")
 	}
 
 	pbFiles, err := openFiles(protoDefPaths)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot open all .proto files")
+		return nil, errors.Wrap(err, "cannot open all .proto files")
 	}
 
 	// Create the svcdef
 	sd, err := svcdef.New(pbgoFiles, pbFiles)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
+		return nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
 	// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
 	if err := rewritePBGoForContext(sd.Service.Name, pbgoPaths); err != nil {
-		return nil, nil, errors.Wrap(err, "cannot rewrite .pb.go files")
+		return nil, errors.Wrap(err, "cannot rewrite .pb.go files")
 	}
 
-	// Create the Deftree
-	protocOut, err := execprotoc.CodeGeneratorRequest(protoDefPaths, cfg.GoPath)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot parse input files with protoc")
-	}
-
-	svcFile, err := execprotoc.ServiceFile(protocOut, filepath.Dir(protoDefPaths[0]))
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot find service definition file")
-	}
-
-	dt, err := deftree.New(protocOut, svcFile)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "cannot to construct service definition")
-	}
-
-	return dt, sd, nil
+	return sd, nil
 }
 
 // TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
@@ -358,8 +340,8 @@ func rewritePBGoForContext(serviceName string, pbgoPaths []string) error {
 }
 
 // generateCode returns a map[string]io.Reader that represents a gokit
-// service with documentation
-func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map[string]io.Reader, error) {
+// service
+func generateCode(cfg *truss.Config, sd *svcdef.Svcdef) (map[string]io.Reader, error) {
 	conf := ggkconf.Config{
 		PBPackage:     cfg.PBPackage,
 		GoPackage:     cfg.ServicePackage,
@@ -373,9 +355,7 @@ func generateCode(cfg *truss.Config, dt deftree.Deftree, sd *svcdef.Svcdef) (map
 		return nil, errors.Wrap(err, "cannot generate gokit service")
 	}
 
-	genDocFiles := gendoc.GenerateDocs(dt)
-
-	return combineFiles(genGokitFiles, genDocFiles), nil
+	return genGokitFiles, nil
 }
 
 func openFiles(paths []string) (map[string]io.Reader, error) {
@@ -388,22 +368,6 @@ func openFiles(paths []string) (map[string]io.Reader, error) {
 		rv[p] = reader
 	}
 	return rv, nil
-}
-
-// combineFiles takes any number of map[string]io.Reader and combines them into one.
-func combineFiles(group ...map[string]io.Reader) map[string]io.Reader {
-	final := make(map[string]io.Reader)
-	for _, g := range group {
-		for path, file := range g {
-			if final[path] != nil {
-				log.WithField("path", path).
-					Warn("truss generated two files with same path, outputting final one specified")
-			}
-			final[path] = file
-		}
-	}
-
-	return final
 }
 
 // writeGenFile writes a file at path to the filesystem

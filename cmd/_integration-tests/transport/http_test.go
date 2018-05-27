@@ -372,7 +372,7 @@ func TestStrangeRPCName(t *testing.T) {
 
 	var want *pb.Empty
 	want = &pb.Empty{}
-	if resp != want {
+	if !reflect.DeepEqual(*resp, *want) {
 		t.Fatalf("Expect: %d, got %d", want, resp)
 	}
 }

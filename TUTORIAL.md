@@ -74,8 +74,6 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 |   │   │   └── main.go
 |   │   └── echo-server
 |   │       └── main.go
-|   ├── docs
-|   │   └── docs.md
 |   ├── echo.pb.go
 |   ├── handlers
 |   │   ├── handlers.go
@@ -86,7 +84,6 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 └── echo.proto
 ```
 From the top down, within `echo-service/`:
-  - `docs/` contains the generated documentation of the service API
   - `svc/` contains the wiring and encoding protocols necessary for service communication (generated code)
   - `handlers/handlers.go` is populated with stubs where you will add the business logic
   - `cmd/echo/` contains the client side CLI (useful for testing)

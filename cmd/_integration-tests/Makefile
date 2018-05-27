@@ -23,29 +23,26 @@ test: clean test-transport test-middlewares test-cli
 truss:
 	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/tuneinc/truss/cmd/truss
 
-protoc-gen-truss-protocast:
-	go build -o protoc-gen-truss-protocast github.com/tuneinc/truss/cmd/protoc-gen-truss-protocast
-
-test-transport: protoc-gen-truss-protocast truss
+test-transport: truss
 	@which truss
 	@printf '$(TRANSPORT_TEST_MSG)'
 	$(MAKE) -C transport
-	rm -f ./truss ./protoc-gen-truss-protocast
+	rm -f ./truss 
 
-test-middlewares: protoc-gen-truss-protocast truss
+test-middlewares: truss
 	@which truss
 	@printf '$(MIDDLEWARES_TEST_MSG)'
 	$(MAKE) -C middlewares
-	rm -f ./truss ./protoc-gen-truss-protocast
+	rm -f ./truss
 
-test-cli: protoc-gen-truss-protocast truss
+test-cli: truss
 	@which truss
 	@printf '$(CLI_TEST_MSG)'
 	go test -v ./cli
-	rm -f ./truss ./protoc-gen-truss-protocast
+	rm -f ./truss
 
 clean:
-	rm -f ./truss ./protoc-gen-truss-protocast
+	rm -f ./truss
 	go test ./cli -clean
 	$(MAKE) -C transport clean
 	$(MAKE) -C middlewares clean

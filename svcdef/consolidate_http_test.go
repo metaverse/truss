@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tuneinc/truss/deftree/svcparse"
+	"github.com/tuneinc/truss/svcdef/svcparse"
 )
 
 func TestGetPathParams(t *testing.T) {
