@@ -35,17 +35,17 @@ var (
 var binName = filepath.Base(os.Args[0])
 
 var (
-	// Version is compiled into truss with the flag
-	// go install -ldflags "-X main.Version=$SHA"
-	Version string
+	// version is compiled into truss with the flag
+	// go install -ldflags "-X main.version=$SHA"
+	version string
 	// BuildDate is compiled into truss with the flag
-	// go install -ldflags "-X main.VersionDate=$VERSION_DATE"
-	VersionDate string
+	// go install -ldflags "-X main.date=$VERSION_DATE"
+	date string
 )
 
 func init() {
 	// If Version or VersionDate are not set, truss was not built with make
-	if Version == "" || VersionDate == "" {
+	if version == "" || date == "" {
 		rebuild := promptNoMake()
 		if !rebuild {
 			os.Exit(1)
@@ -56,8 +56,8 @@ func init() {
 	}
 
 	var buildinfo string
-	buildinfo = fmt.Sprintf("version: %s", Version)
-	buildinfo = fmt.Sprintf("%s version date: %s", buildinfo, VersionDate)
+	buildinfo = fmt.Sprintf("version: %s", version)
+	buildinfo = fmt.Sprintf("%s version date: %s", buildinfo, date)
 
 	flag.Usage = func() {
 		if buildinfo != "" && (*verboseFlag || *helpFlag) {
@@ -346,8 +346,8 @@ func generateCode(cfg *truss.Config, sd *svcdef.Svcdef) (map[string]io.Reader, e
 		PBPackage:     cfg.PBPackage,
 		GoPackage:     cfg.ServicePackage,
 		PreviousFiles: cfg.PrevGen,
-		Version:       Version,
-		VersionDate:   VersionDate,
+		Version:       version,
+		VersionDate:   date,
 	}
 
 	genGokitFiles, err := gengokit.GenerateGokit(sd, conf)

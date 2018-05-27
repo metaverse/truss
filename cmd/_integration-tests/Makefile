@@ -21,13 +21,13 @@ all: test
 test: clean test-transport test-middlewares test-cli
 
 truss:
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/tuneinc/truss/cmd/truss
+	go install -ldflags '-X "main.version=$(SHA)" -X "main.date=$(VERSION_DATE)"' github.com/tuneinc/truss/cmd/truss
 
 test-transport: truss
 	@which truss
 	@printf '$(TRANSPORT_TEST_MSG)'
 	$(MAKE) -C transport
-	rm -f ./truss 
+	rm -f ./truss
 
 test-middlewares: truss
 	@which truss

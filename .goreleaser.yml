@@ -1,0 +1,50 @@
+project_name: truss
+release:
+  github:
+    owner: tuneinc
+    name: truss
+  name_template: '{{.Tag}}'
+brew:
+  description: "Truss helps you build go-kit microservices without having to worry about writing or maintaining boilerplate code"
+  homepage: "https://github.com/tuneinc/truss"
+  github:
+    owner: tuneinc
+    name: homebrew-tap
+  commit_author:
+    name: goreleaserbot
+    email: goreleaser@carlosbecker.com
+  build_dependencies:
+    - go
+  dependencies:
+    - protobuf351
+  install: bin.install "truss"
+builds:
+- goos:
+  - linux
+  - darwin
+  - windows
+  goarch:
+  - amd64
+  - "386"
+  main: cmd/truss/main.go
+  ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
+  binary: truss
+archive:
+  format: tar.gz
+  name_template: '{{ .Binary }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{
+    .Arm }}{{ end }}'
+snapshot:
+  name_template: SNAPSHOT-{{ .Commit }}
+checksum:
+  name_template: '{{ .ProjectName }}_{{ .Version }}_checksums.txt'
+changelog:
+  filters:
+    # commit messages matching the regexp listed here will be removed from
+    # the changelog
+    # Default is empty
+    exclude:
+      - '^\(docs\)'
+      - '^\(travis\)'
+      - '^\(coverage\)'
+      - '^\(tests?'
+      - '^Merge pull request'
