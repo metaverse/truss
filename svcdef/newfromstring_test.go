@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/tuneinc/truss/gengokit/gentesthelper"
+	"github.com/metaverse/truss/gengokit/gentesthelper"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -23,7 +23,7 @@ func basicFromString(t *testing.T) *Svcdef {
 		// General package
 		package general;
 
-		import "github.com/tuneinc/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;
@@ -164,7 +164,7 @@ func TestNoHTTPBinding(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/tuneinc/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
 
 		message SumRequest {
 			int64 a = 1;
