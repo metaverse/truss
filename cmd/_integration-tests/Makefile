@@ -21,7 +21,7 @@ all: test
 test: clean test-transport test-middlewares test-cli
 
 truss:
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/tuneinc/truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/metaverse/truss/cmd/truss
 
 test-transport: truss
 	@which truss

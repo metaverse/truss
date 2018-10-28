@@ -13,9 +13,9 @@ RUN apk update && apk upgrade && apk add --no-cache protobuf git
 
 RUN go version && go get -u -v github.com/golang/protobuf/protoc-gen-go
 
-COPY ./ $GOPATH/src/github.com/tuneinc/truss
+COPY ./ $GOPATH/src/github.com/metaverse/truss
 
-RUN go install -v github.com/tuneinc/truss/...
+RUN go install -v github.com/metaverse/truss/...
 
 WORKDIR  /go/src/protos
 
