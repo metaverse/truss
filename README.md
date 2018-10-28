@@ -1,4 +1,4 @@
-# Truss [![Build Status](https://travis-ci.org/tuneinc/truss.svg?branch=master)](https://travis-ci.org/tuneinc/truss)
+# Truss [![Build Status](https://travis-ci.org/metaverse/truss.svg?branch=master)](https://travis-ci.org/metaverse/truss)
 
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
