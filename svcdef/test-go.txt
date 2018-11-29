@@ -24,7 +24,7 @@ It has these top-level messages:
 */
 package TEST
 
-import proto "github.com/golang/protobuf/proto"
+import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import _ "github.com/metaverse/truss/pbinfo/scrap/third_party/googleapis/google/api"

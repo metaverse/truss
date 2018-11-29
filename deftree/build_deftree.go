@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/golang/protobuf/protoc-gen-go/descriptor"
-	"github.com/golang/protobuf/protoc-gen-go/generator"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	"github.com/gogo/protobuf/protoc-gen-gogo/generator"
+	plugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/pkg/errors"
 
 	"github.com/metaverse/truss/svcdef/svcparse"
@@ -215,7 +215,7 @@ func NewMessage(msg *descriptor.DescriptorProto) (*ProtoMessage, error) {
 
 		// Detect whether this message is a map type
 		// This code is sampled from the source of protoc-gen-go:
-		// https://github.com/golang/protobuf/blob/2c2f7268d78c9b309e301a6df31de3b6e4430dca/protoc-gen-go/generator/generator.go#L1816
+		// https://github.com/gogo/protobuf/blob/2c2f7268d78c9b309e301a6df31de3b6e4430dca/protoc-gen-gogo/generator/generator.go#L1816
 		if *field.Type == descriptor.FieldDescriptorProto_TYPE_MESSAGE {
 			// use the object map that protoc-gen-go uses
 			desc := gengo.ObjectNamed(field.GetTypeName())
