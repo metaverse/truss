@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"go/build"
 	"io"
@@ -270,73 +268,7 @@ func parseServiceDefinition(cfg *truss.Config) (*svcdef.Svcdef, error) {
 		return nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
-	// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
-	if err := rewritePBGoForContext(sd.Service.Name, pbgoPaths); err != nil {
-		return nil, errors.Wrap(err, "cannot rewrite .pb.go files")
-	}
-
 	return sd, nil
-}
-
-// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
-func rewritePBGoForContext(serviceName string, pbgoPaths []string) error {
-	pbgoFiles, err := openFiles(pbgoPaths)
-	if err != nil {
-		return errors.Wrap(err, "cannot open all .pb.go files")
-	}
-
-	const oldContextImport = `context "golang.org/x/net/context"`
-	const newContextImport = `newcontext "context"`
-	serverInterface := serviceName + "Server"
-
-	for path, f := range pbgoFiles {
-		newPBGoFile := bytes.NewBuffer(nil)
-		s := bufio.NewScanner(f)
-		var readingServerInterface bool
-
-		for s.Scan() {
-			line := s.Text()
-
-			// Add the `newcontext "context"` import if we are on the context
-			// import line
-			if strings.Contains(line, oldContextImport) {
-				line = line + "\n\t" + newContextImport
-			}
-
-			// If we are not reading the service interface check if we need to start
-			if !readingServerInterface {
-				// Found the start of the {{.Service.Name}}Server interface
-				if strings.HasPrefix(line, "type "+serverInterface+" interface {") {
-					readingServerInterface = true
-				}
-			}
-
-			// If we are reading the {{.Service.Name}}Server interface
-			if readingServerInterface {
-				// Replace `(context` with `(newcontext`
-				line = strings.Replace(line, "(context", "(newcontext", 1)
-
-				// Reached the end of the {{.Service.Name}}Server interface
-				if strings.HasPrefix(line, "}") {
-					readingServerInterface = false
-				}
-			}
-
-			// Write the line to the new file buffer
-			_, err := newPBGoFile.WriteString(line + "\n")
-			if err != nil {
-				return errors.Wrap(err, "cannot write to new .pb.go file")
-			}
-		}
-
-		// Write the rewritten .pb.go file
-		err = writeGenFile(newPBGoFile, path)
-		if err != nil {
-			return errors.Wrap(err, "cannot write new .pb.go file to disk")
-		}
-	}
-
-	return nil
 }
 
 // generateCode returns a map[string]io.Reader that represents a gokit
