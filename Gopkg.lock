@@ -183,6 +183,25 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:664494e53f8380b67a86a39bf15ef53922f74c48eb43b318fb69a647f0697e24"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/cgo",
+    "go/internal/gcimporter",
+    "go/internal/packagesdriver",
+    "go/packages",
+    "go/types/typeutil",
+    "internal/fastwalk",
+    "internal/gopathwalk",
+    "internal/semver",
+  ]
+  pruneopts = "NUT"
+  revision = "2e4132e53b93d8d81f7a076566396511238b89b0"
+
+[[projects]]
+  branch = "master"
   digest = "1:3c24554c312721e98fa6b76403e7100cf974eb46b1255ea7fc6471db9a9ce498"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
@@ -238,6 +257,7 @@
     "github.com/pkg/errors",
     "github.com/pmezard/go-difflib/difflib",
     "github.com/spf13/pflag",
+    "golang.org/x/tools/go/packages",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
