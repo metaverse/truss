@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+        "golang.org/x/tools/go/packages"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
@@ -139,16 +141,13 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("DefPaths", cfg.DefPaths).Debug()
 
 	protoDir := filepath.Dir(cfg.DefPaths[0])
-	p, err := build.Default.ImportDir(protoDir, build.FindOnly)
-	if err != nil {
-		return nil, err
-	}
-	if p.Root == "" {
-		return nil, errors.New("proto files not in GOPATH")
-	}
+        p, err := packages.Load(nil, protoDir)
+        if err != nil || len(p) == 0 {
+                return nil, errors.Wrap(err, "proto files not found in importable go package")
+        }
 
-	cfg.PBPackage = p.ImportPath
-	cfg.PBPath = p.Dir
+        cfg.PBPackage = p[0].PkgPath
+        cfg.PBPath = protoDir
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
@@ -199,17 +198,14 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrapf(err, "cannot create svcPath directory: %s", svcPath)
 	}
 
-	p, err = build.Default.ImportDir(svcPath, build.FindOnly)
-	if err != nil {
-		log.WithError(err).Error()
-		return nil, err
-	}
-	if p.Root == "" {
-		return nil, errors.New("proto files path not in GOPATH")
-	}
+        p, err = packages.Load(nil, svcPath)
+        if err != nil || len(p) == 0 {
+                return nil, errors.Wrap(err, "generated service not found in importable go package")
+        }
 
-	cfg.ServicePackage = p.ImportPath
-	cfg.ServicePath = p.Dir
+        cfg.ServicePackage = p[0].PkgPath
+        cfg.ServicePath = svcPath
+
 
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
 	log.WithField("Service Path", cfg.ServicePath).Debug()
