@@ -11,8 +11,8 @@ import (
 	// in the sources below.
 	_ "github.com/metaverse/truss/deftree/googlethirdparty"
 
-	"github.com/golang/protobuf/proto"
-	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	"github.com/gogo/protobuf/proto"
+	descriptor "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 )
 
 var gopath []string

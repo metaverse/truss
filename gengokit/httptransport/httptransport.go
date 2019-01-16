@@ -12,7 +12,7 @@ import (
 	"unicode"
 
 	log "github.com/Sirupsen/logrus"
-	gogen "github.com/golang/protobuf/protoc-gen-go/generator"
+	gogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
 
 	"github.com/metaverse/truss/gengokit/httptransport/templates"
