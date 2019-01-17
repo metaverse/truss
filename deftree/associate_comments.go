@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	plugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 )
 
 func init() {

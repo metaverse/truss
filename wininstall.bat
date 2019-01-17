@@ -22,9 +22,9 @@ FOR /F "tokens=* USEBACKQ" %%F IN (`%DATE_FMT_CMD%`) DO (
 
 @ECHO ON
 go get github.com/pauln/go-datefmt
-go get github.com/golang/protobuf/protoc-gen-go
-go get github.com/golang/protobuf/proto
+go get github.com/gogo/protobuf/protoc-gen-gogo
+go get github.com/gogo/protobuf/proto
 go get github.com/jteeuwen/go-bindata/...
-go generate github.com/tuneinc/truss/gengokit/template
-go install -ldflags "-X 'main.Version=%SHA%' -X 'main.VersionDate=%HEAD_DATE%'" github.com/tuneinc/truss/cmd/truss
+go generate github.com/metaverse/truss/gengokit/template
+go install -ldflags "-X 'main.Version=%SHA%' -X 'main.VersionDate=%HEAD_DATE%'" github.com/metaverse/truss/cmd/truss
 @ECHO OFF

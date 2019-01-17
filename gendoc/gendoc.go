@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/tuneinc/truss/deftree"
+	"github.com/metaverse/truss/deftree"
 )
 
 func findServiceName(md *deftree.MicroserviceDefinition) string {

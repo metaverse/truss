@@ -9,17 +9,18 @@ VERSION_DATE := $(shell $(MAKEFILE_PATH)/commit_date.sh)
 default: truss
 
 dependencies:
-	go get -u github.com/golang/protobuf/protoc-gen-go
-	go get -u github.com/golang/protobuf/proto
+	go get -u github.com/gogo/protobuf/protoc-gen-gogo
+	go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
+	go get -u github.com/gogo/protobuf/proto
 	go get -u github.com/jteeuwen/go-bindata/...
 
 # Generate go files containing the all template files in []byte form
 gobindata:
-	go generate github.com/tuneinc/truss/gengokit/template
+	go generate github.com/metaverse/truss/gengokit/template
 
 # Install truss
 truss: gobindata
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/tuneinc/truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/metaverse/truss/cmd/truss
 
 # Run the go tests and the truss integration tests
 test: test-go test-integration

@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"go/build"
 	"io"
@@ -11,18 +9,20 @@ import (
 	"path/filepath"
 	"strings"
 
+        "golang.org/x/tools/go/packages"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 
-	"github.com/tuneinc/truss/truss"
-	"github.com/tuneinc/truss/truss/execprotoc"
-	"github.com/tuneinc/truss/truss/getstarted"
-	"github.com/tuneinc/truss/truss/parsesvcname"
+	"github.com/metaverse/truss/truss"
+	"github.com/metaverse/truss/truss/execprotoc"
+	"github.com/metaverse/truss/truss/getstarted"
+	"github.com/metaverse/truss/truss/parsesvcname"
 
-	ggkconf "github.com/tuneinc/truss/gengokit"
-	gengokit "github.com/tuneinc/truss/gengokit/generator"
-	"github.com/tuneinc/truss/svcdef"
+	ggkconf "github.com/metaverse/truss/gengokit"
+	gengokit "github.com/metaverse/truss/gengokit/generator"
+	"github.com/metaverse/truss/svcdef"
 )
 
 var (
@@ -141,16 +141,13 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("DefPaths", cfg.DefPaths).Debug()
 
 	protoDir := filepath.Dir(cfg.DefPaths[0])
-	p, err := build.Default.ImportDir(protoDir, build.FindOnly)
-	if err != nil {
-		return nil, err
-	}
-	if p.Root == "" {
-		return nil, errors.New("proto files not in GOPATH")
-	}
+        p, err := packages.Load(nil, protoDir)
+        if err != nil || len(p) == 0 {
+                return nil, errors.Wrap(err, "proto files not found in importable go package")
+        }
 
-	cfg.PBPackage = p.ImportPath
-	cfg.PBPath = p.Dir
+        cfg.PBPackage = p[0].PkgPath
+        cfg.PBPath = protoDir
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
@@ -201,17 +198,14 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrapf(err, "cannot create svcPath directory: %s", svcPath)
 	}
 
-	p, err = build.Default.ImportDir(svcPath, build.FindOnly)
-	if err != nil {
-		log.WithError(err).Error()
-		return nil, err
-	}
-	if p.Root == "" {
-		return nil, errors.New("proto files path not in GOPATH")
-	}
+        p, err = packages.Load(nil, svcPath)
+        if err != nil || len(p) == 0 {
+                return nil, errors.Wrap(err, "generated service not found in importable go package")
+        }
 
-	cfg.ServicePackage = p.ImportPath
-	cfg.ServicePath = p.Dir
+        cfg.ServicePackage = p[0].PkgPath
+        cfg.ServicePath = svcPath
+
 
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
 	log.WithField("Service Path", cfg.ServicePath).Debug()
@@ -270,73 +264,7 @@ func parseServiceDefinition(cfg *truss.Config) (*svcdef.Svcdef, error) {
 		return nil, errors.Wrapf(err, "failed to create service definition; did you pass ALL the protobuf files to truss?")
 	}
 
-	// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
-	if err := rewritePBGoForContext(sd.Service.Name, pbgoPaths); err != nil {
-		return nil, errors.Wrap(err, "cannot rewrite .pb.go files")
-	}
-
 	return sd, nil
-}
-
-// TODO: Remove once golang 1.9 comes out and type aliases solve context vs golang.org/x/net/context
-func rewritePBGoForContext(serviceName string, pbgoPaths []string) error {
-	pbgoFiles, err := openFiles(pbgoPaths)
-	if err != nil {
-		return errors.Wrap(err, "cannot open all .pb.go files")
-	}
-
-	const oldContextImport = `context "golang.org/x/net/context"`
-	const newContextImport = `newcontext "context"`
-	serverInterface := serviceName + "Server"
-
-	for path, f := range pbgoFiles {
-		newPBGoFile := bytes.NewBuffer(nil)
-		s := bufio.NewScanner(f)
-		var readingServerInterface bool
-
-		for s.Scan() {
-			line := s.Text()
-
-			// Add the `newcontext "context"` import if we are on the context
-			// import line
-			if strings.Contains(line, oldContextImport) {
-				line = line + "\n\t" + newContextImport
-			}
-
-			// If we are not reading the service interface check if we need to start
-			if !readingServerInterface {
-				// Found the start of the {{.Service.Name}}Server interface
-				if strings.HasPrefix(line, "type "+serverInterface+" interface {") {
-					readingServerInterface = true
-				}
-			}
-
-			// If we are reading the {{.Service.Name}}Server interface
-			if readingServerInterface {
-				// Replace `(context` with `(newcontext`
-				line = strings.Replace(line, "(context", "(newcontext", 1)
-
-				// Reached the end of the {{.Service.Name}}Server interface
-				if strings.HasPrefix(line, "}") {
-					readingServerInterface = false
-				}
-			}
-
-			// Write the line to the new file buffer
-			_, err := newPBGoFile.WriteString(line + "\n")
-			if err != nil {
-				return errors.Wrap(err, "cannot write to new .pb.go file")
-			}
-		}
-
-		// Write the rewritten .pb.go file
-		err = writeGenFile(newPBGoFile, path)
-		if err != nil {
-			return errors.Wrap(err, "cannot write new .pb.go file to disk")
-		}
-	}
-
-	return nil
 }
 
 // generateCode returns a map[string]io.Reader that represents a gokit
@@ -510,7 +438,7 @@ Do you want to automatically run 'make' and rerun command:
 	return false
 }
 
-const trussImportPath = "github.com/tuneinc/truss"
+const trussImportPath = "github.com/metaverse/truss"
 
 // makeAndRunTruss installs truss by running make in trussImportPath.
 // It then passes through args to newly installed truss.

@@ -94,7 +94,7 @@ func TestPostBodyParams(t *testing.T) {
 
 	params := md.Files[0].Services[0].Methods[0].HttpBindings[0].Params
 	if len(params) != 3 {
-		t.Fatalf("Params (%s) has length %v, expected length of 3.\n", params, len(params))
+		t.Fatalf("Params (%v) has length %d, expected length of 3.\n", params, len(params))
 	}
 
 	for _, param := range params {
