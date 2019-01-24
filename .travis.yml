@@ -8,6 +8,11 @@ go:
   - 1.11.x
   - 1.10.x
 
+matrix:
+  include:
+    - go: 1.11.x
+      env: GO111MODULE=on
+
 go_import_path: github.com/metaverse/truss
 
 before_install:
