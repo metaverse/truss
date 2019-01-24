@@ -10,14 +10,12 @@ default: truss
 
 dependencies:
 ifeq ($(GO111MODULE), on)
-	go get -u github.com/kevinburke/go-bindata/...
 	go mod download
-else
+endif
 	go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
 	go get -u github.com/gogo/protobuf/proto
 	go get -u github.com/kevinburke/go-bindata/...
-endif
 
 # Generate go files containing the all template files in []byte form
 gobindata:
