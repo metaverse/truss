@@ -4,6 +4,7 @@ const Hook = `
 package handlers
 
 import (
+//	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -18,5 +19,21 @@ func InterruptHandler(errc chan<- error) {
 	// Place whatever shutdown handling you want here
 
 	errc <- terminateError
+}
+
+func Report(response, request interface{}, method string) {
+	fmt.Println("Client Requested with:")
+	fmt.Println(request)
+	fmt.Println("Server Responded with:")
+	fmt.Println(response)
+	/*
+	buf, err := json.MarshalIndent(response, "", "  ")
+	if nil != err {
+		fmt.Fprintf(os.Stderr, "Failed to convert response to JSON: %v\n%s\n",
+			err, buf)
+	} else {
+		fmt.Printf("%s\n", buf)
+	}
+	*/
 }
 `

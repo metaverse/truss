@@ -23,6 +23,7 @@ import (
 	"{{.ImportPath -}} /svc/client/cli/handlers"
 	grpcclient "{{.ImportPath -}} /svc/client/grpc"
 	httpclient "{{.ImportPath -}} /svc/client/http"
+	hooks "{{.ImportPath -}} /handlers"
 	pb "{{.PBImportPath -}}"
 )
 
@@ -150,10 +151,7 @@ func submain() int {
 				fmt.Fprintf(os.Stderr, "Error calling service.{{$meth}}: %v\n", err)
 				return 1
 			}
-			fmt.Println("Client Requested with:")
-			fmt.Println({{$args.CallArgs}})
-			fmt.Println("Server Responded with:")
-			fmt.Println(v)
+			hooks.Report(v, request, flag.Args()[0])
 	{{end}}
 	default:
 		flag.Usage()
