@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/metaverse/truss/truss/execprotoc"
+	"github.com/Unity-Technologies/truss/truss/execprotoc"
 	"github.com/pkg/errors"
 )
 

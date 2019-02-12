@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/metaverse/truss/gengokit/gentesthelper"
+	"github.com/Unity-Technologies/truss/gengokit/gentesthelper"
 )
 
 // Test that rendering certain templates will ouput the code we expect. The

@@ -16,11 +16,11 @@ dependencies:
 
 # Generate go files containing the all template files in []byte form
 gobindata:
-	go generate github.com/metaverse/truss/gengokit/template
+	go generate github.com/Unity-Technologies/truss/gengokit/template
 
 # Install truss
 truss: gobindata
-	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/metaverse/truss/cmd/truss
+	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/Unity-Technologies/truss/cmd/truss
 
 # Run the go tests and the truss integration tests
 test: test-go test-integration

@@ -18,8 +18,8 @@ import (
 	plugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 	"github.com/pkg/errors"
 
-	"github.com/metaverse/truss/svcdef/svcparse"
-	"github.com/metaverse/truss/truss/execprotoc"
+	"github.com/Unity-Technologies/truss/svcdef/svcparse"
+	"github.com/Unity-Technologies/truss/truss/execprotoc"
 )
 
 var gengo *generator.Generator

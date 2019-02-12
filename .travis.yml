@@ -10,7 +10,7 @@ go:
 env:
   - GO111MODULE=on
 
-go_import_path: github.com/metaverse/truss
+go_import_path: github.com/Unity-Technologies/truss
 
 before_install:
   # protobuf

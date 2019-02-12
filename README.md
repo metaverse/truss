@@ -19,15 +19,15 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 1. Install Truss with
 
 	```
-	go get -u -d github.com/metaverse/truss
-	cd $GOPATH/src/github.com/metaverse/truss
+	go get -u -d github.com/Unity-Technologies/truss
+	cd $GOPATH/src/github.com/Unity-Technologies/truss
 	make dependencies
 	make
 	```
 	On Windows, do the following instead:
 	```
-	go get -u -d github.com/metaverse/truss
-	cd %GOPATH%/src/github.com/metaverse/truss
+	go get -u -d github.com/Unity-Technologies/truss
+	cd %GOPATH%/src/github.com/Unity-Technologies/truss
 	wininstall.bat
 	```
 

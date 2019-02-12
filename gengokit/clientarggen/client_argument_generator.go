@@ -15,7 +15,7 @@ import (
 	gogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
 
-	"github.com/metaverse/truss/svcdef"
+	"github.com/Unity-Technologies/truss/svcdef"
 )
 
 // A collection of the necessary information for generating basic business

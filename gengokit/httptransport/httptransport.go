@@ -15,8 +15,8 @@ import (
 	gogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
 
-	"github.com/metaverse/truss/gengokit/httptransport/templates"
-	"github.com/metaverse/truss/svcdef"
+	"github.com/Unity-Technologies/truss/gengokit/httptransport/templates"
+	"github.com/Unity-Technologies/truss/svcdef"
 )
 
 // Helper is the base struct for the data structure containing all the
