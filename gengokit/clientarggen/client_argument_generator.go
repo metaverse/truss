@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -128,8 +129,14 @@ type ClientServiceArgs struct {
 // doing all this iteration in a template where it would be much less
 // understandable.
 func (c *ClientServiceArgs) AllFlags() string {
+	keys := []string{}
+	for k, _ := range c.MethArgs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	tmp := []string{}
-	for _, m := range c.MethArgs {
+	for _, k := range keys {
+		m := c.MethArgs[k]
 		for _, a := range m.Args {
 			tmp = append(tmp, a.FlagConvertFunc)
 		}
