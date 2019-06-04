@@ -71,7 +71,11 @@ func generateResponseFile(templFP string, data *gengokit.Data, prevFile io.Reade
 		}
 
 	case handlers.HookPath:
-		hook := handlers.NewHook(prevFile)
+		hook, err := handlers.NewHook(prevFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "cannot parse previous hooks: %s", templFP)
+		}
+
 		genCode, err = hook.Render(templFP, data)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot render template: %s", templFP)

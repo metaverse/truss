@@ -11,10 +11,10 @@ import (
 const HookPath = "handlers/hooks.gotemplate"
 
 // NewHook returns a new HookRender
-func NewHook(prev io.Reader) gengokit.Renderable {
+func NewHook(prev io.Reader) (gengokit.Renderable, error) {
 	return &HookRender{
 		prev: prev,
-	}
+	}, nil
 }
 
 type HookRender struct {
