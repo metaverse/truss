@@ -1,6 +1,22 @@
 package templates
 
-const Hook = `
+type HookDef struct {
+	Name string
+	Code string
+}
+
+var Hooks []*HookDef = []*HookDef{
+	&HookDef{
+		Name: "InterruptHandler",
+		Code: HookInt,
+	},
+	&HookDef{
+		Name: "Report",
+		Code: HookReport,
+	},
+}
+
+const HookHead = `
 package handlers
 
 import (
@@ -10,6 +26,9 @@ import (
 	"os/signal"
 	"syscall"
 )
+`
+
+const HookInt = `
 
 func InterruptHandler(errc chan<- error) {
 	c := make(chan os.Signal, 1)
@@ -20,6 +39,9 @@ func InterruptHandler(errc chan<- error) {
 
 	errc <- terminateError
 }
+`
+
+const HookReport = `
 
 func Report(response, request interface{}, method string) {
 	/* Closer to original client output:

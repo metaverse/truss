@@ -1,8 +1,8 @@
 package handlers
 
 import (
+	"bytes"
 	"io"
-	"strings"
 
 	"github.com/Unity-Technologies/truss/gengokit"
 	"github.com/Unity-Technologies/truss/gengokit/handlers/templates"
@@ -24,9 +24,14 @@ type HookRender struct {
 // Render will return the existing file if it exists, otherwise it will return
 // a brand new copy from the template.
 func (h *HookRender) Render(_ string, _ *gengokit.Data) (io.Reader, error) {
-	if h.prev == nil {
-		return strings.NewReader(templates.Hook), nil
-	} else {
+	if h.prev != nil {
 		return h.prev, nil
 	}
+	code := new(bytes.Buffer)
+	code.WriteString(templates.HookHead)
+	for _, hd := range templates.Hooks {
+		code.WriteString(hd.Code)
+	}
+
+	return code, nil
 }
