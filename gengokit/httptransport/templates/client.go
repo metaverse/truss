@@ -50,6 +50,7 @@ var ClientEncodeTemplate = `
 
 		r.URL.RawQuery = values.Encode()
 
+		{{- if ne $binding.Verb "get" }}
 		// Set the body parameters
 		var buf bytes.Buffer
 		toRet := request.(*pb.{{GoName $binding.Parent.RequestType}})
@@ -66,6 +67,7 @@ var ClientEncodeTemplate = `
 			return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
 		}
 		r.Body = ioutil.NopCloser(&buf)
+		{{- end }}
 		return nil
 	}
 {{- end -}}

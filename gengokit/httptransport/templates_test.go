@@ -92,16 +92,6 @@ func EncodeHTTPSumZeroRequest(_ context.Context, r *http.Request, request interf
 	values.Add("b", fmt.Sprint(req.B))
 
 	r.URL.RawQuery = values.Encode()
-
-	// Set the body parameters
-	var buf bytes.Buffer
-	toRet := request.(*pb.SumRequest)
-	encoder := json.NewEncoder(&buf)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(toRet); err != nil {
-		return errors.Wrapf(err, "couldn't encode body as json %v", toRet)
-	}
-	r.Body = ioutil.NopCloser(&buf)
 	return nil
 }
 
