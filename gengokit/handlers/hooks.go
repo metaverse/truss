@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -35,7 +36,7 @@ type HookRender struct {
 
 // Render will return the existing file if it exists, otherwise it will return
 // a brand new copy from the template.
-func (h *HookRender) Render(_ string, _ *gengokit.Data) (io.Reader, error) {
+func (h *HookRender) Render(path string, _ *gengokit.Data) (io.Reader, error) {
 	code := new(bytes.Buffer)
 	if h.ast == nil {
 		code.WriteString(templates.HookHead)
@@ -61,12 +62,38 @@ func (h *HookRender) Render(_ string, _ *gengokit.Data) (io.Reader, error) {
 	// Place to collect code for any missing hooks:
 	extra := new(bytes.Buffer)
 
+	// Add missing imports needed for hooks that will be added:
+	included := map[string]bool{}
+	for _, i := range h.ast.Imports {
+		included[i.Path.Value] = true
+	}
+	var imp *ast.GenDecl
 	for _, hd := range templates.Hooks {
 		if "" == hd.Code {
 			continue
 		}
 		// Add source code for this missing hook:
 		extra.WriteString(hd.Code)
+
+		for _, i := range hd.Imports {
+			i = "\"" + i + "\""
+			if included[i] {
+				continue
+			}
+			included[i] = true
+			if imp == nil {
+				if len(h.ast.Decls) < 1 {
+					return nil, fmt.Errorf("No import() statement in %s", path)
+				}
+				var ok bool
+				if imp, ok = h.ast.Decls[0].(*ast.GenDecl); !ok {
+					return nil, fmt.Errorf("First import in %s lacks parens", path)
+				}
+			}
+			imp.Specs = append(imp.Specs, &ast.ImportSpec{
+				Path: &ast.BasicLit{Kind: token.STRING, Value: i},
+			})
+		}
 	}
 
 	if err := printer.Fprint(code, h.fset, h.ast); nil != err {

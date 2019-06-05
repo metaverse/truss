@@ -1,17 +1,20 @@
 package templates
 
 type HookDef struct {
-	Name string
-	Code string
+	Name    string
+	Imports []string
+	Code    string
 }
 
 var Hooks []*HookDef = []*HookDef{
 	&HookDef{
 		Name: "InterruptHandler",
+		Imports: []string{"fmt", "os", "os/signal", "syscall"},
 		Code: HookInt,
 	},
 	&HookDef{
 		Name: "Report",
+		Imports: []string{"encoding/json", "fmt", "os"},
 		Code: HookReport,
 	},
 }
