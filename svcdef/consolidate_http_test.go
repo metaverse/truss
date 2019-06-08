@@ -69,7 +69,7 @@ message MsgA {
 }
 
 message Thing {
-  MsgA A = 1;
+  MsgA a = 1;
   repeated MsgA AA = 17;
   EnumType C = 18;
   map<string, MsgA> MapField = 19;
@@ -79,7 +79,7 @@ service Map {
   rpc GetThing (Thing) returns (Thing) {
     option (google.api.http) = {
       get: "/1"
-	  body: "*"
+      body: "a"
     };
   }
 }`
@@ -119,5 +119,31 @@ service Map {
 			t.Fatalf("Parameter %q does not refer to the same field as field %q", parmName, fld.Name)
 		}
 	}
-
+	// Verify the locations of HTTPParams
+	var cases = []struct {
+		Name     string
+		Location string
+	}{
+		{"A", "body"},
+		{"AA", "query"},
+		{"C", "query"},
+		{"MapField", "query"},
+	}
+	HTTPParamWithName := func(name string) *HTTPParameter {
+		for _, p := range bind.Params {
+			if p.Field.Name == name {
+				return p
+			}
+		}
+		return nil
+	}
+	for _, tcase := range cases {
+		param := HTTPParamWithName(tcase.Name)
+		if param == nil {
+			t.Fatalf("Failed to find HTTPParam with name %q", tcase.Name)
+		}
+		if param.Location != tcase.Location {
+			t.Fatalf("The HTTPParameter %q has a location of %q, expected %q", tcase.Name, param.Location, tcase.Location)
+		}
+	}
 }
