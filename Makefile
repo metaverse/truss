@@ -9,9 +9,9 @@ VERSION_DATE := $(shell $(MAKEFILE_PATH)/commit_date.sh)
 default: truss
 
 dependencies:
-	go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	go get -u github.com/gogo/protobuf/protoc-gen-gogofaster
-	go get -u github.com/gogo/protobuf/proto
+	go get -u github.com/gogo/protobuf/protoc-gen-gogo@21df5aa0e680850681b8643f0024f92d3b09930c
+	go get -u github.com/gogo/protobuf/protoc-gen-gogofaster@21df5aa0e680850681b8643f0024f92d3b09930c
+	go get -u github.com/gogo/protobuf/proto@21df5aa0e680850681b8643f0024f92d3b09930c
 	go get -u github.com/kevinburke/go-bindata/...
 
 # Generate go files containing the all template files in []byte form
