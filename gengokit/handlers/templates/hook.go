@@ -29,6 +29,10 @@ import (
 	"os/signal"
 	"syscall"
 )
+
+var (
+	_ = json.Compact
+)
 `
 
 const HookInt = `
