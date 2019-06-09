@@ -242,7 +242,7 @@ func goConvInvoc(a ClientArg) string {
 	jsonConvTmpl := `
 var {{.GoArg}} {{.GoType}}
 if {{.FlagArg}} != nil && len(*{{.FlagArg}}) > 0 {
-	hooks.UnmarshalArg(&{{.GoArg}}, *{{.FlagArg}}, "{{.GoArg}}")
+	hooks.UnmarshalArg(&{{.GoArg}}, *{{.FlagArg}}, "{{.GoType}}")
 }
 `
 	if a.Repeated || !a.IsBaseType {
