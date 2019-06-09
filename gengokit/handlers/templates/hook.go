@@ -17,21 +17,31 @@ var Hooks []*HookDef = []*HookDef{
 		Imports: []string{"encoding/json", "fmt", "os"},
 		Code: HookReport,
 	},
+	&HookDef{
+		Name: "UnmarshalArg",
+		Imports: []string{"bytes", "encoding/json", "github.com/pkg/errors"},
+		Code: HookUnmarsh,
+	},
 }
 
 const HookHead = `
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/pkg/errors"
 )
 
 var (
+	_ = bytes.Compare
 	_ = json.Compact
+	_ = errors.Wrapf
 )
 `
 
@@ -65,6 +75,16 @@ func Report(response, request interface{}, method string) {
 			err, buf)
 	} else {
 		fmt.Printf("%s\n", buf)
+	}
+}
+`
+
+const HookUnmarsh = `
+
+func UnmarshalArg(dest interface{}, data, what string) {
+	err := json.Unmarshal([]byte(data), dest)
+	if err != nil {
+		panic(errors.Wrapf(err, "unmarshalling %s from %v:", what, data))
 	}
 }
 `

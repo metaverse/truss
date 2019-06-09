@@ -69,7 +69,7 @@ func TestNewClientServiceArgs(t *testing.T) {
 						FlagConvertFunc: "flagASum = fsSum.String(\"a\", \"\", \"\")",
 						GoArg:           "ASum",
 						GoType:          "[]int64",
-						GoConvertInvoc:  "\nvar ASum []int64\nif flagASum != nil && len(*flagASum) > 0 {\n\terr = json.Unmarshal([]byte(*flagASum), &ASum)\n\tif err != nil {\n\t\tpanic(errors.Wrapf(err, \"unmarshalling ASum from %v:\", flagASum))\n\t}\n}\n",
+						GoConvertInvoc:  "\nvar ASum []int64\nif flagASum != nil && len(*flagASum) > 0 {\n\thooks.UnmarshalArg(&ASum, *flagASum, \"ASum\")\n}\n",
 						IsBaseType:      true,
 						Repeated:        true,
 					},
