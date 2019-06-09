@@ -84,7 +84,7 @@ const HookUnmarsh = `
 func UnmarshalArg(dest interface{}, data, what string) {
 	err := json.Unmarshal([]byte(data), dest)
 	if err != nil {
-		panic(errors.Wrapf(err, "unmarshalling %s from %v:", what, data))
+		panic(errors.Wrapf(err, "unmarshalling %s from %q:", what, data))
 	}
 }
 `
