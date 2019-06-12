@@ -1,4 +1,4 @@
-module github.com/metaverse/truss
+module github.com/Unity-Technologies/truss
 
 require (
 	github.com/Sirupsen/logrus v1.0.5
