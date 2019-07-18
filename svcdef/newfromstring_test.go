@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/metaverse/truss/gengokit/gentesthelper"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/metaverse/truss/gengokit/gentesthelper"
 )
 
 var gopath []string
@@ -111,6 +111,10 @@ func TestMessages(t *testing.T) {
 					},
 				},
 			},
+		},
+		&Message{
+			Name:   "UnimplementedSumSvcServer",
+			Fields: nil,
 		},
 	}
 

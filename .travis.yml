@@ -5,22 +5,20 @@ sudo: false
 
 go:
   - tip
+  - 1.12.x
   - 1.11.x
-  - 1.10.x
 
-matrix:
-  include:
-    - go: 1.11.x
-      env: GO111MODULE=on
+env:
+  - GO111MODULE=on
 
 go_import_path: github.com/metaverse/truss
 
 before_install:
   # protobuf
   # download, unzip in $HOME, add to $PATH
-  - wget https://github.com/google/protobuf/releases/download/v3.5.1/protoc-3.5.1-linux-x86_64.zip
-  - mv protoc-3.5.1-linux-x86_64.zip $HOME
-  - unzip ~/protoc-3.5.1-linux-x86_64.zip -d $HOME
+  - wget https://github.com/google/protobuf/releases/download/v3.6.1/protoc-3.6.1-linux-x86_64.zip
+  - mv protoc-3.6.1-linux-x86_64.zip $HOME
+  - unzip ~/protoc-3.6.1-linux-x86_64.zip -d $HOME
   - export PATH=$HOME/bin/:$PATH
 
 install:
