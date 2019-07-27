@@ -182,7 +182,8 @@ func (h httpError) Headers() http.Header {
 func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
 	marshaller := jsonpb.Marshaler{
 		EnumsAsInts:  true,
-		EmitDefaults: true,
+		EmitDefaults: false,
+		OrigName: true,
 	}
 
 	return marshaller.Marshal(w, response.(proto.Message))
