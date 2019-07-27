@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/metaverse/truss/gengokit/gentesthelper"
 	"github.com/metaverse/truss/svcdef"
-	"github.com/davecgh/go-spew/spew"
 )
 
 var (
@@ -33,6 +33,7 @@ func TestNewMethod(t *testing.T) {
 		message SumRequest {
 			int64 a = 1;
 			int64 b = 2;
+			int64 orig_name = 3;
 		}
 
 		message SumReply {
@@ -82,6 +83,19 @@ func TestNewMethod(t *testing.T) {
 				ConvertFunc:                "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
 				ConvertFuncNeedsErrorCheck: true,
 				TypeConversion:             "BSum",
+				IsBaseType:                 true,
+			},
+			&Field{
+				Name:                       "OrigName",
+				QueryParamName:             "orig_name",
+				CamelName:                  "OrigName",
+				LowCamelName:               "origName",
+				LocalName:                  "OrigNameSum",
+				Location:                   "query",
+				GoType:                     "int64",
+				ConvertFunc:                "OrigNameSum, err := strconv.ParseInt(OrigNameSumStr, 10, 64)",
+				ConvertFuncNeedsErrorCheck: true,
+				TypeConversion:             "OrigNameSum",
 				IsBaseType:                 true,
 			},
 		},
