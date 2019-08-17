@@ -125,6 +125,8 @@ func main() {
 			log.Fatal(errors.Wrap(err, "cannot to write output"))
 		}
 	}
+
+	cleanupOldFiles(cfg.ServicePath, strings.ToLower(sd.Service.Name))
 }
 
 // parseInput constructs a *truss.Config with all values needed to parse
@@ -396,6 +398,34 @@ func fileExists(path string) bool {
 		return true
 	}
 	return false
+}
+
+func cleanupOldFiles(servicePath, serviceName string) {
+	serverCLI := filepath.Join(servicePath, "svc/server/cli")
+	if _, err := os.Stat(serverCLI); err == nil {
+		log.Warnf("Removing stale 'svc/server/cli' files")
+		err := os.RemoveAll(serverCLI)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+	clientCLI := filepath.Join(servicePath, "svc/client/cli")
+	if _, err := os.Stat(clientCLI); err == nil {
+		log.Warnf("Removing stale 'svc/client/cli' files")
+		err := os.RemoveAll(clientCLI)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	oldServer := filepath.Join(servicePath, fmt.Sprintf("cmd/%s-server", serviceName))
+	if _, err := os.Stat(oldServer); err == nil {
+		log.Warnf(fmt.Sprintf("Removing stale 'cmd/%s-server' files, use cmd/%s going forward", serviceName, serviceName))
+		err := os.RemoveAll(oldServer)
+		if err != nil {
+			log.Error(err)
+		}
+	}
 }
 
 // promptNoMake prints that truss was not built with make and prompts the user
