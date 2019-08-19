@@ -7,7 +7,7 @@ TRANSPORT_TEST_MSG=\n$(OK_COLOR)Starting transport end to end test:$(END_COLOR_L
 
 MIDDLEWARES_TEST_MSG=\n$(OK_COLOR)Starting middlewares end to end test:$(END_COLOR_LINE)
 
-CLI_TEST_MSG=\n$(OK_COLOR)Start server and cliclient generate, build, and run test:$(END_COLOR_LINE)
+SERVER_TEST_MSG=\n$(OK_COLOR)Start server generate, build, and run test:$(END_COLOR_LINE)
 
 SHA := $(shell git rev-parse --short=10 HEAD)
 
@@ -18,7 +18,7 @@ export PATH := $(CURDIR):$(PATH)
 
 all: test
 
-test: clean test-transport test-middlewares test-cli
+test: clean test-transport test-middlewares test-server
 
 truss:
 	go install -ldflags '-X "main.Version=$(SHA)" -X "main.VersionDate=$(VERSION_DATE)"' github.com/metaverse/truss/cmd/truss
@@ -27,7 +27,7 @@ test-transport: truss
 	@which truss
 	@printf '$(TRANSPORT_TEST_MSG)'
 	$(MAKE) -C transport
-	rm -f ./truss 
+	rm -f ./truss
 
 test-middlewares: truss
 	@which truss
@@ -35,15 +35,15 @@ test-middlewares: truss
 	$(MAKE) -C middlewares
 	rm -f ./truss
 
-test-cli: truss
+test-server: truss
 	@which truss
-	@printf '$(CLI_TEST_MSG)'
-	go test -v ./cli
+	@printf '$(SERVER_TEST_MSG)'
+	go test -v ./server
 	rm -f ./truss
 
 clean:
 	rm -f ./truss
-	go test ./cli -clean
+	go test ./server -clean
 	$(MAKE) -C transport clean
 	$(MAKE) -C middlewares clean
 

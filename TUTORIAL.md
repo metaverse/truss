@@ -70,9 +70,7 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 .
 ├── echo-service
 |   ├── cmd
-|   │   ├── echo
-|   │   │   └── main.go
-|   │   └── echo-server
+|   │   └── echo
 |   │       └── main.go
 |   ├── echo.pb.go
 |   ├── handlers
@@ -86,8 +84,7 @@ In your terminal, go to the folder containing echo.proto and run `truss *.proto`
 From the top down, within `echo-service/`:
   - `svc/` contains the wiring and encoding protocols necessary for service communication (generated code)
   - `handlers/handlers.go` is populated with stubs where you will add the business logic
-  - `cmd/echo/` contains the client side CLI (useful for testing)
-  - `cmd/echo-server/` contains the service main, which you will build and run shortly
+  - `cmd/echo/` contains the service main, which you will build and run shortly
   - `echo.pb.go` contains the RPC interface definitions and supporting structures that have been translated from `echo.proto` to golang
 
 If you try to build and run your service now, it will respond with empty messages. There is no business logic yet! We shall add it in the next step.
@@ -125,7 +122,7 @@ From the directory containing echo.proto run
 `go build echo-service/echo`
 
 Create another terminal window to run the server in, navigate to the same directory and launch the server:
-`./echo-server`
+`./echo`
 When server starts up, you should see something like this:
 ```
 ts=2016-12-06T23:25:14Z caller=main.go:55 msg=hello
@@ -135,7 +132,7 @@ ts=2016-12-06T23:25:14Z caller=main.go:124 transport=gRPC addr=:5040
 
 ```
 The server is now waiting for incoming messages.
-At this point we can send a request to the server via networking tools (telnet, curl) and construct message directly, or we can use the client CLI.
+At this point we can send a request to the server via networking tools (telnet, curl) and construct message directly
 
 Let's do the latter, in your first terminal. To learn how to launch client with proper parameters run `./echo -help`. The printout will tell you what methods the service supports and all the additional flags that must be set to call a certain method
 

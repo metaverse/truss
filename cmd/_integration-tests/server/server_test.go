@@ -1,4 +1,4 @@
-package cli
+package server
 
 import (
 	"bytes"
@@ -65,7 +65,6 @@ func TestMain(m *testing.M) {
 		fmt.Printf("cannot copy '0-basic' service: %v", err)
 		return
 	}
-
 	path := filepath.Join(basePath, "0-basic")
 
 	err = createTrussService(path)
@@ -73,13 +72,11 @@ func TestMain(m *testing.M) {
 		fmt.Printf("cannot create truss service: %v", err)
 		return
 	}
-
 	err = buildTestService(filepath.Join(path, "test-service"))
 	if err != nil {
 		fmt.Printf("cannot build truss service: %v", err)
 		return
 	}
-
 	exitCode = m.Run()
 }
 
@@ -100,12 +97,6 @@ func TestPortVariable(t *testing.T) {
 	server, srvrOut, errc := runServer(path,
 		"-grpc.addr", ":"+grpcPort,
 		"-debug.addr", ":"+debugPort)
-	// run client with http transport
-	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort, "getbasic")
-	if errHTTP != nil {
-		t.Error(string(clientHTTP))
-		t.Error(errHTTP)
-	}
 
 	err := reapServer(server, errc)
 	if err != nil {
@@ -119,7 +110,7 @@ func TestBasicTypes(t *testing.T) {
 }
 
 func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
-	svcOut := "./tunelab"
+	svcOut := "./metaverse"
 	path := filepath.Join(basePath, "1-basic")
 	err := createTrussService(path, "--svcout", svcOut)
 	if err != nil {
@@ -132,7 +123,7 @@ func TestBasicTypesWithRelSVCOutFlag(t *testing.T) {
 }
 
 func TestBasicTypesWithTrailingSlashSVCOutFlag(t *testing.T) {
-	svcOut := "./tunelab/"
+	svcOut := "./metaverse/"
 	path := filepath.Join(basePath, "1-basic")
 	err := createTrussService(path, "--svcout", svcOut)
 	if err != nil {
@@ -212,18 +203,11 @@ func testEndToEnd(defDir string, subcmd string, t *testing.T, trussOptions ...st
 		"-http.addr", ":"+httpPort,
 		"-debug.addr", ":"+debugPort)
 
-	// run client with grpc transport
-	clientGRPC, errGRPC := runClient(path, "-grpc.addr", ":"+grpcPort, subcmd)
-	// run client with http transport
-	clientHTTP, errHTTP := runClient(path, "-http.addr", ":"+httpPort, subcmd)
-
 	// check server for errors and kill if needed
 	errSRVR := reapServer(server, errc)
 
-	if errGRPC != nil || errHTTP != nil || errSRVR != nil {
+	if errSRVR != nil {
 		t.Logf("Communication test FAILED - %v", filepath.Base(path))
-		t.Logf("Client gRPC Output\n%v", string(clientGRPC))
-		t.Logf("Client HTTP Output\n%v", string(clientHTTP))
 		t.Logf("Server Output\n%v", srvrOut.String())
 		t.FailNow()
 	}
@@ -270,7 +254,6 @@ func truss(path string, options ...string) (string, error) {
 // buildTestService builds a truss service with the package "test"
 // into the `serviceDir`/bin directory
 func buildTestService(serviceDir string) (err error) {
-
 	wd, err := os.Getwd()
 	if err != nil {
 		return err
@@ -282,25 +265,14 @@ func buildTestService(serviceDir string) (err error) {
 	}
 
 	binDir := serviceDir + "/bin"
-
 	err = os.MkdirAll(binDir, 0777)
 	if err != nil {
 		return err
 	}
 
-	const serverPath = "cmd/test-server"
-	const clientPath = "cmd/test"
-
-	// Build server and client
+	const serverPath = "cmd/test"
 	errChan := make(chan error)
-
-	go goBuild("test-server", binDir, filepath.Join(relDir, serverPath), errChan)
-	go goBuild("test", binDir, filepath.Join(relDir, clientPath), errChan)
-
-	err = <-errChan
-	if err != nil {
-		return err
-	}
+	go goBuild("test", binDir, filepath.Join(relDir, serverPath), errChan)
 
 	err = <-errChan
 	if err != nil {
@@ -313,9 +285,7 @@ func buildTestService(serviceDir string) (err error) {
 // goBuild calls the `$ go get ` to install dependenices
 // and then calls `$ go build ` to build the service
 func goBuild(name, outputPath, relCodePath string, errChan chan error) {
-
 	// $ go get
-
 	goGetExec := exec.Command(
 		"go",
 		"get",
@@ -325,14 +295,12 @@ func goBuild(name, outputPath, relCodePath string, errChan chan error) {
 	)
 
 	err := goGetExec.Run()
-
 	if err != nil {
 		errChan <- errors.Wrapf(err, "could not $ go get %v", relCodePath)
 		return
 	}
 
 	// $ go build
-
 	goBuildExec := exec.Command(
 		"go",
 		"build",
@@ -353,7 +321,7 @@ func goBuild(name, outputPath, relCodePath string, errChan chan error) {
 func runServer(path string, flags ...string) (*exec.Cmd, *bytes.Buffer, chan error) {
 	// From within a folder with a truss `service`
 	// These are the paths to the compiled binaries
-	const relativeServerPath = "/bin/test-server"
+	const relativeServerPath = "/bin/test"
 
 	// Output buffer for the server Stdout and Stderr
 	srvrOut := bytes.NewBuffer(nil)
@@ -411,17 +379,6 @@ func reapServer(server *exec.Cmd, errc chan error) error {
 	return nil
 }
 
-func runClient(path string, flags ...string) ([]byte, error) {
-	const relativeClientPath = "/bin/test"
-
-	client := exec.Command(
-		path+relativeClientPath,
-		flags...,
-	)
-
-	return client.CombinedOutput()
-}
-
 // fileExists checks if a file at the given path exists. Returns true if the
 // file exists, and false if the file does not exist.
 func fileExists(path string) bool {
@@ -450,7 +407,7 @@ func cleanTests(servicesDir string) {
 // service from a single definition directory
 func removeTestFiles(defDir string) {
 	// svcout dir
-	os.RemoveAll(filepath.Join(defDir, "tunelab"))
+	os.RemoveAll(filepath.Join(defDir, "metaverse"))
 	// service dir
 	os.RemoveAll(filepath.Join(defDir, "test-service"))
 	// where the binaries are compiled to

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-        "golang.org/x/tools/go/packages"
+	"golang.org/x/tools/go/packages"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
@@ -51,7 +51,9 @@ func init() {
 			os.Exit(1)
 		}
 		err := makeAndRunTruss(os.Args)
-		exitIfError(errors.Wrap(err, "please install truss with make manually"))
+		if err != nil {
+			log.Fatal(errors.Wrap(err, "please install truss with make manually"))
+		}
 		os.Exit(0)
 	}
 
@@ -98,7 +100,9 @@ func main() {
 	}
 
 	cfg, err := parseInput()
-	exitIfError(errors.Wrap(err, "cannot parse input"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "cannot parse input"))
+	}
 
 	// If there was no service found in parseInput, the rest can be omitted.
 	if cfg == nil {
@@ -106,17 +110,23 @@ func main() {
 	}
 
 	sd, err := parseServiceDefinition(cfg)
-	exitIfError(errors.Wrap(err, "cannot parse input definition proto files"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "cannot parse input definition proto files"))
+	}
 
 	genFiles, err := generateCode(cfg, sd)
-	exitIfError(errors.Wrap(err, "cannot generate service"))
+	if err != nil {
+		log.Fatal(errors.Wrap(err, "cannot generate service"))
+	}
 
 	for path, file := range genFiles {
 		err := writeGenFile(file, filepath.Join(cfg.ServicePath, path))
 		if err != nil {
-			exitIfError(errors.Wrap(err, "cannot to write output"))
+			log.Fatal(errors.Wrap(err, "cannot to write output"))
 		}
 	}
+
+	cleanupOldFiles(cfg.ServicePath, strings.ToLower(sd.Service.Name))
 }
 
 // parseInput constructs a *truss.Config with all values needed to parse
@@ -141,13 +151,13 @@ func parseInput() (*truss.Config, error) {
 	log.WithField("DefPaths", cfg.DefPaths).Debug()
 
 	protoDir := filepath.Dir(cfg.DefPaths[0])
-        p, err := packages.Load(nil, protoDir)
-        if err != nil || len(p) == 0 {
-                return nil, errors.Wrap(err, "proto files not found in importable go package")
-        }
+	p, err := packages.Load(nil, protoDir)
+	if err != nil || len(p) == 0 {
+		return nil, errors.Wrap(err, "proto files not found in importable go package")
+	}
 
-        cfg.PBPackage = p[0].PkgPath
-        cfg.PBPath = protoDir
+	cfg.PBPackage = p[0].PkgPath
+	cfg.PBPath = protoDir
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
@@ -198,14 +208,13 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrapf(err, "cannot create svcPath directory: %s", svcPath)
 	}
 
-        p, err = packages.Load(nil, svcPath)
-        if err != nil || len(p) == 0 {
-                return nil, errors.Wrap(err, "generated service not found in importable go package")
-        }
+	p, err = packages.Load(nil, svcPath)
+	if err != nil || len(p) == 0 {
+		return nil, errors.Wrap(err, "generated service not found in importable go package")
+	}
 
-        cfg.ServicePackage = p[0].PkgPath
-        cfg.ServicePath = svcPath
-
+	cfg.ServicePackage = p[0].PkgPath
+	cfg.ServicePath = svcPath
 
 	log.WithField("Service Package", cfg.ServicePackage).Debug()
 	log.WithField("Service Path", cfg.ServicePath).Debug()
@@ -341,19 +350,6 @@ func cleanProtofilePath(rawPaths []string) ([]string, error) {
 	return fullPaths, nil
 }
 
-// exitIfError will print the error message and exit 1 if the passed error is
-// non-nil
-func exitIfError(err error) {
-	if errors.Cause(err) != nil {
-		defer os.Exit(1)
-		if *verboseFlag {
-			fmt.Printf("%+v\n", err)
-			return
-		}
-		fmt.Printf("%v\n", err)
-	}
-}
-
 // readPreviousGeneration returns a map[string]io.Reader representing the files in serviceDir
 func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 	if !fileExists(serviceDir) {
@@ -404,6 +400,34 @@ func fileExists(path string) bool {
 	return false
 }
 
+func cleanupOldFiles(servicePath, serviceName string) {
+	serverCLI := filepath.Join(servicePath, "svc/server/cli")
+	if _, err := os.Stat(serverCLI); err == nil {
+		log.Warnf("Removing stale 'svc/server/cli' files")
+		err := os.RemoveAll(serverCLI)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+	clientCLI := filepath.Join(servicePath, "svc/client/cli")
+	if _, err := os.Stat(clientCLI); err == nil {
+		log.Warnf("Removing stale 'svc/client/cli' files")
+		err := os.RemoveAll(clientCLI)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+
+	oldServer := filepath.Join(servicePath, fmt.Sprintf("cmd/%s-server", serviceName))
+	if _, err := os.Stat(oldServer); err == nil {
+		log.Warnf(fmt.Sprintf("Removing stale 'cmd/%s-server' files, use cmd/%s going forward", serviceName, serviceName))
+		err := os.RemoveAll(oldServer)
+		if err != nil {
+			log.Error(err)
+		}
+	}
+}
+
 // promptNoMake prints that truss was not built with make and prompts the user
 // asking if they would like for this process to be automated
 // returns true if yes, false if not.
@@ -428,7 +452,7 @@ Do you want to automatically run 'make' and rerun command:
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		exitIfError(err)
+		log.Fatal(err)
 	}
 
 	switch strings.ToLower(strings.TrimSpace(response)) {

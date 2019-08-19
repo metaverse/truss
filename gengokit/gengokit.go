@@ -9,7 +9,6 @@ import (
 	generatego "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
 
-	"github.com/metaverse/truss/gengokit/clientarggen"
 	"github.com/metaverse/truss/gengokit/httptransport"
 	"github.com/metaverse/truss/svcdef"
 )
@@ -44,8 +43,7 @@ type Data struct {
 	// PackageName is the name of the package containing the service definition
 	PackageName string
 	// GRPC/Protobuff service, with all parameters and return values accessible
-	Service    *svcdef.Service
-	ClientArgs *clientarggen.ClientServiceArgs
+	Service *svcdef.Service
 	// A helper struct for generating http transport functionality.
 	HTTPHelper *httptransport.Helper
 	FuncMap    template.FuncMap
@@ -60,7 +58,6 @@ func NewData(sd *svcdef.Svcdef, conf Config) (*Data, error) {
 		PBImportPath: conf.PBPackage,
 		PackageName:  sd.PkgName,
 		Service:      sd.Service,
-		ClientArgs:   clientarggen.New(sd.Service),
 		HTTPHelper:   httptransport.NewHelper(sd.Service),
 		FuncMap:      FuncMap,
 		Version:      conf.Version,

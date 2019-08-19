@@ -32,7 +32,7 @@ func TestTemplatePathToActual(t *testing.T) {
 	pathToWants := map[string]string{
 		"NAME-service/":                "package-service/",
 		"NAME-service/test.gotemplate": "package-service/test.go",
-		"NAME-service/NAME-server":     "package-service/package-server",
+		"NAME-service/NAME":            "package-service/package",
 	}
 
 	for path, want := range pathToWants {
