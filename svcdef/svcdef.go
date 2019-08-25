@@ -91,6 +91,15 @@ type FieldType struct {
 	// Enum contains a pointer to the Enum type this fieldtype represents, if
 	// this FieldType represents an Enum. If not, Enum is nil.
 	Enum *Enum
+	// OneofTypes contains the array of types within a oneof block. If not, is nil
+	// Example proto:
+	// message {
+	//   oneof daterange {
+	//     int64 a = 1;
+	//     int64 b = 2;
+	//   }
+	// }
+	Oneof []*Field
 	// Message contains a pointer to the Message type this FieldType
 	// represents, if this FieldType represents a Message. If not, Message is
 	// nil.
@@ -185,6 +194,10 @@ func (le LocationError) Location() string {
 	return le.Position
 }
 
+var (
+	oneofs = map[string][]*Field{}
+)
+
 // New creates a Svcdef by parsing the provided Go and Protobuf source files to
 // derive type information, gRPC service data, and HTTP annotations.
 func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef, error) {
@@ -206,6 +219,79 @@ func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot retrive type specs")
 		}
+
+		// oneof names
+		oneofExists := map[string]struct{}{}
+
+		for _, t := range typespecs {
+			switch t.Type.(type) {
+			case *ast.InterfaceType:
+				// Each service will have two interfaces ("{SVCNAME}Server" and
+				// "{SVCNAME}Client") each containing the same information that we
+				// care about, but structured a bit differently. Additionally,
+				// oneof fields are generated as interfaces and captured here
+				// to aid in their generations
+				if !strings.HasSuffix(t.Name.Name, "Server") {
+					// is prefixes indicates oneof, we'll use this to form Fields later
+					if strings.HasPrefix(t.Name.Name, "is") {
+						oneofExists[t.Name.Name] = struct{}{}
+						break
+					}
+					if !strings.HasSuffix(t.Name.Name, "Client") {
+						// This interface isn't either Server or Client; it may be a oneof
+						// field, which isn't currently supported.  Warn the user and skip.
+						log.Warnf("Unexpected interface %s found; skipping", t.Name.Name)
+					}
+					break
+				}
+				nsvc, err := NewService(t, debugInfo)
+				if err != nil {
+					return nil, errors.Wrapf(err, "error parsing service %q", t.Name.Name)
+				}
+				rv.Service = nsvc
+			}
+		}
+
+		oneofTypes := map[string]string{}
+		// Find oneof types if they haven't been added already
+		if len(oneofs) == 0 {
+			for _, d := range fileAst.Decls {
+				switch decl := d.(type) {
+				case *ast.FuncDecl:
+					if _, ok := oneofExists[decl.Name.Name]; ok {
+						t := decl.Recv.List[0].Type.(*ast.StarExpr)
+						name := t.X.(*ast.Ident)
+						oneofTypes[name.Name] = decl.Name.Name
+					}
+				}
+			}
+
+			// Process and group oneof types
+			for _, t := range typespecs {
+				switch t.Type.(type) {
+				case *ast.StructType:
+					// Non-exported structs do not represent types
+					if !t.Name.IsExported() {
+						break
+					}
+					// Skip all non-oneofs; will be processed later
+					iface, ok := oneofTypes[t.Name.Name]
+					if !ok {
+						break
+					}
+					nmsg, err := NewMessage(t)
+					if err != nil {
+						return nil, errors.Wrapf(err, "error parsing message %q", t.Name.Name)
+					}
+					f := nmsg.Fields[0]
+					f.Type.Message = &Message{
+						Name: nmsg.Name,
+					}
+					oneofs[iface] = append(oneofs[iface], f)
+				}
+			}
+		}
+
 		for _, t := range typespecs {
 			switch typdf := t.Type.(type) {
 			case *ast.Ident:
@@ -221,30 +307,15 @@ func New(goFiles map[string]io.Reader, protoFiles map[string]io.Reader) (*Svcdef
 				if !t.Name.IsExported() {
 					break
 				}
+				// if its a oneof type it's not a "message"
+				if _, ok := oneofTypes[t.Name.Name]; ok {
+					break
+				}
 				nmsg, err := NewMessage(t)
 				if err != nil {
 					return nil, errors.Wrapf(err, "error parsing message %q", t.Name.Name)
 				}
 				rv.Messages = append(rv.Messages, nmsg)
-			case *ast.InterfaceType:
-				// Each service will have two interfaces ("{SVCNAME}Server" and
-				// "{SVCNAME}Client") each containing the same information that we
-				// care about, but structured a bit differently. Additionally,
-				// oneof fields generate an interface which is not a service - so
-				// for simplicity, only process the "Server" interface.
-				if !strings.HasSuffix(t.Name.Name, "Server") {
-					if !strings.HasSuffix(t.Name.Name, "Client") {
-						// This interface isn't either Server or Client; it may be a oneof
-						// field, which isn't currently supported.  Warn the user and skip.
-						log.Warnf("Unexpected interface %s found; skipping", t.Name.Name)
-					}
-					break
-				}
-				nsvc, err := NewService(t, debugInfo)
-				if err != nil {
-					return nil, errors.Wrapf(err, "error parsing service %q", t.Name.Name)
-				}
-				rv.Service = nsvc
 			}
 		}
 	}
@@ -429,15 +500,23 @@ func NewField(f *ast.Field) (*Field, error) {
 	var typeFollower func(ast.Expr) error
 	typeFollower = func(e ast.Expr) error {
 		if f.Tag != nil {
-			tag := reflect.StructTag(f.Tag.Value).Get("json")
-			if idx := strings.Index(tag, ","); idx != -1 {
-				rv.PBFieldName = tag[:idx]
+			pbTag := reflect.StructTag(f.Tag.Value[1 : len(f.Tag.Value)-1]).Get("protobuf")
+			subFields := strings.Split(pbTag, ",")
+			if len(subFields) >= 4 {
+				if idx := strings.Index(subFields[3], "="); idx != -1 {
+					rv.PBFieldName = subFields[3][idx+1:]
+				} else if idx := strings.Index(subFields[4], "="); idx != -1 {
+					rv.PBFieldName = subFields[4][idx+1:]
+				}
 			}
 		}
 
 		switch ex := e.(type) {
 		case *ast.Ident:
 			rv.Type.Name += ex.Name
+			if oneof, ok := oneofs[ex.Name]; ok {
+				rv.Type.Oneof = oneof
+			}
 		case *ast.StarExpr:
 			rv.Type.StarExpr = true
 			typeFollower(ex.X)

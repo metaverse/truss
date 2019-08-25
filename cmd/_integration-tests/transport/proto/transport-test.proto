@@ -47,6 +47,11 @@ service TransportPermutations {
       get: "/getwithenumpath/{in}"
     };
   }
+  rpc GetWithOneofQuery(GetWithOneofRequest) returns (GetWithOneofResponse) {
+    option (google.api.http) = {
+      get: "/getwithoneof"
+    };
+  }
   rpc EchoOddNames (OddFieldNames) returns (OddFieldNames) {
   /* Ensure that strange field names survive the encode/decode phases */
     option (google.api.http) = {
@@ -159,4 +164,16 @@ message OddFieldNames {
   int64 snake_case = 1;
   int64 camelCase = 2;
   int64 __why__so__many__underscores = 3;
+}
+
+message GetWithOneofRequest {
+  oneof aorb {
+    int64 a = 1;
+    int64 b = 2;
+  }
+}
+
+message GetWithOneofResponse {
+    int64 a = 1;
+    int64 b = 2;
 }
