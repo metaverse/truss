@@ -23,9 +23,9 @@ import (
 // information necessary to correctly template the HTTP transport functionality
 // of a service. Helper must be built from a Svcdef.
 type Helper struct {
-	Methods           []*Method
-	ServerTemplate    func(interface{}) (string, error)
-	ClientTemplate    func(interface{}) (string, error)
+	Methods        []*Method
+	ServerTemplate func(interface{}) (string, error)
+	ClientTemplate func(interface{}) (string, error)
 }
 
 // NewHelper builds a helper struct from a service declaration. The other
@@ -35,8 +35,8 @@ func NewHelper(svc *svcdef.Service) *Helper {
 	// The HTTPAssistFuncs global is a group of function literals defined
 	// within templates.go
 	rv := Helper{
-		ServerTemplate:    GenServerTemplate,
-		ClientTemplate:    GenClientTemplate,
+		ServerTemplate: GenServerTemplate,
+		ClientTemplate: GenClientTemplate,
 	}
 	for _, meth := range svc.Methods {
 		if len(meth.Bindings) > 0 {
@@ -54,7 +54,6 @@ func NewMethod(meth *svcdef.ServiceMethod) *Method {
 		RequestType:  meth.RequestType.Name,
 		ResponseType: meth.ResponseType.Name,
 	}
-	//for i := range meth.HttpBindings {
 	for i := range meth.Bindings {
 		nBinding := NewBinding(i, meth)
 		nBinding.Parent = &nMeth
@@ -76,10 +75,59 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 		BasePath:     basePath(binding.Path),
 		Verb:         binding.Verb,
 	}
+	// Handle oneofs which need to be specially formed for query params
 	for _, param := range binding.Params {
 		// The 'Field' attr of each HTTPParameter always point to it's bound
 		// Methods RequestType
 		field := param.Field
+		// only processing oneof fields
+		if field.Type.Oneof == nil {
+			continue
+		}
+		oneofField := OneofField{
+			Name:     field.Name,
+			Location: param.Location,
+		}
+		for _, oneofType := range field.Type.Oneof {
+			option := Field{
+				Name:           oneofType.Name,
+				QueryParamName: oneofType.PBFieldName,
+				CamelName:      gogen.CamelCase(field.Name),
+				LowCamelName:   LowCamelName(oneofType.Name),
+				Repeated:       oneofType.Type.ArrayType,
+				GoType:         oneofType.Type.Name,
+				LocalName:      fmt.Sprintf("%s%s", gogen.CamelCase(oneofType.Name), gogen.CamelCase(meth.Name)),
+			}
+			if oneofType.Type.Enum == nil && oneofType.Type.Map == nil {
+				option.IsBaseType = true
+			} else {
+				option.GoType = "pb." + option.GoType
+			}
+
+			// Modify GoType to reflect pointer or repeated status
+			if oneofType.Type.StarExpr && oneofType.Type.ArrayType {
+				option.GoType = "[]*" + option.GoType
+			} else if oneofType.Type.ArrayType {
+				option.GoType = "[]" + option.GoType
+			}
+
+			option.IsEnum = oneofType.Type.Enum != nil
+			option.ConvertFunc, option.ConvertFuncNeedsErrorCheck = createDecodeConvertFunc(option)
+			option.TypeConversion = fmt.Sprintf("&pb.%s{%s: %s}", oneofType.Type.Message.Name, gogen.CamelCase(oneofType.Name), createDecodeTypeConversion(option))
+			option.ZeroValue = getZeroValue(option)
+
+			oneofField.Options = append(oneofField.Options, option)
+		}
+		nBinding.OneofFields = append(nBinding.OneofFields, &oneofField)
+	}
+	for _, param := range binding.Params {
+		// The 'Field' attr of each HTTPParameter always point to it's bound
+		// Methods RequestType
+		field := param.Field
+		// If the field is a oneof ignore; we handled above already
+		if field.Type.Oneof != nil {
+			continue
+		}
 		newField := Field{
 			Name:           field.Name,
 			QueryParamName: field.PBFieldName,
@@ -251,6 +299,48 @@ req.{{.CamelName}} = {{.TypeConversion}}
 	return code, nil
 }
 
+// GenQueryUnmarshaler returns the generated code for server-side unmarshaling
+// of a query parameter into it's correct field on the request struct.
+func (f *OneofField) GenQueryUnmarshaler() (string, error) {
+	oneofEnclosure := `
+{{- with $oneof := . -}}
+	// {{.Name}} oneof
+	{{.Name}}CountSet := 0
+	{{range $option := $oneof.Options}}
+
+		var {{$option.LocalName}}Str string
+		{{$option.LocalName}}StrArr, {{$option.LocalName}}OK := {{$oneof.Location}}Params["{{$option.QueryParamName}}"]
+		if {{$option.LocalName}}OK {
+			{{$option.LocalName}}Str = {{$option.LocalName}}StrArr[0]
+			{{$oneof.Name}}CountSet++
+		}
+	{{end}}
+
+if {{.Name}}CountSet > 1 {
+	return nil, errors.Errorf("only one of ({{range $option := $oneof.Options}}\"{{$option.QueryParamName}}\",{{end}}) allowed")
+}
+
+switch {
+{{range $option := $oneof.Options}}
+case {{$option.LocalName}}OK:
+	{{$option.ConvertFunc}}{{if $option.ConvertFuncNeedsErrorCheck}}
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting {{.LocalName}} from {{$option.Location}}, {{$oneof.Location}}Params: %v", {{$oneof.Location}}Params))
+	}{{end}}
+	req.{{$option.CamelName}} = {{$option.TypeConversion}}
+{{end}}
+}
+{{- end -}}
+`
+
+	code, err := ApplyTemplate("FieldEncodeLogic", oneofEnclosure, f, TemplateFuncs)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code)
+	return code, nil
+}
+
 // createDecodeConvertFunc creates a go string representing the function to
 // convert the string form of the field to it's correct go type.
 func createDecodeConvertFunc(f Field) (string, bool) {
@@ -351,6 +441,20 @@ func createDecodeTypeConversion(f Field) string {
 		fType = f.GoType + "(%s)"
 	}
 	return fmt.Sprintf(fType, f.LocalName)
+}
+
+func getZeroValue(f Field) string {
+	if !f.IsBaseType || f.Repeated {
+		return "nil"
+	}
+	switch f.GoType {
+	case "bool":
+		return "false"
+	case "string":
+		return "\"\""
+	default:
+		return "0"
+	}
 }
 
 // The 'basePath' of a path is the section from the start of the string till

@@ -13,6 +13,7 @@ require (
 	github.com/kevinburke/go-bindata v3.13.0+incompatible // indirect
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515 // indirect
+	github.com/moul/http2curl v1.0.0 // indirect
 	github.com/pkg/errors v0.8.0
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/spf13/pflag v1.0.1
