@@ -1,6 +1,7 @@
 package test
 
 import (
+	"io"
 	"reflect"
 	"testing"
 
@@ -18,7 +19,10 @@ import (
 	httpclient "github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
 
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/moul/http2curl"
 	"github.com/pkg/errors"
+
+	"github.com/stretchr/testify/require"
 )
 
 var httpAddr string
@@ -60,7 +64,10 @@ func TestGetWithQueryRequest(t *testing.T) {
 		V: A + B,
 	}
 
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithquery?%s=%d&%s=%d", "A", A, "B", B)
+	err := testHTTP(t, &resp, &expects, nil, "GET", "getwithquery?%s=%d&%s=%d", "A", A, "B", B)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 }
 
 func TestGetWithRepeatedQueryClient(t *testing.T) {
@@ -92,11 +99,17 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 		V: A[0] + A[1],
 	}
 
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
+	err := testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 	// csv style
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 	// multi / golang style
-	//testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d]", "A", A[0], "A", A[1])
+	//err := testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d]", "A", A[0], "A", A[1])
 }
 
 func TestGetWithEnumQueryClient(t *testing.T) {
@@ -126,10 +139,78 @@ func TestGetWithEnumQueryRequest(t *testing.T) {
 		Out: pb.TestStatus_test_passed,
 	}
 
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumquery?in=%d", pb.TestStatus_test_passed)
-	// csv style
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumquery?in=%d", pb.TestStatus_test_passed)
-	// multi / golang style
+	err := testHTTP(t, &resp, &expects, nil, "GET", "getwithenumquery?in=%d", pb.TestStatus_test_passed)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+}
+
+func TestGetWithOneofClient(t *testing.T) {
+	var req pb.GetWithOneofRequest
+	req.Aorb = &pb.GetWithOneofRequest_A{A: 12}
+	want := int64(12)
+
+	svchttp, err := httpclient.New(httpAddr, httpclient.CtxValuesToSend("request-url", "transport"))
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.GetWithOneofQuery(context.Background(), &req)
+	require.NoError(t, err)
+
+	require.Equal(t, want, resp.A)
+	require.Empty(t, resp.B)
+
+	req.Aorb = &pb.GetWithOneofRequest_B{B: 12}
+
+	resp, err = svchttp.GetWithOneofQuery(context.Background(), &req)
+	require.NoError(t, err)
+
+	require.Equal(t, want, resp.B)
+	require.Empty(t, resp.A)
+}
+
+// A manually-constructed HTTP request test, ensuring that a get with query
+// parameters works even outside the behvior of the client.
+func TestGetWithOneofRequest(t *testing.T) {
+	var resp pb.GetWithOneofResponse
+
+	var A int64
+	A = 12
+	expects := pb.GetWithOneofResponse{
+		A: A,
+	}
+
+	err := testHTTP(t, &resp, &expects, nil, "GET", "getwithoneof?%s=%d", "a", A)
+	require.NoError(t, err)
+
+	resp = pb.GetWithOneofResponse{}
+	expects = pb.GetWithOneofResponse{
+		B: A,
+	}
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithoneof?%s=%d", "b", A)
+	require.NoError(t, err)
+
+	// Test oneof behavior itself
+	req, err := http.NewRequest("GET", httpAddr+"/"+fmt.Sprintf("getwithoneof?%s=%d&%s=%d", "a", A, "b", A), nil)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot construct http request"))
+	}
+
+	respBytes, err := testHTTPRequest(req)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	jsonOut := make(map[string]interface{})
+	err = json.Unmarshal(respBytes, &jsonOut)
+	if err != nil {
+		t.Fatal(errors.Wrapf(err, "json error, got response: %q", string(respBytes)))
+	}
+
+	if jsonOut["error"] == nil {
+		t.Fatal("http transport did not send error as json")
+	}
 }
 
 func TestPostWithNestedMessageBodyClient(t *testing.T) {
@@ -167,7 +248,10 @@ func TestPostWithNestedMessageBodyRequest(t *testing.T) {
 	}
 	jsonStr := fmt.Sprintf(`{ "NM": { "A": %d, "B": %d}}`, A, B)
 
-	testHTTP(t, &resp, &expects, []byte(jsonStr), "POST", "postwithnestedmessagebody")
+	err := testHTTP(t, &resp, &expects, []byte(jsonStr), "POST", "postwithnestedmessagebody")
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 }
 
 func TestCtxToCtxViaHTTPHeaderClient(t *testing.T) {
@@ -283,7 +367,10 @@ func TestGetWithCapsPathRequest(t *testing.T) {
 		V: A + B,
 	}
 
-	testHTTP(t, &resp, &expects, nil, "GET", "get/With/CapsPath?%s=%d&%s=%d", "A", A, "B", B)
+	err := testHTTP(t, &resp, &expects, nil, "GET", "get/With/CapsPath?%s=%d&%s=%d", "A", A, "B", B)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 }
 
 // Test that we can manually insert parameters into the path and recieve a
@@ -297,7 +384,10 @@ func TestGetWithPathParams(t *testing.T) {
 		V: A + B,
 	}
 
-	testHTTP(t, &resp, &expects, nil, "GET", "path/%d/%d", A, B)
+	err := testHTTP(t, &resp, &expects, nil, "GET", "path/%d/%d", A, B)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 }
 
 func TestGetWithEnumPathClient(t *testing.T) {
@@ -327,9 +417,15 @@ func TestGetWithEnumPathRequest(t *testing.T) {
 		Out: pb.TestStatus_test_passed,
 	}
 
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumpath/%d", pb.TestStatus_test_passed)
+	err := testHTTP(t, &resp, &expects, nil, "GET", "getwithenumpath/%d", pb.TestStatus_test_passed)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 	// csv style
-	testHTTP(t, &resp, &expects, nil, "GET", "getwithenumpath/%d", pb.TestStatus_test_passed)
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithenumpath/%d", pb.TestStatus_test_passed)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 	// multi / golang style
 }
 
@@ -591,7 +687,10 @@ func TestCustomVerbRequest(t *testing.T) {
 		V: A + B,
 	}
 
-	testHTTP(t, &resp, &expects, nil, "CUSTOMVERB", "customverb?%s=%d&%s=%d", "A", A, "B", B)
+	err := testHTTP(t, &resp, &expects, nil, "CUSTOMVERB", "customverb?%s=%d&%s=%d", "A", A, "B", B)
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 }
 
 // Test that we can use the generated client to make requests to methods which
@@ -634,14 +733,14 @@ func testHTTP(
 	bodyBytes []byte,
 	method,
 	routeFormat string,
-	routeFields ...interface{}) {
+	routeFields ...interface{}) error {
 	respBytes, err := httpRequestBuilder{
 		method: method,
 		route:  fmt.Sprintf(routeFormat, routeFields...),
 		body:   bodyBytes,
 	}.Test(t)
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "cannot make http request"))
+		return err
 	}
 
 	switch v := resp.(type) {
@@ -655,6 +754,8 @@ func testHTTP(
 		err = jsonpb.UnmarshalString(string(respBytes), v)
 	case *pb.MetaResponse:
 		err = jsonpb.UnmarshalString(string(respBytes), v)
+	case *pb.GetWithOneofResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
 	default:
 		t.Fatalf("Unknown response type: %T", v)
 	}
@@ -666,6 +767,8 @@ func testHTTP(
 	if !reflect.DeepEqual(resp, expects) {
 		t.Fatalf("Expect: %+v, got %+v", expects, resp)
 	}
+
+	return nil
 }
 
 type httpRequestBuilder struct {
@@ -675,11 +778,19 @@ type httpRequestBuilder struct {
 }
 
 func (h httpRequestBuilder) Test(t *testing.T) ([]byte, error) {
-	t.Logf("Method: %q | Route: %q", h.method, h.route)
-	httpReq, err := http.NewRequest(h.method, httpAddr+"/"+h.route, bytes.NewReader(h.body))
+	var body io.Reader = nil
+	if h.body != nil {
+		body = bytes.NewReader(h.body)
+	}
+	httpReq, err := http.NewRequest(h.method, httpAddr+"/"+h.route, body)
 	if err != nil {
 		return nil, err
 	}
+	curl, err := http2curl.GetCurlCommand(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	t.Logf(curl.String())
 
 	// These are set to allow TestGetWithQueryRequest to pass since it will
 	// use the same handler as the client version
@@ -693,7 +804,7 @@ func testHTTPRequest(req *http.Request) ([]byte, error) {
 	client := &http.Client{}
 	httpResp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot make http request")
+		return nil, err
 	}
 	defer httpResp.Body.Close()
 

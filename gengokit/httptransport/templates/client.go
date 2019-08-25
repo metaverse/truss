@@ -47,6 +47,26 @@ var ClientEncodeTemplate = `
 				{{- end }}
 			{{- end }}
 		{{- end}}
+		{{- range $oneof := $binding.OneofFields }}
+			{{- if eq $oneof.Location "query"}}
+				{{- range $option := $oneof.Options }}
+					{{if or (not $option.IsBaseType) $option.Repeated}}
+						if val := req.Get{{$option.Name}}(); val != {{$option.ZeroValue}} {
+							tmp, err = json.Marshal(req.Get{{$option.Name}}())
+							if err != nil {
+								return errors.Wrap(err, "failed to marshal req.Get{{$option.Name}}()")
+							}
+							strval = string(tmp)
+							values.Add("{{$option.QueryParamName}}", strval)
+						}
+					{{else}}
+						if val := req.Get{{$option.Name}}(); val != {{$option.ZeroValue}} {
+							values.Add("{{$option.QueryParamName}}", fmt.Sprint(val))
+						}
+					{{- end }}
+				{{- end }}
+			{{- end }}
+		{{- end}}
 
 		r.URL.RawQuery = values.Encode()
 
@@ -86,6 +106,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -189,13 +210,13 @@ func CtxValuesToSend(keys ...string) httptransport.ClientOption {
 	// error and attempt to decode the specific error message from the response
 	// body. Primarily useful in a client.
 	func DecodeHTTP{{$method.Name}}Response(_ context.Context, r *http.Response) (interface{}, error) {
+		defer r.Body.Close()
 		buf, err := ioutil.ReadAll(r.Body)
+		if err == io.EOF {
+			return nil, errors.New("response http body empty")
+		}
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot read http body")
-		}
-
-		if len(buf) == 0 {
-			return nil, errors.New("response http body empty")
 		}
 
 		if r.StatusCode != http.StatusOK {
