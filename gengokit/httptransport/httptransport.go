@@ -272,6 +272,14 @@ func (b *Binding) PathSections() []string {
 // GenQueryUnmarshaler returns the generated code for server-side unmarshaling
 // of a query parameter into it's correct field on the request struct.
 func (f *Field) GenQueryUnmarshaler() (string, error) {
+	// TODO: once f Field is updated to have all of its nested fields
+	// defined on it with fully resolved available queryparam names.  Then
+	// implement alternate queryParamLogic blocks for the fields.
+	// Theoritially it should be able to concat to `genericLogic` without
+	// additional modification.
+	// NOTE: this will likely require pulling the information through the
+	// svcdef.Field where the recursive Field structure will need to be
+	// build out and passed along to here.
 	queryParamLogic := `
 if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.QueryParamName}}"]; ok {
 {{.LocalName}}Str := {{.LocalName}}StrArr[0]`
