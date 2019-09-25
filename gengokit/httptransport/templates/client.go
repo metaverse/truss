@@ -116,21 +116,7 @@ var (
 // New returns a service backed by an HTTP server living at the remote
 // instance. We expect instance to come from a service discovery system, so
 // likely of the form "host:port".
-func New(instance string, options ...ClientOption) (pb.{{.Service.Name}}Server, error) {
-	var cc clientConfig
-
-	for _, f := range options {
-		err := f(&cc)
-		if err != nil {
-			return nil, errors.Wrap(err, "cannot apply option") }
-	}
-
-	{{ if .HTTPHelper.Methods }}
-		clientOptions := []httptransport.ClientOption{
-			httptransport.ClientBefore(
-				contextValuesToHttpHeaders(cc.headers)),
-		}
-	{{ end }}
+func New(instance string, options ...httptransport.ClientOption) (pb.{{.Service.Name}}Server, error) {
 
 	if !strings.HasPrefix(instance, "http") {
 		instance = "http://" + instance
@@ -155,7 +141,7 @@ func New(instance string, options ...ClientOption) (pb.{{.Service.Name}}Server, 
 						copyURL(u, "{{$binding.BasePath}}"),
 						EncodeHTTP{{$binding.Label}}Request,
 						DecodeHTTP{{$method.Name}}Response,
-						clientOptions...,
+						options...,
 					).Endpoint()
 				}
 			{{- end}}
@@ -179,35 +165,21 @@ func copyURL(base *url.URL, path string) *url.URL {
 	return &next
 }
 
-type clientConfig struct {
-	headers []string
-}
-
-// ClientOption is a function that modifies the client config
-type ClientOption func(*clientConfig) error
-
 // CtxValuesToSend configures the http client to pull the specified keys out of
 // the context and add them to the http request as headers.  Note that keys
 // will have net/http.CanonicalHeaderKey called on them before being send over
 // the wire and that is the form they will be available in the server context.
-func CtxValuesToSend(keys ...string) ClientOption {
-	return func(o *clientConfig) error {
-		o.headers = keys
-		return nil
-	}
-}
-
-func contextValuesToHttpHeaders(keys []string) httptransport.RequestFunc {
-	return func(ctx context.Context, r *http.Request) context.Context {
+func CtxValuesToSend(keys ...string) httptransport.ClientOption {
+	return httptransport.ClientBefore(func(ctx context.Context, r *http.Request) context.Context {
 		for _, k := range keys {
 			if v, ok := ctx.Value(k).(string); ok {
 				r.Header.Set(k, v)
 			}
 		}
-
 		return ctx
-	}
+	})
 }
+
 
 // HTTP Client Decode
 {{range $method := .HTTPHelper.Methods}}
