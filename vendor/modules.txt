@@ -1,5 +1,5 @@
-# github.com/Sirupsen/logrus v1.0.5
-github.com/Sirupsen/logrus
+# github.com/sirupsen/logrus v1.0.5
+github.com/sirupsen/logrus
 # github.com/davecgh/go-spew v1.1.0
 github.com/davecgh/go-spew/spew
 # github.com/gogo/protobuf v1.2.2-0.20190601103108-21df5aa0e680

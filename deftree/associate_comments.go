@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	plugin "github.com/gogo/protobuf/protoc-gen-gogo/plugin"
 )
 
