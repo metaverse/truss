@@ -4,6 +4,7 @@ require (
 	github.com/davecgh/go-spew v1.1.0
 	github.com/gogo/protobuf v1.2.2-0.20190601103108-21df5aa0e680
 	github.com/golang/protobuf v1.3.1 // indirect
+	github.com/kevinburke/go-bindata v3.15.0+incompatible // indirect
 	github.com/onsi/ginkgo v1.10.2 // indirect
 	github.com/onsi/gomega v1.7.0 // indirect
 	github.com/pkg/errors v0.8.0
@@ -19,3 +20,4 @@ require (
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 )
+
