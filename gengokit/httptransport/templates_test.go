@@ -157,6 +157,7 @@ func TestGenServerDecode(t *testing.T) {
 // decodes a JSON-encoded sum request from the HTTP request
 // body. Primarily useful in a server.
 func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	defer r.Body.Close()
 	var req pb.SumRequest
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
