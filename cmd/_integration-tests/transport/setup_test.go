@@ -31,6 +31,7 @@ func TestMain(m *testing.M) {
 	getWithCapsPathE := svc.MakeGetWithCapsPathEndpoint(service)
 	getWithPathParamsE := svc.MakeGetWithPathParamsEndpoint(service)
 	getWithEnumPathE := svc.MakeGetWithEnumPathEndpoint(service)
+	getWithOneofQueryE := svc.MakeGetWithOneofQueryEndpoint(service)
 	echoOddNamesE := svc.MakeEchoOddNamesEndpoint(service)
 	errorRPCE := svc.MakeErrorRPCEndpoint(service)
 	errorRPCNonJSONE := svc.MakeErrorRPCNonJSONEndpoint(service)
@@ -50,6 +51,7 @@ func TestMain(m *testing.M) {
 		GetWithCapsPathEndpoint:           getWithCapsPathE,
 		GetWithPathParamsEndpoint:         getWithPathParamsE,
 		GetWithEnumPathEndpoint:           getWithEnumPathE,
+		GetWithOneofQueryEndpoint:         getWithOneofQueryE,
 		EchoOddNamesEndpoint:              echoOddNamesE,
 		ErrorRPCEndpoint:                  errorRPCE,
 		ErrorRPCNonJSONEndpoint:           errorRPCNonJSONE,

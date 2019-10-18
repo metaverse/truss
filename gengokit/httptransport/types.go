@@ -24,9 +24,10 @@ type Binding struct {
 	PathTemplate string
 	// BasePath is the longest static portion of the full PathTemplate, and is
 	// given to the net/http mux as the path for the route for this binding.
-	BasePath string
-	Verb     string
-	Fields   []*Field
+	BasePath    string
+	Verb        string
+	Fields      []*Field
+	OneofFields []*OneofField
 	// A pointer back to the parent method of this binding. Used within some
 	// binding methods
 	Parent *Method
@@ -72,4 +73,15 @@ type Field struct {
 	// given an identifier of "repeated", meaning it will represented in Go as
 	// a slice of it's type.
 	Repeated bool
+
+	ZeroValue string
+}
+
+// OneofField contains the distillation of information within an []*svcdef.Field
+// representing a single oneof field from protobuf that is useful for
+// templating http transport.
+type OneofField struct {
+	Name     string
+	Location string
+	Options  []Field
 }

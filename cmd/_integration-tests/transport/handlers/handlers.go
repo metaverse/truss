@@ -58,6 +58,16 @@ func (s transportpermutationsService) GetWithEnumQuery(ctx context.Context, in *
 	return &response, nil
 }
 
+// GetWithOneofQuery implements Service.
+func (s transportpermutationsService) GetWithOneofQuery(ctx context.Context, in *pb.GetWithOneofRequest) (*pb.GetWithOneofResponse, error) {
+	response := pb.GetWithOneofResponse{
+		A: in.GetA(),
+		B: in.GetB(),
+	}
+
+	return &response, nil
+}
+
 // PostWithNestedMessageBody implements Service.
 func (s transportpermutationsService) PostWithNestedMessageBody(ctx context.Context, in *pb.PostWithNestedMessageBodyRequest) (*pb.PostWithNestedMessageBodyResponse, error) {
 	response := pb.PostWithNestedMessageBodyResponse{

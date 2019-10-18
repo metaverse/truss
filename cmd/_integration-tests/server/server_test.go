@@ -282,24 +282,7 @@ func buildTestService(serviceDir string) (err error) {
 	return nil
 }
 
-// goBuild calls the `$ go get ` to install dependenices
-// and then calls `$ go build ` to build the service
 func goBuild(name, outputPath, relCodePath string, errChan chan error) {
-	// $ go get
-	goGetExec := exec.Command(
-		"go",
-		"get",
-		"-d",
-		"-v",
-		"./"+relCodePath,
-	)
-
-	err := goGetExec.Run()
-	if err != nil {
-		errChan <- errors.Wrapf(err, "could not $ go get %v", relCodePath)
-		return
-	}
-
 	// $ go build
 	goBuildExec := exec.Command(
 		"go",

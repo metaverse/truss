@@ -8,6 +8,7 @@ var ServerDecodeTemplate = `
 	// decodes a JSON-encoded {{ToLower $binding.Parent.Name}} request from the HTTP request
 	// body. Primarily useful in a server.
 	func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
+		defer r.Body.Close()
 		var req pb.{{GoName $binding.Parent.RequestType}}
 		buf, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -38,6 +39,12 @@ var ServerDecodeTemplate = `
 
 		{{range $field := $binding.Fields}}
 			{{if ne $field.Location "body"}}
+				{{$field.GenQueryUnmarshaler}}
+			{{end}}
+		{{end}}
+
+		{{range $field := $binding.OneofFields}}
+			{{if eq $field.Location "query"}}
 				{{$field.GenQueryUnmarshaler}}
 			{{end}}
 		{{end}}

@@ -369,25 +369,16 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"cmd/NAME/main.gotemplate": cmdNameMainGotemplate,
-
-	"handlers/handlers.gotemplate": handlersHandlersGotemplate,
-
-	"handlers/hooks.gotemplate": handlersHooksGotemplate,
-
-	"handlers/middlewares.gotemplate": handlersMiddlewaresGotemplate,
-
+	"cmd/NAME/main.gotemplate":          cmdNameMainGotemplate,
+	"handlers/handlers.gotemplate":      handlersHandlersGotemplate,
+	"handlers/hooks.gotemplate":         handlersHooksGotemplate,
+	"handlers/middlewares.gotemplate":   handlersMiddlewaresGotemplate,
 	"svc/client/grpc/client.gotemplate": svcClientGrpcClientGotemplate,
-
 	"svc/client/http/client.gotemplate": svcClientHttpClientGotemplate,
-
-	"svc/endpoints.gotemplate": svcEndpointsGotemplate,
-
-	"svc/server/run.gotemplate": svcServerRunGotemplate,
-
-	"svc/transport_grpc.gotemplate": svcTransport_grpcGotemplate,
-
-	"svc/transport_http.gotemplate": svcTransport_httpGotemplate,
+	"svc/endpoints.gotemplate":          svcEndpointsGotemplate,
+	"svc/server/run.gotemplate":         svcServerRunGotemplate,
+	"svc/transport_grpc.gotemplate":     svcTransport_grpcGotemplate,
+	"svc/transport_http.gotemplate":     svcTransport_httpGotemplate,
 }
 
 // AssetDir returns the file names below a certain
