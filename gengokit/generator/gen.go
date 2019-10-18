@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
 
 	"github.com/metaverse/truss/gengokit"

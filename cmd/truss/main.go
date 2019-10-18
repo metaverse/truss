@@ -11,7 +11,7 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
 	flag "github.com/spf13/pflag"
 

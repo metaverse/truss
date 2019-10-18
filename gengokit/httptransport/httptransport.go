@@ -11,7 +11,7 @@ import (
 	"text/template"
 	"unicode"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	gogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
 

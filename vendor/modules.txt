@@ -1,18 +1,18 @@
-# github.com/Sirupsen/logrus v1.0.5
-github.com/Sirupsen/logrus
 # github.com/davecgh/go-spew v1.1.0
 github.com/davecgh/go-spew/spew
 # github.com/gogo/protobuf v1.2.2-0.20190601103108-21df5aa0e680
+github.com/gogo/protobuf/gogoproto
+github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/protoc-gen-gogo/generator
-github.com/gogo/protobuf/protoc-gen-gogo/plugin
-github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/protoc-gen-gogo/generator/internal/remap
+github.com/gogo/protobuf/protoc-gen-gogo/plugin
 # github.com/pkg/errors v0.8.0
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
+# github.com/sirupsen/logrus v1.0.5
+github.com/sirupsen/logrus
 # github.com/spf13/pflag v1.0.1
 github.com/spf13/pflag
 # golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
@@ -21,10 +21,10 @@ golang.org/x/crypto/ssh/terminal
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/tools v0.0.0-20190607224622-755ce86c7629
-golang.org/x/tools/go/packages
 golang.org/x/tools/go/gcexportdata
+golang.org/x/tools/go/internal/gcimporter
 golang.org/x/tools/go/internal/packagesdriver
+golang.org/x/tools/go/packages
+golang.org/x/tools/internal/fastwalk
 golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/semver
-golang.org/x/tools/go/internal/gcimporter
-golang.org/x/tools/internal/fastwalk
