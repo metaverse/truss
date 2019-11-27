@@ -106,13 +106,14 @@ var (
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
-func MakeHTTPHandler(endpoints Endpoints) http.Handler {
+func MakeHTTPHandler(endpoints Endpoints, options ...httptransport.ServerOption) http.Handler {
 	{{- if .HTTPHelper.Methods}}
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
 			httptransport.ServerErrorEncoder(errorEncoder),
 			httptransport.ServerAfter(httptransport.SetContentType(contentType)),
 		}
+		serverOptions = append(serverOptions, options...)
 	{{- end }}
 	m := mux.NewRouter()
 

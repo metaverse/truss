@@ -21,10 +21,11 @@ import (
 )
 
 // MakeGRPCServer makes a set of endpoints available as a gRPC {{.Service.Name}}Server.
-func MakeGRPCServer(endpoints Endpoints) pb.{{.Service.Name}}Server {
+func MakeGRPCServer(endpoints Endpoints, options ...grpctransport.ServerOption) pb.{{.Service.Name}}Server {
 	serverOptions := []grpctransport.ServerOption{
 		 grpctransport.ServerBefore(metadataToContext),
 	}
+        serverOptions = append(serverOptions, options...)
 	return &grpcServer{
 	// {{ ToLower .Service.Name }}
 	{{range $i := .Service.Methods}}
