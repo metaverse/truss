@@ -332,7 +332,10 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 	}
 
 	tk, val = lex.GetTokenIgnoreWhitespace()
-	if tk != OPEN_BRACE {
+	if val == ";" {
+		// No http options defined
+		return nil, nil
+	} else if tk != OPEN_BRACE {
 		return nil, parserErr{
 			expected: "'{' after declaration of method signature",
 			line:     lex.GetLineNumber(),

@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	flag "github.com/spf13/pflag"
 
 	"github.com/metaverse/truss/truss"
@@ -168,7 +168,7 @@ func parseInput() (*truss.Config, error) {
 	// Service Path
 	svcName, err := parsesvcname.FromPaths(cfg.GoPath, cfg.DefPaths)
 	if err != nil {
-		log.Warn("No valid service is defined; exiting now.")
+		log.Warnf("No valid service is defined; exiting now: %v", err)
 		log.Info(".pb.go generation with protoc-gen-go was successful.")
 		return nil, nil
 	}
