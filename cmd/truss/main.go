@@ -213,7 +213,7 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrap(err, "generated service not found in importable go package")
 	}
 
-	log.WithField("Service Packages", p).Info()
+	log.WithField("Service Packages", p).Debug()
 
 	cfg.ServicePackage = p[0].PkgPath
 	cfg.ServicePath = svcPath
