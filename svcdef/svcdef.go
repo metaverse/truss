@@ -25,8 +25,8 @@ import (
 	"reflect"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // Svcdef is the top-level struct for the definition of a service.
@@ -448,14 +448,20 @@ func NewServiceMethod(m *ast.Field, info *DebugInfo) (*ServiceMethod, error) {
 				"is not *ast.StarExpr",
 				info.Path, info.Position(in.Pos()))
 		}
-		ident, ok := star.X.(*ast.Ident)
-		if !ok {
+
+		var name string
+		switch node := star.X.(type) {
+		case *ast.SelectorExpr: // package.FuncName
+			name = fmt.Sprintf("%s", node.Sel.Name)
+		case *ast.Ident: // FuncName
+			name = fmt.Sprintf("%s", node.Name)
+		default:
 			return nil, NewLocationError("cannot create FieldType, "+
-				"star.Type is not *ast.Ident",
+				"star.Type is not *ast.Ident or *ast.SelectorExpr",
 				info.Path, info.Position(star.Pos()))
 		}
 		return &FieldType{
-			Name:     ident.Name,
+			Name:     name,
 			StarExpr: true,
 		}, nil
 	}

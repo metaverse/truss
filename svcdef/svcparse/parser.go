@@ -277,14 +277,22 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 		}
 	}
 
-	toret.RequestType = val
-
-	tk, val = lex.GetTokenIgnoreWhitespace()
-	if tk != CLOSE_PAREN {
-		return nil, parserErr{
-			expected: "')'",
-			line:     lex.GetLineNumber(),
-			val:      val,
+	// Looping here handles for request types from other packages
+	// (google.protobuf.Struct). Only the last ident is kept as truss
+	// doesn't support properly importanting external packages, but by
+	// using this approach type aliases can be made alongside the generated
+	// pb.go code (type Struct = types.Struct)
+	for ; tk != CLOSE_PAREN; tk, val = lex.GetTokenIgnoreWhitespace() {
+		switch tk {
+		case SYMBOL: // skip
+		case IDENT:
+			toret.RequestType = val
+		default:
+			return nil, parserErr{
+				expected: "')' or '.'",
+				line:     lex.GetLineNumber(),
+				val:      val,
+			}
 		}
 	}
 
@@ -320,14 +328,22 @@ func ParseMethod(lex *SvcLexer) (*Method, error) {
 		}
 	}
 
-	toret.ResponseType = val
-
-	tk, val = lex.GetTokenIgnoreWhitespace()
-	if tk != CLOSE_PAREN {
-		return nil, parserErr{
-			expected: "')' after declaration of return type to method",
-			line:     lex.GetLineNumber(),
-			val:      val,
+	// Looping here handles for response types from other packages
+	// (google.protobuf.Struct). Only the last ident is kept as truss
+	// doesn't support properly importanting external packages, but by
+	// using this approach type aliases can be made alongside the generated
+	// pb.go code (type Struct = types.Struct)
+	for ; tk != CLOSE_PAREN; tk, val = lex.GetTokenIgnoreWhitespace() {
+		switch tk {
+		case SYMBOL: // skip
+		case IDENT:
+			toret.ResponseType = val
+		default:
+			return nil, parserErr{
+				expected: "')' or '.'",
+				line:     lex.GetLineNumber(),
+				val:      val,
+			}
 		}
 	}
 

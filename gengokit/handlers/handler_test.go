@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/metaverse/truss/gengokit"
 	helper "github.com/metaverse/truss/gengokit/gentesthelper"
@@ -76,12 +76,8 @@ func TestServerMethsTempl(t *testing.T) {
 	}
 	genBytes, err := ioutil.ReadAll(gen)
 	const expected = `
-		// ProtoMethod implements Service.
 		func (s protoService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error){
 			var resp pb.ResponseMessage
-			resp = pb.ResponseMessage{
-				// Output:
-				}
 			return &resp, nil
 		}
 	`
@@ -149,12 +145,8 @@ func TestApplyServerTempl(t *testing.T) {
 
 		type protoService struct{}
 
-		// ProtoMethod implements Service.
 		func (s protoService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
 			var resp pb.ResponseMessage
-			resp = pb.ResponseMessage{
-			// Output:
-			}
 			return &resp, nil
 		}
 	`
@@ -326,18 +318,12 @@ func TestPruneDecls(t *testing.T) {
 		// ProtoMethod implements Service.
 		func (s protoService) ProtoMethod(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
 			var resp pb.ResponseMessage
-			resp = pb.ResponseMessage{
-			// Output:
-			}
 			return &resp, nil
 		}
 
 		// FOOBAR implements Service.
 		func (s protoService) FOOBAR(ctx context.Context, in *pb.RequestMessage) (*pb.ResponseMessage, error) {
 			var resp pb.ResponseMessage
-			resp = pb.ResponseMessage{
-			// Output:
-			}
 			return &resp, nil
 		}
 	`
