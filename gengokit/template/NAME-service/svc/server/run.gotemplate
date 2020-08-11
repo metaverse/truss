@@ -52,14 +52,11 @@ type Config struct {
 	GRPCAddr string
 }
 
-func NewEndpoints() svc.Endpoints {
+func NewEndpoints(service pb.{{.Service.Name}}Server) svc.Endpoints {
 	// Business domain.
-	var service pb.{{.Service.Name}}Server
-	{
-		service = handlers.NewService()
-		// Wrap Service with middlewares. See handlers/middlewares.go
-		service = handlers.WrapService(service)
-	}
+
+	// Wrap Service with middlewares. See handlers/middlewares.go
+	service = handlers.WrapService(service)
 
 	// Endpoint domain.
 	var (
@@ -83,7 +80,8 @@ func NewEndpoints() svc.Endpoints {
 // Run starts a new http server, gRPC server, and a debug server with the
 // passed config and logger
 func Run(cfg Config) {
-	endpoints := NewEndpoints()
+	service := handlers.NewService()
+	endpoints := NewEndpoints(service)
 
 	// Mechanical domain.
 	errc := make(chan error)

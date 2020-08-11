@@ -73,7 +73,7 @@ type Endpoints struct {
 func (e *Endpoints) WrapAllExcept(middleware endpoint.Middleware, excluded ...string) {
 	included := map[string]struct{}{
 		{{- range $i := .Service.Methods}}
-			"{{$i.Name}}": struct{}{},
+			"{{$i.Name}}": {},
 		{{- end}}
 	}
 
@@ -84,7 +84,7 @@ func (e *Endpoints) WrapAllExcept(middleware endpoint.Middleware, excluded ...st
 		delete(included, ex)
 	}
 
-	for inc, _ := range included {
+	for inc := range included {
 		{{- range $i := .Service.Methods}}
 			if inc == "{{$i.Name}}" {
 				e.{{$i.Name}}Endpoint = middleware(e.{{$i.Name}}Endpoint)
@@ -105,7 +105,7 @@ type LabeledMiddleware func(string, endpoint.Endpoint) endpoint.Endpoint
 func (e *Endpoints) WrapAllLabeledExcept(middleware func(string, endpoint.Endpoint) endpoint.Endpoint, excluded ...string) {
 	included := map[string]struct{}{
 		{{- range $i := .Service.Methods}}
-			"{{$i.Name}}": struct{}{},
+			"{{$i.Name}}": {},
 		{{- end}}
 	}
 
@@ -116,7 +116,7 @@ func (e *Endpoints) WrapAllLabeledExcept(middleware func(string, endpoint.Endpoi
 		delete(included, ex)
 	}
 
-	for inc, _ := range included {
+	for inc := range included {
 		{{- range $i := .Service.Methods}}
 			if inc == "{{$i.Name}}" {
 				e.{{$i.Name}}Endpoint = middleware("{{$i.Name}}", e.{{$i.Name}}Endpoint)
