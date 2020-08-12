@@ -199,7 +199,7 @@ func EncodeHTTPGenericResponse(_ context.Context, w http.ResponseWriter, respons
 // Helper functions
 
 func headersToContext(ctx context.Context, r *http.Request) context.Context {
-	for k, _ := range r.Header {
+	for k := range r.Header {
 		// The key is added both in http format (k) which has had
 		// http.CanonicalHeaderKey called on it in transport as well as the
 		// strings.ToLower which is the grpc metadata format of the key so
