@@ -359,15 +359,23 @@ func readPreviousGeneration(serviceDir string) (map[string]io.Reader, error) {
 		return nil, nil
 	}
 
+	const handlersDirName = "handlers"
 	files := make(map[string]io.Reader)
 
 	addFileToFiles := func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
-			return nil
+			switch info.Name() {
+			// Only files within the handlers dir are used to
+			// support regeneration.
+			// See `gengokit/generator/gen.go:generateResponseFile`
+			case filepath.Base(serviceDir), handlersDirName:
+				return nil
+			default:
+				return filepath.SkipDir
+			}
 		}
 
 		file, ioErr := os.Open(path)
-
 		if ioErr != nil {
 			return errors.Wrapf(ioErr, "cannot read file: %v", path)
 		}
