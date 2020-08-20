@@ -11,9 +11,9 @@ import (
 	"text/template"
 	"unicode"
 
-	log "github.com/sirupsen/logrus"
 	gogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/metaverse/truss/gengokit/httptransport/templates"
 	"github.com/metaverse/truss/svcdef"
@@ -345,8 +345,12 @@ case {{$option.LocalName}}OK:
 // convert the string form of the field to it's correct go type.
 func createDecodeConvertFunc(f Field) (string, bool) {
 	needsErrorCheck := true
+	// We may leverage the below convert logic for repeated base types. By
+	// triming the slice prefix we can easily store the template for the
+	// type if needed.
+	goType := strings.TrimPrefix(f.GoType, "[]")
 	fType := ""
-	switch f.GoType {
+	switch goType {
 	case "uint32":
 		fType = "%s, err := strconv.ParseUint(%s, 10, 32)"
 	case "uint64":
@@ -381,6 +385,11 @@ func createDecodeConvertFunc(f Field) (string, bool) {
 var {{.LocalName}} *{{.GoType}}
 {{.LocalName}} = &{{.GoType}}{}
 err = json.Unmarshal([]byte({{.LocalName}}Str), {{.LocalName}})`
+
+		errorCheckingTmpl := `
+if err != nil {
+	return nil, errors.Wrapf(err, "couldn't decode {{.LocalName}} from %v", {{.LocalName}}Str)
+}`
 		// All repeated args of any type are represented as slices, and bare
 		// assignments to a slice accept a slice as the rvalue. As a result,
 		// LocalName will be declared as a slice, and json.Unmarshal handles
@@ -389,20 +398,42 @@ err = json.Unmarshal([]byte({{.LocalName}}Str), {{.LocalName}})`
 		// provided, and if that fails, we try to unmarshal the string
 		// surrounded by square brackets. If THAT fails, then the string does
 		// not represent a valid JSON string and an error is returned.
+
+		repeatedFieldType := strings.TrimPrefix(f.GoType, "[]")
+		convertedVar := "converted"
+		switch repeatedFieldType {
+		case "uint32", "int32", "float32":
+			convertedVar = repeatedFieldType + "(converted)"
+		}
 		repeatedUnmarshalTmpl := `
 var {{.LocalName}} {{.GoType}}
-{{- if and (and .IsBaseType .Repeated) (not (Contains .GoType "[]byte"))}}
-err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})
-if err != nil {
-	{{.LocalName}}Str = "[" + {{.LocalName}}Str + "]"
-}
+{{- if and (.IsBaseType) (not (Contains .GoType "[]byte"))}}
+if len({{.LocalName}}StrArr) > 1 {
+	{{- if (Contains .GoType "[]string")}}
+	{{.LocalName}} = {{.LocalName}}StrArr
+	{{- else}}
+	{{.LocalName}} = make({{.GoType}}, len({{.LocalName}}StrArr))
+	for i, v := range {{.LocalName}}StrArr {
+	` + fmt.Sprintf(fType, "converted", "v") + errorCheckingTmpl + `
+		{{.LocalName}}[i] = ` + convertedVar + `
+	}
+	{{- end}}
+} else {
 {{- end}}
-err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})`
-
-		errorCheckingTmpl := `
-if err != nil {
-	return nil, errors.Wrapf(err, "couldn't decode {{.LocalName}} from %v", {{.LocalName}}Str)
-}`
+	{{- if (Contains .GoType "[]string")}}
+		{{.LocalName}} = strings.Split({{.LocalName}}Str, ",")
+	{{- else if and (and .IsBaseType .Repeated) (not (Contains .GoType "[]byte"))}}
+	err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})
+	if err != nil {
+		{{.LocalName}}Str = "[" + {{.LocalName}}Str + "]"
+	}
+	err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})
+	{{- else}}
+	err = json.Unmarshal([]byte({{.LocalName}}Str), &{{.LocalName}})
+	{{- end}}
+{{- if and (.IsBaseType) (not (Contains .GoType "[]byte"))}}
+}
+{{- end}}`
 
 		var preamble string
 		if !f.Repeated {
