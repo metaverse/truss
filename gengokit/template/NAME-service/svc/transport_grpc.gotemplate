@@ -85,8 +85,8 @@ func metadataToContext(ctx context.Context, md metadata.MD) context.Context {
 			// The key is added both in metadata format (k) which is all lower
 			// and the http.CanonicalHeaderKey of the key so that it can be
 			// accessed in either format
-			ctx = context.WithValue(ctx, k, v[0])
-			ctx = context.WithValue(ctx, http.CanonicalHeaderKey(k), v[0])
+			ctx = context.WithValue(ctx, CtxKey(k), v[0])
+			ctx = context.WithValue(ctx, CtxKey(http.CanonicalHeaderKey(k)), v[0])
 		}
 	}
 

@@ -13,7 +13,6 @@ var ClientEncodeTemplate = `
 		req := request.(*pb.{{GoName $binding.Parent.RequestType}})
 		_ = req
 
-		r.Header.Set("transport", "HTTPJSON")
 		r.Header.Set("request-url", r.URL.Path)
 
 		// Set the path parameters
@@ -138,7 +137,6 @@ var (
 // instance. We expect instance to come from a service discovery system, so
 // likely of the form "host:port".
 func New(instance string, options ...httptransport.ClientOption) (pb.{{.Service.Name}}Server, error) {
-
 	if !strings.HasPrefix(instance, "http") {
 		instance = "http://" + instance
 	}
@@ -187,13 +185,13 @@ func copyURL(base *url.URL, path string) *url.URL {
 }
 
 // CtxValuesToSend configures the http client to pull the specified keys out of
-// the context and add them to the http request as headers.  Note that keys
-// will have net/http.CanonicalHeaderKey called on them before being send over
-// the wire and that is the form they will be available in the server context.
+// the context and add them to the http request as headers. Note that keys will
+// have net/http.CanonicalHeaderKey called on them before being send over the
+// wire and that is the form they will be available in the server context.
 func CtxValuesToSend(keys ...string) httptransport.ClientOption {
 	return httptransport.ClientBefore(func(ctx context.Context, r *http.Request) context.Context {
 		for _, k := range keys {
-			if v, ok := ctx.Value(k).(string); ok {
+			if v, ok := ctx.Value(svc.CtxKey(k)).(string); ok {
 				r.Header.Set(k, v)
 			}
 		}

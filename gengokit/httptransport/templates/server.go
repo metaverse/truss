@@ -204,14 +204,12 @@ func headersToContext(ctx context.Context, r *http.Request) context.Context {
 		// http.CanonicalHeaderKey called on it in transport as well as the
 		// strings.ToLower which is the grpc metadata format of the key so
 		// that it can be accessed in either format
-		ctx = context.WithValue(ctx, k, r.Header.Get(k))
-		ctx = context.WithValue(ctx, strings.ToLower(k), r.Header.Get(k))
+		ctx = context.WithValue(ctx, CtxKey(k), r.Header.Get(k))
+		ctx = context.WithValue(ctx, CtxKey(strings.ToLower(k)), r.Header.Get(k))
 	}
 
-	// Tune specific change.
-	// also add the request url
-	ctx = context.WithValue(ctx, "request-url", r.URL.Path)
-	ctx = context.WithValue(ctx, "transport", "HTTPJSON")
+	// request url is generally useful for auth cases
+	ctx = context.WithValue(ctx, CtxKey("request-url"), r.URL.Path)
 
 	return ctx
 }
