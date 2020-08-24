@@ -1,0 +1,66 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    name: Build & Test -- Go ${{ matrix.go }}, protoc ${{ matrix.protoc }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.14.x', '1.15.x' ]
+        protoc: [ '3.6.1', '3.13.0' ]
+    env:
+      GO111MODULE: on
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+          path: go/src/github.com/metaverse/truss
+
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Deps
+        env:
+          GOPATH: /home/runner/work/truss/truss/go
+          PROTOC_VER: ${{ matrix.protoc }}
+        run: |
+          sudo apt update && sudo apt install -y git unzip build-essential
+          wget https://github.com/google/protobuf/releases/download/v${PROTOC_VER}/protoc-${PROTOC_VER}-linux-x86_64.zip
+          mv protoc-${PROTOC_VER}-linux-x86_64.zip $HOME
+          unzip ~/protoc-${PROTOC_VER}-linux-x86_64.zip -d $HOME
+
+          cd go/src/github.com/metaverse/truss
+          make dependencies
+
+
+      - name: Build
+        env:
+          GOPATH: /home/runner/work/truss/truss/go
+        run: |
+          cd go/src/github.com/metaverse/truss
+          export PATH=$HOME/bin/:$GOPATH/bin/:$PATH
+          make
+
+      - name: Test
+        env:
+          GOPATH: /home/runner/work/truss/truss/go
+        run: |
+          export PATH=$HOME/bin/:$GOPATH/bin/:$PATH
+          cd go/src/github.com/metaverse/truss
+          make test
+
+          #      - uses: codecov/codecov-action@v1
+          #        if: always() && matrix.go == '1.15.x' && matrix.protoc == '3.13.0'
+          #        with:
+          #          file: ./coverage.out
+          #          flags: unittests
+          #          name: codecov-unittests
+          #          fail_ci_if_error: true

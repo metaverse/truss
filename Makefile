@@ -26,6 +26,7 @@ truss: gobindata
 test: test-go test-integration
 
 test-go:
+	#GO111MODULE=on go test -v ./... -covermode=atomic -coverprofile=./coverage.out --coverpkg=./...
 	GO111MODULE=on go test -v ./...
 
 test-integration:
