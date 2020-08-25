@@ -523,6 +523,9 @@ func NewField(f *ast.Field) (*Field, error) {
 			if oneof, ok := oneofs[ex.Name]; ok {
 				rv.Type.Oneof = oneof
 			}
+		case *ast.SelectorExpr:
+			packageIdent := ex.X.(*ast.Ident)
+			rv.Type.Name += fmt.Sprintf("%s.%s", packageIdent.Name, ex.Sel.Name)
 		case *ast.StarExpr:
 			rv.Type.StarExpr = true
 			typeFollower(ex.X)

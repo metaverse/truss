@@ -77,9 +77,11 @@ import (
 	"strconv"
 	"strings"
 	"io"
+	"time"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 
 	"context"
 
@@ -102,6 +104,8 @@ var (
 	_ = pb.New{{.Service.Name}}Client
 	_ = io.Copy
 	_ = errors.Wrap
+	_ = types.EmptyAny
+	_ = time.NewTimer
 )
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
