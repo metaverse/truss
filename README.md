@@ -1,4 +1,4 @@
-# Truss [![Build Status](https://travis-ci.org/metaverse/truss.svg?branch=master)](https://travis-ci.org/metaverse/truss)
+# Truss [![Build Status](https://github.com/metaverse/truss/workflows/Go/badge.svg?branch=master)
 
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
