@@ -49,6 +49,20 @@ func (s transportpermutationsService) GetWithRepeatedQuery(ctx context.Context, 
 	return &response, nil
 }
 
+func (s transportpermutationsService) GetWithRepeatedStringQuery(ctx context.Context, in *pb.GetWithRepeatedStringQueryRequest) (*pb.GetWithRepeatedStringQueryResponse, error) {
+	var out string
+
+	for _, v := range in.A {
+		out = out + v
+	}
+
+	response := pb.GetWithRepeatedStringQueryResponse{
+		V: out,
+	}
+
+	return &response, nil
+}
+
 // GetWithEnumQuery implements Service.
 func (s transportpermutationsService) GetWithEnumQuery(ctx context.Context, in *pb.GetWithEnumQueryRequest) (*pb.GetWithEnumQueryResponse, error) {
 	response := pb.GetWithEnumQueryResponse{

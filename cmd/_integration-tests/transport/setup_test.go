@@ -25,6 +25,7 @@ func TestMain(m *testing.M) {
 	// Endpoint domain.
 	getWithQueryE := svc.MakeGetWithQueryEndpoint(service)
 	getWithRepeatedQueryE := svc.MakeGetWithRepeatedQueryEndpoint(service)
+	getWithRepeatedStringQueryE := svc.MakeGetWithRepeatedStringQueryEndpoint(service)
 	getWithEnumQueryE := svc.MakeGetWithEnumQueryEndpoint(service)
 	postWithNestedMessageBodyE := svc.MakePostWithNestedMessageBodyEndpoint(service)
 	ctxToCtxE := svc.MakeCtxToCtxEndpoint(service)
@@ -43,24 +44,25 @@ func TestMain(m *testing.M) {
 	CustomVerbE := svc.MakeCustomVerbEndpoint(service)
 
 	endpoints := svc.Endpoints{
-		GetWithQueryEndpoint:              getWithQueryE,
-		GetWithRepeatedQueryEndpoint:      getWithRepeatedQueryE,
-		GetWithEnumQueryEndpoint:          getWithEnumQueryE,
-		PostWithNestedMessageBodyEndpoint: postWithNestedMessageBodyE,
-		CtxToCtxEndpoint:                  ctxToCtxE,
-		GetWithCapsPathEndpoint:           getWithCapsPathE,
-		GetWithPathParamsEndpoint:         getWithPathParamsE,
-		GetWithEnumPathEndpoint:           getWithEnumPathE,
-		GetWithOneofQueryEndpoint:         getWithOneofQueryE,
-		EchoOddNamesEndpoint:              echoOddNamesE,
-		ErrorRPCEndpoint:                  errorRPCE,
-		ErrorRPCNonJSONEndpoint:           errorRPCNonJSONE,
-		ErrorRPCNonJSONLongEndpoint:       errorRPCNonJSONLongE,
-		X2AOddRPCNameEndpoint:             X2AOddRPCNameE,
-		ContentTypeTestEndpoint:           contentTypeTestE,
-		StatusCodeAndNilHeadersEndpoint:   StatusCodeAndNilHeadersE,
-		StatusCodeAndHeadersEndpoint:      StatusCodeAndHeadersE,
-		CustomVerbEndpoint:                CustomVerbE,
+		GetWithQueryEndpoint:               getWithQueryE,
+		GetWithRepeatedQueryEndpoint:       getWithRepeatedQueryE,
+		GetWithRepeatedStringQueryEndpoint: getWithRepeatedStringQueryE,
+		GetWithEnumQueryEndpoint:           getWithEnumQueryE,
+		PostWithNestedMessageBodyEndpoint:  postWithNestedMessageBodyE,
+		CtxToCtxEndpoint:                   ctxToCtxE,
+		GetWithCapsPathEndpoint:            getWithCapsPathE,
+		GetWithPathParamsEndpoint:          getWithPathParamsE,
+		GetWithEnumPathEndpoint:            getWithEnumPathE,
+		GetWithOneofQueryEndpoint:          getWithOneofQueryE,
+		EchoOddNamesEndpoint:               echoOddNamesE,
+		ErrorRPCEndpoint:                   errorRPCE,
+		ErrorRPCNonJSONEndpoint:            errorRPCNonJSONE,
+		ErrorRPCNonJSONLongEndpoint:        errorRPCNonJSONLongE,
+		X2AOddRPCNameEndpoint:              X2AOddRPCNameE,
+		ContentTypeTestEndpoint:            contentTypeTestE,
+		StatusCodeAndNilHeadersEndpoint:    StatusCodeAndNilHeadersE,
+		StatusCodeAndHeadersEndpoint:       StatusCodeAndHeadersE,
+		CustomVerbEndpoint:                 CustomVerbE,
 	}
 
 	// http test server
