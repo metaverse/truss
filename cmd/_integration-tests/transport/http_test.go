@@ -99,17 +99,85 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 		V: A[0] + A[1],
 	}
 
-	err := testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
+	var err error
+
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=[%d,%d]", "A", A[0], A[1])
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot make http request"))
 	}
+
 	// csv style
 	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot make http request"))
 	}
 	// multi / golang style
-	//err := testHTTP(nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d]", "A", A[0], "A", A[1])
+	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d", "A", A[0], "A", A[1])
+	// if err != nil {
+	// 	t.Fatal(errors.Wrap(err, "cannot make http request"))
+	// }
+}
+
+func TestGetWithRepeatedStringQueryClient(t *testing.T) {
+	var req pb.GetWithRepeatedStringQueryRequest
+	req.A = []string{"Hello", "truss"}
+	want := req.A[0] + req.A[1]
+
+	svchttp, err := httpclient.New(httpAddr)
+	if err != nil {
+		t.Fatalf("failed to create httpclient: %q", err)
+	}
+
+	resp, err := svchttp.GetWithRepeatedStringQuery(context.Background(), &req)
+	if err != nil {
+		t.Fatalf("httpclient returned error: %q", err)
+	}
+
+	if resp.V != want {
+		t.Fatalf("Expect: %s, got %s", want, resp.V)
+	}
+}
+
+func TestGetWithRepeatedStringQueryRequest(t *testing.T) {
+	resp := pb.GetWithRepeatedStringQueryResponse{}
+
+	var A []string
+	A = []string{"Hello", "truss"}
+	expects := pb.GetWithRepeatedStringQueryResponse{
+		V: A[0] + A[1],
+	}
+
+	var err error
+
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=[\"%s\",\"%s\"]", "A", A[0], A[1])
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	// csv style
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=\"%s\",\"%s\"", "A", A[0], A[1])
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
+
+	// default array, no quotes
+	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=[%s,%s]", "A", A[0], A[1])
+	// if err != nil {
+	//	t.Fatal(errors.Wrap(err, "cannot make http request"))
+	// }
+
+	// csv style, no quotes
+	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=[%s,%s]", "A", A[0], A[1])
+	// if err != nil {
+	//	t.Fatal(errors.Wrap(err, "cannot make http request"))
+	// }
+
+	// multi / golang style
+	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=%s&%s=%s", "A", A[0], "A", A[1])
+	// if err != nil {
+	//	t.Fatal(errors.Wrap(err, "cannot make http request"))
+	// }
+
 }
 
 func TestGetWithEnumQueryClient(t *testing.T) {
@@ -747,6 +815,8 @@ func testHTTP(
 	case *pb.GetWithQueryResponse:
 		err = jsonpb.UnmarshalString(string(respBytes), v)
 	case *pb.GetWithRepeatedQueryResponse:
+		err = jsonpb.UnmarshalString(string(respBytes), v)
+	case *pb.GetWithRepeatedStringQueryResponse:
 		err = jsonpb.UnmarshalString(string(respBytes), v)
 	case *pb.GetWithEnumQueryResponse:
 		err = jsonpb.UnmarshalString(string(respBytes), v)

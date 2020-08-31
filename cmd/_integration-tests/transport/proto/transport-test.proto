@@ -15,6 +15,11 @@ service TransportPermutations {
       get: "/getwithrepeatedquery"
     };
   }
+  rpc GetWithRepeatedStringQuery (GetWithRepeatedStringQueryRequest) returns (GetWithRepeatedStringQueryResponse) {
+    option (google.api.http) = {
+      get: "/getwithrepeatedstringquery"
+    };
+  }
   rpc GetWithEnumQuery (GetWithEnumQueryRequest) returns (GetWithEnumQueryResponse) {
     option (google.api.http) = {
       get: "/getwithenumquery"
@@ -124,6 +129,14 @@ message GetWithRepeatedQueryRequest {
 
 message GetWithRepeatedQueryResponse {
   int64 V = 1;
+}
+
+message GetWithRepeatedStringQueryRequest {
+  repeated string A = 1;
+}
+
+message GetWithRepeatedStringQueryResponse {
+  string V = 1;
 }
 
 enum TestStatus {
