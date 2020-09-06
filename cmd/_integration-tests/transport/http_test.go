@@ -105,17 +105,16 @@ func TestGetWithRepeatedQueryRequest(t *testing.T) {
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot make http request"))
 	}
-
 	// csv style
 	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d,%d", "A", A[0], A[1])
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "cannot make http request"))
 	}
 	// multi / golang style
-	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d", "A", A[0], "A", A[1])
-	// if err != nil {
-	// 	t.Fatal(errors.Wrap(err, "cannot make http request"))
-	// }
+	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedquery?%s=%d&%s=%d", "A", A[0], "A", A[1])
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cannot make http request"))
+	}
 }
 
 func TestGetWithRepeatedStringQueryClient(t *testing.T) {
@@ -146,37 +145,32 @@ func TestGetWithRepeatedStringQueryRequest(t *testing.T) {
 	expects := pb.GetWithRepeatedStringQueryResponse{
 		V: A[0] + A[1],
 	}
+	expectsSingle := pb.GetWithRepeatedStringQueryResponse{
+		V: A[0],
+	}
 
 	var err error
 
-	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=[\"%s\",\"%s\"]", "A", A[0], A[1])
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "cannot make http request"))
-	}
+	t.Run("single Value", func(t *testing.T) {
+		err = testHTTP(t, &resp, &expectsSingle, nil, "GET", "getwithrepeatedstringquery?%s=%s", "A", A[0])
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
+	})
 
-	// csv style
-	err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=\"%s\",\"%s\"", "A", A[0], A[1])
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "cannot make http request"))
-	}
+	t.Run("csv style, no quotes", func(t *testing.T) {
+		err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=%s,%s", "A", A[0], A[1])
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
+	})
 
-	// default array, no quotes
-	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=[%s,%s]", "A", A[0], A[1])
-	// if err != nil {
-	//	t.Fatal(errors.Wrap(err, "cannot make http request"))
-	// }
-
-	// csv style, no quotes
-	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=[%s,%s]", "A", A[0], A[1])
-	// if err != nil {
-	//	t.Fatal(errors.Wrap(err, "cannot make http request"))
-	// }
-
-	// multi / golang style
-	// err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=%s&%s=%s", "A", A[0], "A", A[1])
-	// if err != nil {
-	//	t.Fatal(errors.Wrap(err, "cannot make http request"))
-	// }
+	t.Run("multi / golang style", func(t *testing.T) {
+		err = testHTTP(t, &resp, &expects, nil, "GET", "getwithrepeatedstringquery?%s=%s&%s=%s", "A", A[0], "A", A[1])
+		if err != nil {
+			t.Fatal(errors.Wrap(err, "cannot make http request"))
+		}
+	})
 
 }
 

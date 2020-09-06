@@ -35,7 +35,15 @@ var ClientEncodeTemplate = `
 		_ = tmp
 		{{- range $field := $binding.Fields }}
 			{{- if eq $field.Location "query"}}
-				{{if or (not $field.IsBaseType) $field.Repeated}}
+				{{if and $field.Repeated $field.IsBaseType}}
+					{{- if (Contains $field.GoType "[]string")}}
+					values["{{$field.QueryParamName}}"] = req.{{$field.CamelName}}
+					{{- else}}
+					for _, v := range req.{{$field.CamelName}} {
+						values.Add("{{$field.QueryParamName}}", fmt.Sprint(v))
+					}
+					{{- end}}
+				{{else if or (not $field.IsBaseType) $field.Repeated}}
 					tmp, err = json.Marshal(req.{{$field.CamelName}})
 					if err != nil {
 						return errors.Wrap(err, "failed to marshal req.{{$field.CamelName}}")
