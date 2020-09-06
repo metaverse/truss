@@ -73,7 +73,7 @@ builds:
     env:
       - CGO_ENABLED=0
     main: cmd/truss/main.go
-    ldflags: -s -w -X main.version={{.Version}} -X main.date={{.Date}}
+    ldflags: -s -w -X main.version={{.Version}} -X main.date={{.CommitDate}}
     binary: truss
 
 archives:
