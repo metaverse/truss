@@ -34,6 +34,7 @@ brews:
     # Packages your package depends on.
     dependencies:
       - name: protobuf
+      - name: protoc-gen-gogo
       - name: protoc-gen-gogofaster
 
     # So you can `brew test` your formula.
