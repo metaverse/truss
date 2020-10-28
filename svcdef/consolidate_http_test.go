@@ -10,21 +10,36 @@ import (
 )
 
 func TestGetPathParams(t *testing.T) {
-	binding := &svcparse.HTTPBinding{
-		Fields: []*svcparse.Field{
-			&svcparse.Field{
-				Kind:  "get",
-				Value: `"/{a}/{b}"`,
-			},
+	tests := []struct {
+		name  string
+		value string
+		want  []string
+	}{
+		{
+			name:  "basic",
+			value: `"/{a}/{b}"`,
+			want:  []string{"a", "b"},
+		},
+		{
+			name:  "variable with path segments",
+			value: `"/v1/{parent=shelves/*}/books"`,
+			want:  []string{"parent"},
 		},
 	}
-	params := getPathParams(binding)
-	if len(params) != 2 {
-		t.Fatalf("Params (%v) is length '%v', expected length 2", params, len(params))
-	}
-	expected := []string{"a", "b"}
-	if !reflect.DeepEqual(params, expected) {
-		t.Fatalf("Params is %v, expected %v", params, expected)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			binding := &svcparse.HTTPBinding{
+				Fields: []*svcparse.Field{
+					{
+						Kind:  "get",
+						Value: tt.value,
+					},
+				},
+			}
+			if got := getPathParams(binding); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getPathParams() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
 

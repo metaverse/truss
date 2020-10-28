@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	gogen "github.com/gogo/protobuf/protoc-gen-gogo/generator"
 
@@ -164,11 +164,10 @@ func paramLocation(field *Field, binding *svcparse.HTTPBinding) string {
 func getPathParams(binding *svcparse.HTTPBinding) []string {
 	_, path := getVerb(binding)
 	findParams := regexp.MustCompile("{(.*?)}")
-	removeBraces := regexp.MustCompile("{|}")
 	params := findParams.FindAllString(path, -1)
 	rv := []string{}
 	for _, p := range params {
-		rv = append(rv, removeBraces.ReplaceAllString(p, ""))
+		rv = append(rv, strings.Split(p[1:len(p)-1], "=")[0])
 	}
 	return rv
 }

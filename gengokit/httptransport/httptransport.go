@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -71,7 +72,7 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 	binding := meth.Bindings[i]
 	nBinding := Binding{
 		Label:        meth.Name + EnglishNumber(i),
-		PathTemplate: binding.Path,
+		PathTemplate: getMuxPathTemplate(binding.Path),
 		BasePath:     basePath(binding.Path),
 		Verb:         binding.Verb,
 	}
@@ -240,6 +241,12 @@ func (b *Binding) GenClientEncode() (string, error) {
 //         "fmt.Sprint(req.A)",
 //     }
 func (b *Binding) PathSections() []string {
+	path := b.PathTemplate
+	re := regexp.MustCompile(`{.+:.+}`)
+	path = re.ReplaceAllStringFunc(path, func(v string) string {
+		return strings.Split(v, ":")[0] + "}"
+	})
+
 	isEnum := make(map[string]struct{})
 	for _, v := range b.Fields {
 		if v.IsEnum {
@@ -248,7 +255,7 @@ func (b *Binding) PathSections() []string {
 	}
 
 	rv := []string{}
-	parts := strings.Split(b.PathTemplate, "/")
+	parts := strings.Split(path, "/")
 	for _, part := range parts {
 		if len(part) > 2 && part[0] == '{' && part[len(part)-1] == '}' {
 			name := RemoveBraces(part)
@@ -488,6 +495,19 @@ func getZeroValue(f Field) string {
 	default:
 		return "0"
 	}
+}
+
+// getMuxPathTemplate translates gRPC Transcoding path into gorilla/mux
+// compatible path template.
+func getMuxPathTemplate(path string) string {
+	re := regexp.MustCompile(`{.+=.+}`)
+	stars := regexp.MustCompile(`\*{2,}`)
+	return re.ReplaceAllStringFunc(path, func(v string) string {
+		v = strings.Replace(v, "=", ":", 1)
+		v = stars.ReplaceAllLiteralString(v, `.+`)
+		v = strings.ReplaceAll(v, "*", `[^/]+`)
+		return v
+	})
 }
 
 // The 'basePath' of a path is the section from the start of the string till

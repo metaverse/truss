@@ -179,3 +179,87 @@ func TestLowCamelName(t *testing.T) {
 		}
 	}
 }
+
+func Test_getMuxPathTemplate(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "no pattern",
+			path: "/v1/{parent}/books",
+			want: "/v1/{parent}/books",
+		},
+		{
+			name: "no *",
+			path: "/v1/{parent=shelves}/books",
+			want: "/v1/{parent:shelves}/books",
+		},
+		{
+			name: "single *",
+			path: "/v1/{parent=shelves/*}/books",
+			want: `/v1/{parent:shelves/[^/]+}/books`,
+		},
+		{
+			name: "multiple *",
+			path: "/v1/{name=shelves/*/books/*}",
+			want: `/v1/{name:shelves/[^/]+/books/[^/]+}`,
+		},
+		{
+			name: "**",
+			path: "/v1/shelves/{name=books/**}",
+			want: `/v1/shelves/{name:books/.+}`,
+		},
+		{
+			name: "mixed * and **",
+			path: "/v1/{name=shelves/*/books/**}",
+			want: `/v1/{name:shelves/[^/]+/books/.+}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := getMuxPathTemplate(tt.path); got != tt.want {
+				t.Errorf("getMuxPathTemplate() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBinding_PathSections(t *testing.T) {
+	tests := []struct {
+		name         string
+		pathTemplate string
+		want         []string
+	}{
+		{
+			name:         "simple",
+			pathTemplate: "/sum/{a}",
+			want: []string{
+				`""`,
+				`"sum"`,
+				"fmt.Sprint(req.A)",
+			},
+		},
+		{
+			name:         "pattern",
+			pathTemplate: `/v1/{parent:shelves/[^/]+}/books`,
+			want: []string{
+				`""`,
+				`"v1"`,
+				"fmt.Sprint(req.Parent)",
+				`"books"`,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := &Binding{
+				PathTemplate: tt.pathTemplate,
+			}
+			if got := b.PathSections(); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Binding.PathSections() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
