@@ -180,7 +180,7 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 		}
 	}
 
-	pathParams := mux.Vars(r)
+	pathParams := encodePathParams(mux.Vars(r))
 	_ = pathParams
 
 	queryParams := r.URL.Query()

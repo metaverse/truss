@@ -1,6 +1,7 @@
 package httptransport
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -68,4 +69,40 @@ func RemoveBraces(val string) string {
 	val = strings.Replace(val, "{", "", -1)
 	val = strings.Replace(val, "}", "", -1)
 	return val
+}
+
+// encodePathParams encodes `mux.Vars()` with dot notations into JSON objects
+// to be unmarshaled into non-basetype fields.
+// e.g. {"book.name": "books/1"} -> {"book": {"name": "books/1"}}
+func encodePathParams(vars map[string]string) map[string]string {
+	var recur func(path, value string, data map[string]interface{})
+	recur = func(path, value string, data map[string]interface{}) {
+		parts := strings.SplitN(path, ".", 2)
+		key := parts[0]
+		if len(parts) == 1 {
+			data[key] = value
+		} else {
+			if _, ok := data[key]; !ok {
+				data[key] = make(map[string]interface{})
+			}
+			recur(parts[1], value, data[key].(map[string]interface{}))
+		}
+	}
+
+	data := make(map[string]interface{})
+	for key, val := range vars {
+		recur(key, val, data)
+	}
+
+	ret := make(map[string]string)
+	for key, val := range data {
+		switch val := val.(type) {
+		case string:
+			ret[key] = val
+		case map[string]interface{}:
+			m, _ := json.Marshal(val)
+			ret[key] = string(m)
+		}
+	}
+	return ret
 }

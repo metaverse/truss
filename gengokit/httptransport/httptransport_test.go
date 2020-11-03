@@ -251,6 +251,15 @@ func TestBinding_PathSections(t *testing.T) {
 				`"books"`,
 			},
 		},
+		{
+			name:         "dot notation",
+			pathTemplate: `/v1/{book.name:shelves/[^/]+/books/[^/]+}`,
+			want: []string{
+				`""`,
+				`"v1"`,
+				"fmt.Sprint(req.Book.Name)",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -191,7 +191,11 @@ func GenServerTemplate(exec interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	code = FormatCode(code)
+	encodeFuncSource, err := FuncSourceCode(encodePathParams)
+	if err != nil {
+		return "", err
+	}
+	code = FormatCode(code + encodeFuncSource)
 	return code, nil
 }
 
@@ -258,13 +262,19 @@ func (b *Binding) PathSections() []string {
 	parts := strings.Split(path, "/")
 	for _, part := range parts {
 		if len(part) > 2 && part[0] == '{' && part[len(part)-1] == '}' {
-			name := RemoveBraces(part)
-			if _, ok := isEnum[gogen.CamelCase(name)]; ok {
-				convert := fmt.Sprintf("fmt.Sprintf(\"%%d\", req.%v)", gogen.CamelCase(name))
+			name := part[1 : len(part)-1]
+			parts := strings.Split(name, ".")
+			for idx, part := range parts {
+				parts[idx] = gogen.CamelCase(part)
+			}
+			camelName := strings.Join(parts, ".")
+
+			if _, ok := isEnum[camelName]; ok {
+				convert := fmt.Sprintf("fmt.Sprintf(\"%%d\", req.%v)", camelName)
 				rv = append(rv, convert)
 				continue
 			}
-			convert := fmt.Sprintf("fmt.Sprint(req.%v)", gogen.CamelCase(name))
+			convert := fmt.Sprintf("fmt.Sprint(req.%v)", camelName)
 			rv = append(rv, convert)
 		} else {
 			// Add quotes around things which'll be embeded as string literals,
@@ -291,7 +301,7 @@ if {{.LocalName}}StrArr, ok := {{.Location}}Params["{{.QueryParamName}}"]; ok {
 if err != nil {
 	return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting {{.LocalName}} from {{.Location}}, {{.Location}}Params: %v", {{.Location}}Params))
 }{{end}}
-req.{{.CamelName}} = {{.TypeConversion}}
+{{if or .Repeated .IsBaseType .IsEnum}}req.{{.CamelName}} = {{.TypeConversion}}{{end}}
 `
 	mergedLogic := queryParamLogic + genericLogic + "}"
 	if f.Location == "path" {
@@ -389,9 +399,7 @@ func createDecodeConvertFunc(f Field) (string, bool) {
 		// pointer as well. So we special case args of a single custom message
 		// type so that the variable LocalName is declared as a pointer.
 		singleCustomTypeUnmarshalTmpl := `
-var {{.LocalName}} *{{.GoType}}
-{{.LocalName}} = &{{.GoType}}{}
-err = json.Unmarshal([]byte({{.LocalName}}Str), {{.LocalName}})`
+err = json.Unmarshal([]byte({{.LocalName}}Str), req.{{.CamelName}})`
 
 		errorCheckingTmpl := `
 if err != nil {

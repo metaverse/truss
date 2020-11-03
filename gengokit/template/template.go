@@ -425,31 +425,31 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"cmd": &bintree{nil, map[string]*bintree{
-		"NAME": &bintree{nil, map[string]*bintree{
-			"main.gotemplate": &bintree{cmdNameMainGotemplate, map[string]*bintree{}},
+	"cmd": {nil, map[string]*bintree{
+		"NAME": {nil, map[string]*bintree{
+			"main.gotemplate": {cmdNameMainGotemplate, map[string]*bintree{}},
 		}},
 	}},
-	"handlers": &bintree{nil, map[string]*bintree{
-		"handlers.gotemplate":    &bintree{handlersHandlersGotemplate, map[string]*bintree{}},
-		"hooks.gotemplate":       &bintree{handlersHooksGotemplate, map[string]*bintree{}},
-		"middlewares.gotemplate": &bintree{handlersMiddlewaresGotemplate, map[string]*bintree{}},
+	"handlers": {nil, map[string]*bintree{
+		"handlers.gotemplate": {handlersHandlersGotemplate, map[string]*bintree{}},
+		"hooks.gotemplate": {handlersHooksGotemplate, map[string]*bintree{}},
+		"middlewares.gotemplate": {handlersMiddlewaresGotemplate, map[string]*bintree{}},
 	}},
-	"svc": &bintree{nil, map[string]*bintree{
-		"client": &bintree{nil, map[string]*bintree{
-			"grpc": &bintree{nil, map[string]*bintree{
-				"client.gotemplate": &bintree{svcClientGrpcClientGotemplate, map[string]*bintree{}},
+	"svc": {nil, map[string]*bintree{
+		"client": {nil, map[string]*bintree{
+			"grpc": {nil, map[string]*bintree{
+				"client.gotemplate": {svcClientGrpcClientGotemplate, map[string]*bintree{}},
 			}},
-			"http": &bintree{nil, map[string]*bintree{
-				"client.gotemplate": &bintree{svcClientHttpClientGotemplate, map[string]*bintree{}},
+			"http": {nil, map[string]*bintree{
+				"client.gotemplate": {svcClientHttpClientGotemplate, map[string]*bintree{}},
 			}},
 		}},
-		"endpoints.gotemplate": &bintree{svcEndpointsGotemplate, map[string]*bintree{}},
-		"server": &bintree{nil, map[string]*bintree{
-			"run.gotemplate": &bintree{svcServerRunGotemplate, map[string]*bintree{}},
+		"endpoints.gotemplate": {svcEndpointsGotemplate, map[string]*bintree{}},
+		"server": {nil, map[string]*bintree{
+			"run.gotemplate": {svcServerRunGotemplate, map[string]*bintree{}},
 		}},
-		"transport_grpc.gotemplate": &bintree{svcTransport_grpcGotemplate, map[string]*bintree{}},
-		"transport_http.gotemplate": &bintree{svcTransport_httpGotemplate, map[string]*bintree{}},
+		"transport_grpc.gotemplate": {svcTransport_grpcGotemplate, map[string]*bintree{}},
+		"transport_http.gotemplate": {svcTransport_httpGotemplate, map[string]*bintree{}},
 	}},
 }}
 

@@ -31,7 +31,7 @@ var ServerDecodeTemplate = `
 			}
 		}
 
-		pathParams := mux.Vars(r)
+		pathParams := encodePathParams(mux.Vars(r))
 		_ = pathParams
 
 		queryParams := r.URL.Query()
