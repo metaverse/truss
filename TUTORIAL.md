@@ -167,14 +167,10 @@ The following is left as an exercise to the reader:
 You can control the location of the output folders for your service by specifying the following flags when running truss
 ```
   --svcout {go-style-package-path to where you want the contents of {Name}-service folder to be}
-  --pbout {go-style-package-path to where you want the *.pb.go interface definitions to be}
 ```
 
-Note: “go-style-package-path” means exactly the style you use in your golang import statements, relative to your $GOPATH. This is not your system file path, nor it is relative to location of the *.proto file; the start of the path must be accessible from your $GOPATH.
-For example:
-```
-truss --pbout truss-demo/interface-defs --svcout truss-demo/service echo.proto
-```
+Note: “go-style-package-path” means exactly the style you use in your golang import statements, relative to your $GOPATH.
+
 Executing this command will place the *.pb.go files into `$GOPATH/truss-demo/interface-defs/`, and the entire echo-service contents (excepting the *.pb.go files) to `$GOPATH/truss-demo/service/`.
 
 ## Middlewares
