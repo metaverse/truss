@@ -138,7 +138,7 @@ func TestApplyServerTempl(t *testing.T) {
 			pb "github.com/metaverse/truss/gengokit/general-service"
 		)
 
-		// NewService returns a naïve, stateless implementation of Service.
+		// NewService returns a stateless implementation of Service.
 		func NewService() pb.ProtoServer {
 			return protoService{}
 		}
