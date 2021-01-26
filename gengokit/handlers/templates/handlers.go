@@ -3,15 +3,16 @@ package templates
 const HandlerMethods = `
 {{ with $te := .}}
 		{{range $i := .Methods}}
-		{{if ne .ResponseType.Name "Empty" }}
-		func (s {{ToLower $te.ServiceName}}Service) {{.Name}}(ctx context.Context, in *pb.{{GoName .RequestType.Name}})(*pb.{{GoName $i.ResponseType.Name}}, error){
-			var resp pb.{{GoName .ResponseType.Name}}
-			return &resp, nil
-		{{else}}
-		func (s {{ToLower $te.ServiceName}}Service) {{.Name}}(ctx context.Context, in *pb.{{GoName .RequestType.Name}})error{
-			return  nil
-		{{end}}		
-		}
+			{{if ne .ResponseType.Name "Empty" }}
+				func (s {{ToLower $te.ServiceName}}Service) {{.Name}}(ctx context.Context, in *pb.{{GoName .RequestType.Name}})(*pb.{{GoName $i.ResponseType.Name}}, error){
+					var resp pb.{{GoName .ResponseType.Name}}
+					return &resp, nil
+				}
+			{{else}}
+				func (s {{ToLower $te.ServiceName}}Service) {{.Name}}(ctx context.Context, in *pb.{{GoName .RequestType.Name}})error{
+					return  nil
+				}
+			{{end}}		
 		{{end}}
 {{- end}}
 `

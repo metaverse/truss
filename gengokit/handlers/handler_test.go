@@ -31,7 +31,7 @@ func init() {
 	log.SetLevel(log.DebugLevel)
 }
 
-func TestServerMethsTempl(t *testing.T) {
+func testServerMethsTempl(t *testing.T) {
 	const def = `
 		syntax = "proto3";
 
