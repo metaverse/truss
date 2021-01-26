@@ -11,12 +11,11 @@ import (
 	"io"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/pkg/errors"
-
 	"github.com/metaverse/truss/gengokit"
 	"github.com/metaverse/truss/gengokit/handlers/templates"
 	"github.com/metaverse/truss/svcdef"
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // NewService is an exported func that creates a new service
@@ -189,9 +188,9 @@ func updateParams(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
 // updateResults updates the first result of f to be `X`.(m.ResponseType.Name).
 // func ProtoMethod(...) (*pb.Old, error) ->  func ProtoMethod(...) (*pb.(m.ResponseType.Name), error)
 func updateResults(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
-	if f.Type.Results.NumFields() != 2 {
+	if f.Type.Results.NumFields() == 0 {
 		log.WithField("Function", f.Name.Name).
-			Warn("Function results signature should be (*pb.TYPE, error), cannot fix")
+			Warn("Function results signature should be at lease (error), cannot fix")
 		return
 	}
 	updatePBFieldType(f.Type.Results.List[0].Type, m.ResponseType.Name)
