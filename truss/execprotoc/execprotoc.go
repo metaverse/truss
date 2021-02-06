@@ -3,6 +3,7 @@
 package execprotoc
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -105,8 +106,15 @@ func protoc(protoPaths, gopath []string, plugin string) error {
 
 	cmdArgs = append(cmdArgs, "--proto_path="+filepath.Dir(protoPaths[0]))
 
-	for _, gp := range gopath {
+	for i, gp := range gopath {
 		cmdArgs = append(cmdArgs, "-I"+filepath.Join(gp, "src"))
+		if i == 0 {
+			googleapis := filepath.Join(gp, "googleapis")
+			cmdArgs = append(cmdArgs, "-I"+googleapis)
+			if err := checkGoogleApisPath(googleapis); err != nil {
+				return errors.Wrapf(err, "googleapis file not found")
+			}
+		}
 	}
 
 	cmdArgs = append(cmdArgs, plugin)
@@ -123,6 +131,23 @@ func protoc(protoPaths, gopath []string, plugin string) error {
 		return errors.Wrapf(err,
 			"protoc exec failed.\nprotoc output:\n\n%v\nprotoc arguments:\n\n%v\n\n",
 			string(outBytes), protocExec.Args)
+	}
+
+	return nil
+}
+
+// check need google api path
+func checkGoogleApisPath(googleApiPath string) error {
+	_, err := os.Stat(googleApiPath)
+	if os.IsNotExist(err) {
+		fmt.Println("git clone https://github.com/googleapis/googleapis " + googleApiPath)
+		outBytes, err := exec.Command("git", "clone", "https://github.com/googleapis/googleapis", googleApiPath).CombinedOutput()
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(outBytes))
+		fmt.Println("go get -u -d github.com/googleapis/googleapis")
+		exec.Command("go", "get", "-u", "-d", "github.com/googleapis/googleapis")
 	}
 
 	return nil
