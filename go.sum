@@ -1,6 +1,8 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/gogo/protobuf v0.0.0-20190601103108-21df5aa0e680 h1:4yJo8IamhOSf9/lMuik4aZGz/lcN6ai8gJfe40HSre4=
+github.com/gogo/protobuf v0.0.0-20190601103108-21df5aa0e680/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/gogo/protobuf v1.2.2-0.20190601103108-21df5aa0e680 h1:C0sYRtvp5PUPDdevTvhGWbyiRrLM1ci+tHfyJymCNzM=
 github.com/gogo/protobuf v1.2.2-0.20190601103108-21df5aa0e680/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/kevinburke/go-bindata v3.22.0+incompatible h1:/JmqEhIWQ7GRScV0WjX/0tqBrC5D21ALg0H0U/KZ/ts=

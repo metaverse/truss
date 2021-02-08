@@ -144,6 +144,7 @@ func parseInput() (*truss.Config, error) {
 	// DefPaths
 	var err error
 	rawDefinitionPaths := flag.Args()
+	log.WithField("rawDefinitionPaths", rawDefinitionPaths).Debug()
 	cfg.DefPaths, err = cleanProtofilePath(rawDefinitionPaths)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse input arguments")
@@ -156,8 +157,10 @@ func parseInput() (*truss.Config, error) {
 		return nil, errors.Wrap(err, "proto files not found in importable go package")
 	}
 
-	cfg.PBPackage = p[0].PkgPath
-	cfg.PBPath = protoDir
+	//cfg.PBPackage = p[0].PkgPath
+	//cfg.PBPath = protoDir
+	cfg.PBPackage, _ = os.Getwd()
+	cfg.PBPath = cfg.PBPackage
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
@@ -175,10 +178,11 @@ func parseInput() (*truss.Config, error) {
 
 	svcName = strings.ToLower(svcName)
 
-	svcDirName := svcName + "-service"
+	//svcDirName := svcName + "-service"
+	svcDirName := ""
 	log.WithField("svcDirName", svcDirName).Debug()
 
-	svcPath := filepath.Join(filepath.Dir(cfg.DefPaths[0]), svcDirName)
+	svcPath := filepath.Join(filepath.Dir("./"), svcDirName)
 
 	if *svcPackageFlag != "" {
 		svcOut := *svcPackageFlag
