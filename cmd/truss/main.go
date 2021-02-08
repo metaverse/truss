@@ -159,8 +159,11 @@ func parseInput() (*truss.Config, error) {
 
 	//cfg.PBPackage = p[0].PkgPath
 	//cfg.PBPath = protoDir
-	cfg.PBPackage, _ = os.Getwd()
-	cfg.PBPath = cfg.PBPackage
+	// Current Directory
+	currPath := filepath.Dir("./")
+	c, _ := packages.Load(nil, currPath)
+	cfg.PBPackage = c[0].PkgPath
+	cfg.PBPath = currPath
 	log.WithField("PB Package", cfg.PBPackage).Debug()
 	log.WithField("PB Path", cfg.PBPath).Debug()
 
