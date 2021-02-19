@@ -126,6 +126,11 @@ func Run(cfg Config) {
 		errc <- s.Serve(ln)
 	}()
 
+	// register server
+    go func() {
+        handlers.Register().Up()
+    }()
+
 	// Run!
 	log.Println("exit", <-errc)
 }

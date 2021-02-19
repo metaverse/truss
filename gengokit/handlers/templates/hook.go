@@ -16,7 +16,7 @@ func InterruptHandler(errc chan<- error) {
 	terminateError := fmt.Errorf("%s", <-c)
 
 	// Place whatever shutdown handling you want here
-
+	Register().Down()
 	errc <- terminateError
 }
 `
