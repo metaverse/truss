@@ -13,9 +13,11 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"path/filepath"
 
 	// 3d Party
 	"google.golang.org/grpc"
+	"github.com/joho/godotenv"
 
 	// This Service
 	pb "{{.PBImportPath -}}"
@@ -30,19 +32,28 @@ func init() {
 	flag.StringVar(&DefaultConfig.HTTPAddr, "http.addr", ":5050", "HTTP listen address")
 	flag.StringVar(&DefaultConfig.GRPCAddr, "grpc.addr", ":5040", "gRPC (HTTP) listen address")
 
+    // parse local env file
+    envFile, err := filepath.Abs(".env")
+    if err == nil || os.IsExist(err) {
+        _ = godotenv.Load(envFile)
+    }
+
 	// Use environment variables, if set. Flags have priority over Env vars.
-	if addr := os.Getenv("DEBUG_ADDR"); addr != "" {
-		DefaultConfig.DebugAddr = addr
-	}
-	if port := os.Getenv("PORT"); port != "" {
-		DefaultConfig.HTTPAddr = fmt.Sprintf(":%s", port)
-	}
-	if addr := os.Getenv("HTTP_ADDR"); addr != "" {
-		DefaultConfig.HTTPAddr = addr
-	}
-	if addr := os.Getenv("GRPC_ADDR"); addr != "" {
-		DefaultConfig.GRPCAddr = addr
-	}
+	if addr := os.Getenv("SERVICE.DEBUG_ADDR"); addr != "" {
+        DefaultConfig.DebugAddr = addr
+    }
+    if port := os.Getenv("SERVICE.HTTP.PORT"); port != "" {
+        DefaultConfig.HTTPAddr = fmt.Sprintf(":%s", port)
+    }
+    if ip := os.Getenv("SERVICE.HTTP.IP"); ip != "" {
+        DefaultConfig.HTTPAddr = fmt.Sprintf("%s%s", ip, DefaultConfig.HTTPAddr)
+    }
+    if port := os.Getenv("SERVICE.GRPC.PORT"); port != "" {
+        DefaultConfig.GRPCAddr = fmt.Sprintf(":%s", port)
+    }
+    if ip := os.Getenv("SERVICE.GRPC.IP"); ip != "" {
+        DefaultConfig.GRPCAddr = fmt.Sprintf("%s%s", ip, DefaultConfig.GRPCAddr)
+    }
 }
 
 // Config contains the required fields for running a server
@@ -90,41 +101,47 @@ func Run(cfg Config) {
 	go handlers.InterruptHandler(errc)
 
 	// Debug listener.
-	go func() {
-		log.Println("transport", "debug", "addr", cfg.DebugAddr)
+	if enable := os.Getenv("SERVICE.DEBUG.ENABLE"); enable != "false" {
+        go func() {
+            log.Println("transport", "debug", "addr", cfg.DebugAddr)
 
-		m := http.NewServeMux()
-		m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+            m := http.NewServeMux()
+            m.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+            m.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+            m.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+            m.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+            m.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-		errc <- http.ListenAndServe(cfg.DebugAddr, m)
-	}()
+            errc <- http.ListenAndServe(cfg.DebugAddr, m)
+        }()
+	}
 
 	// HTTP transport.
-	go func() {
-		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
-		h := svc.MakeHTTPHandler(endpoints)
-		errc <- http.ListenAndServe(cfg.HTTPAddr, h)
-	}()
+	if enable := os.Getenv("SERVICE.HTTP.ENABLE"); enable != "false" {
+        go func() {
+            log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
+            h := svc.MakeHTTPHandler(endpoints)
+            errc <- http.ListenAndServe(cfg.HTTPAddr, h)
+        }()
+	}
 
 	// gRPC transport.
-	go func() {
-		log.Println("transport", "gRPC","addr", cfg.GRPCAddr)
-		ln, err := net.Listen("tcp", cfg.GRPCAddr)
-		if err != nil {
-			errc <- err
-			return
-		}
+	if enable := os.Getenv("SERVICE.GRPC.ENABLE"); enable != "false" {
+        go func() {
+            log.Println("transport", "gRPC","addr", cfg.GRPCAddr)
+            ln, err := net.Listen("tcp", cfg.GRPCAddr)
+            if err != nil {
+                errc <- err
+                return
+            }
 
-		srv := svc.MakeGRPCServer(endpoints)
-		s := grpc.NewServer()
-		pb.Register{{.Service.Name}}Server(s, srv)
+            srv := svc.MakeGRPCServer(endpoints)
+            s := grpc.NewServer()
+            pb.Register{{.Service.Name}}Server(s, srv)
 
-		errc <- s.Serve(ln)
-	}()
+            errc <- s.Serve(ln)
+        }()
+	}
 
 	// register server
     go func() {
