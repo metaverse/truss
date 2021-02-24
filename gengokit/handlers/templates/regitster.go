@@ -28,8 +28,10 @@ var reg *register
 func Register() *register {
 	if reg == nil {
 		reg = &register{}
-		reg.parseServer()
-		reg.naClient = reg.nacosClient()
+		if os.Getenv("SERVICE.REGISTER") == "true" {
+			reg.parseServer()
+			reg.naClient = reg.nacosClient()
+		}
 	}
 	return reg
 }
