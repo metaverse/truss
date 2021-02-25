@@ -28,9 +28,9 @@ import (
 var DefaultConfig Config
 
 func init() {
-	flag.StringVar(&DefaultConfig.DebugAddr, "debug.addr", ":5060", "Debug and metrics listen address")
-	flag.StringVar(&DefaultConfig.HTTPAddr, "http.addr", ":5050", "HTTP listen address")
-	flag.StringVar(&DefaultConfig.GRPCAddr, "grpc.addr", ":5040", "gRPC (HTTP) listen address")
+	flag.StringVar(&DefaultConfig.DebugAddr, "debug.addr", ":9092", "Debug and metrics listen address")
+	flag.StringVar(&DefaultConfig.HTTPAddr, "http.addr", ":9090", "HTTP listen address")
+	flag.StringVar(&DefaultConfig.GRPCAddr, "grpc.addr", ":9091", "gRPC (HTTP) listen address")
 
     // parse local env file
     envFile, err := filepath.Abs(".env")
