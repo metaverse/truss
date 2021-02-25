@@ -44,7 +44,7 @@ type register struct {
 
 // 注册服务
 func (r *register) Up() {
-	if os.Getenv("SERVICE.REGISTER") == "false" {
+	if os.Getenv("SERVICE.REGISTER") != "true" {
 		return
 	}
 	// 延迟10秒注册服务
@@ -110,7 +110,7 @@ func (r *register) Up() {
 
 // 注销服务
 func (r *register) Down() {
-	if os.Getenv("SERVICE.REGISTER") == "false" {
+	if os.Getenv("SERVICE.REGISTER") != "true" {
 		return
 	}
 	if r.grpcConf != nil {
