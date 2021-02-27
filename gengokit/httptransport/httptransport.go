@@ -156,6 +156,10 @@ func NewBinding(i int, meth *svcdef.ServiceMethod) *Binding {
 		newField.IsEnum = field.Type.Enum != nil
 		newField.ConvertFunc, newField.ConvertFuncNeedsErrorCheck = createDecodeConvertFunc(newField)
 		newField.TypeConversion = createDecodeTypeConversion(newField)
+		if newField.Location == "body_root" {
+			newField.Location = "body"
+			nBinding.RequestRootField = &newField
+		}
 
 		nBinding.Fields = append(nBinding.Fields, &newField)
 

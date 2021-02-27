@@ -28,6 +28,7 @@ type Binding struct {
 	Verb        string
 	Fields      []*Field
 	OneofFields []*OneofField
+	RequestRootField *Field
 	// A pointer back to the parent method of this binding. Used within some
 	// binding methods
 	Parent *Method
