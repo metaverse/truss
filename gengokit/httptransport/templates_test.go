@@ -151,6 +151,7 @@ func TestGenServerDecode(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to generate server decode code: %v", err)
 	}
+
 	desired := `
 
 // DecodeHTTPSumZeroRequest is a transport/http.DecodeRequestFunc that
@@ -158,6 +159,7 @@ func TestGenServerDecode(t *testing.T) {
 // body. Primarily useful in a server.
 func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	defer r.Body.Close()
+
 	var req pb.SumRequest
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -179,6 +181,135 @@ func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, 
 			}
 		}
 	}
+
+	pathParams := mux.Vars(r)
+	_ = pathParams
+
+	queryParams := r.URL.Query()
+	_ = queryParams
+
+	ASumStr := pathParams["a"]
+	ASum, err := strconv.ParseInt(ASumStr, 10, 64)
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting ASum from path, pathParams: %v", pathParams))
+	}
+	req.A = ASum
+
+	if BSumStrArr, ok := queryParams["b"]; ok {
+		BSumStr := BSumStrArr[0]
+		BSum, err := strconv.ParseInt(BSumStr, 10, 64)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("Error while extracting BSum from query, queryParams: %v", queryParams))
+		}
+		req.B = BSum
+	}
+
+	return &req, err
+}
+
+`
+	if got, want := strings.TrimSpace(str), strings.TrimSpace(desired); got != want {
+		t.Errorf("Generated code differs from result.\ngot = %s\nwant = %s", got, want)
+		t.Log(gentesthelper.DiffStrings(got, want))
+	}
+}
+
+func TestGenServerDecodeWithBody(t *testing.T) {
+	innerField := &Field{
+		Name:                       "c",
+		QueryParamName:             "c",
+		CamelName:                  "C",
+		LowCamelName:               "c",
+		LocalName:                  "CSum",
+		Location:                   "body",
+		GoType:                     "pb.Inner",
+		ConvertFunc:                "",
+		ConvertFuncNeedsErrorCheck: true,
+		TypeConversion:             "CSum",
+		IsBaseType:                 true,
+	}
+	binding := &Binding{
+		Label:        "SumZero",
+		PathTemplate: "/sum/{a}",
+		BasePath:     "/sum/",
+		Verb:         "get",
+		RequestRootField: innerField,
+		Fields: []*Field{
+			&Field{
+				Name:                       "a",
+				QueryParamName:             "a",
+				CamelName:                  "A",
+				LowCamelName:               "a",
+				LocalName:                  "ASum",
+				Location:                   "path",
+				GoType:                     "int64",
+				ConvertFunc:                "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
+				ConvertFuncNeedsErrorCheck: true,
+				TypeConversion:             "ASum",
+				IsBaseType:                 true,
+			},
+			&Field{
+				Name:                       "b",
+				QueryParamName:             "b",
+				CamelName:                  "B",
+				LowCamelName:               "b",
+				LocalName:                  "BSum",
+				Location:                   "query",
+				GoType:                     "int64",
+				ConvertFunc:                "BSum, err := strconv.ParseInt(BSumStr, 10, 64)",
+				ConvertFuncNeedsErrorCheck: true,
+				TypeConversion:             "BSum",
+				IsBaseType:                 true,
+			},
+			innerField,
+		},
+	}
+	meth := &Method{
+		Name:         "Sum",
+		RequestType:  "SumRequest",
+		ResponseType: "SumReply",
+		Bindings: []*Binding{
+			binding,
+		},
+	}
+	binding.Parent = meth
+
+	str, err := binding.GenServerDecode()
+	if err != nil {
+		t.Errorf("Failed to generate server decode code: %v", err)
+	}
+	desired := `
+
+// DecodeHTTPSumZeroRequest is a transport/http.DecodeRequestFunc that
+// decodes a JSON-encoded sum request from the HTTP request
+// body. Primarily useful in a server.
+func DecodeHTTPSumZeroRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	defer r.Body.Close()
+
+	var req pb.SumRequest
+	var reqc pb.Inner
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.Wrapf(err, "cannot read body of http request")
+	}
+	if len(buf) > 0 {
+		// AllowUnknownFields stops the unmarshaler from failing if the JSON contains unknown fields.
+		unmarshaller := jsonpb.Unmarshaler{
+			AllowUnknownFields: true,
+		}
+		if err = unmarshaller.Unmarshal(bytes.NewBuffer(buf), &reqc); err != nil {
+			const size = 8196
+			if len(buf) > size {
+				buf = buf[:size]
+			}
+			return nil, httpError{errors.Wrapf(err, "request body '%s': cannot parse non-json request body", buf),
+				http.StatusBadRequest,
+				nil,
+			}
+		}
+	}
+
+	req.c = &reqc
 
 	pathParams := mux.Vars(r)
 	_ = pathParams

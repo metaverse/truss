@@ -124,7 +124,7 @@ service Map {
 		Name     string
 		Location string
 	}{
-		{"A", "body"},
+		{"A", "body_root"},
 		{"AA", "query"},
 		{"C", "query"},
 		{"MapField", "query"},

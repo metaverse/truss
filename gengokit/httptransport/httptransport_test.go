@@ -21,6 +21,97 @@ func init() {
 	gopath = filepath.SplitList(os.Getenv("GOPATH"))
 }
 
+func TestNewMethodWithBody(t *testing.T) {
+	defStr := `
+		syntax = "proto3";
+
+		// General package
+		package general;
+
+		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+
+		message Inner {
+			string a = 1;
+		}
+
+		message SumRequest {
+			int64 a = 1;
+			Inner in = 2;
+		}
+
+		message SumReply {
+			int64 v = 1;
+			string err = 2;
+		}
+
+		service SumSvc {
+			rpc Sum(SumRequest) returns (SumReply) {
+				option (google.api.http) = {
+					put: "/sum/{a}"
+					body: "in"
+				};
+			}
+		}
+	`
+	sd, err := svcdef.NewFromString(defStr, gopath)
+	if err != nil {
+		t.Fatal(err, "Failed to create a service from the definition string")
+	}
+	innerField := Field{
+		Name:                       "In",
+		QueryParamName:             "in",
+		CamelName:                  "In",
+		LowCamelName:               "in",
+		LocalName:                  "InSum",
+		Location:                   "body",
+		GoType:                     "pb.Inner",
+		ConvertFunc:                "\nvar InSum *pb.Inner\nInSum = &pb.Inner{}\nerr = json.Unmarshal([]byte(InSumStr), InSum)\nif err != nil {\n\treturn nil, errors.Wrapf(err, \"couldn't decode InSum from %v\", InSumStr)\n}",
+		ConvertFuncNeedsErrorCheck: false,
+		TypeConversion:             "InSum",
+		IsBaseType:                 false,
+	}
+	binding := &Binding{
+		Label:            "SumZero",
+		PathTemplate:     "/sum/{a}",
+		BasePath:         "/sum/",
+		Verb:             "put",
+		RequestRootField: &innerField,
+		Fields: []*Field{
+			&Field{
+				Name:                       "A",
+				QueryParamName:             "a",
+				CamelName:                  "A",
+				LowCamelName:               "a",
+				LocalName:                  "ASum",
+				Location:                   "path",
+				GoType:                     "int64",
+				ConvertFunc:                "ASum, err := strconv.ParseInt(ASumStr, 10, 64)",
+				ConvertFuncNeedsErrorCheck: true,
+				TypeConversion:             "ASum",
+				IsBaseType:                 true,
+			},
+			&innerField,
+		},
+	}
+
+	meth := &Method{
+		Name:         "Sum",
+		RequestType:  "SumRequest",
+		ResponseType: "SumReply",
+		Bindings: []*Binding{
+			binding,
+		},
+	}
+	binding.Parent = meth
+
+	newMeth := NewMethod(sd.Service.Methods[0])
+	t.Logf("%v\n", spew.Sdump(sd.Service.Methods[0]))
+	if got, want := newMeth, meth; !reflect.DeepEqual(got, want) {
+		diff := gentesthelper.DiffStrings(spew.Sdump(got), spew.Sdump(want))
+		t.Errorf("got != want; methods differ: %v\n", diff)
+	}
+}
+
 func TestNewMethod(t *testing.T) {
 	defStr := `
 		syntax = "proto3";

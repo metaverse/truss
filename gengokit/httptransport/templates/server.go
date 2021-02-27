@@ -9,7 +9,14 @@ var ServerDecodeTemplate = `
 	// body. Primarily useful in a server.
 	func DecodeHTTP{{$binding.Label}}Request(_ context.Context, r *http.Request) (interface{}, error) {
 		defer r.Body.Close()
+
 		var req pb.{{GoName $binding.Parent.RequestType}}
+		{{$req_field := "req" -}}
+		{{if $binding.RequestRootField -}}
+		{{$req_field = print "req" ($binding.RequestRootField.Name) -}}
+		var {{$req_field}} {{$binding.RequestRootField.GoType}}
+		{{end -}}
+
 		buf, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			return nil, errors.Wrapf(err, "cannot read body of http request")
@@ -19,7 +26,7 @@ var ServerDecodeTemplate = `
 			unmarshaller := jsonpb.Unmarshaler{
 				AllowUnknownFields: true,
 			}
-			if err = unmarshaller.Unmarshal(bytes.NewBuffer(buf), &req); err != nil {
+			if err = unmarshaller.Unmarshal(bytes.NewBuffer(buf), &{{$req_field}}); err != nil {
 				const size = 8196
 				if len(buf) > size {
 					buf = buf[:size]
@@ -30,6 +37,10 @@ var ServerDecodeTemplate = `
 				}
 			}
 		}
+
+		{{if $binding.RequestRootField}}
+		req.{{$binding.RequestRootField.Name}} = &{{$req_field}}
+		{{end}}
 
 		pathParams := mux.Vars(r)
 		_ = pathParams
