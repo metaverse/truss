@@ -33,6 +33,9 @@ import (
 // single type that implements the Service interface. For example, you might
 // construct individual endpoints using transport/http.NewClient, combine them into an Endpoints, and return it to the caller as a Service.
 type Endpoints struct {
+	httpServerOptions    map[string][]httptransport.ServerOption
+	httpRequestDecoders  map[string]httptransport.DecodeRequestFunc
+	httpResponseEncoders map[string]httptransport.EncodeResponseFunc
 {{range $i := .Service.Methods}}
 	{{$i.Name}}Endpoint    endpoint.Endpoint
 {{- end}}
@@ -123,4 +126,72 @@ func (e *Endpoints) WrapAllLabeledExcept(middleware func(string, endpoint.Endpoi
 			}
 		{{- end}}
 	}
+}
+
+// WrapAllWithHttpOptionExcept wraps each Endpoint entry of filed HttpServerOptions of struct Endpoints with a
+// httptransport.ServerOption.
+// Use this for applying a set of server options to every endpoint in the service.
+// Optionally, endpoints can be passed in by name to be excluded from being wrapped.
+// WrapAllWithHttpOptionExcept(serverOption, "Status", "Ping")
+func (e *Endpoints) WrapAllWithHttpOptionExcept(serverOption httptransport.ServerOption, excluded ...string) {
+	included := map[string]struct{}{
+		{{- range $i := .Service.Methods}}
+			"{{$i.Name}}": {},
+		{{- end}}
+	}
+
+	for _, ex := range excluded {
+		if _, ok := included[ex]; !ok {
+			panic(fmt.Sprintf("Excluded endpoint '%s' does not exist; see middlewares/endpoints.go", ex))
+		}
+		delete(included, ex)
+	}
+
+	if e.httpServerOptions == nil {
+		e.httpServerOptions = make(map[string][]httptransport.ServerOption)
+	}
+	for inc := range included {
+		var options []httptransport.ServerOption
+		if o, ok := e.httpServerOptions[inc]; ok {
+			options = append(o, serverOption)
+		} else {
+			options = make([]httptransport.ServerOption, 1)
+			options[0] = serverOption
+		}
+		e.httpServerOptions[inc] = options
+	}
+}
+
+// GetHttpServerOptions returns all httptransport.ServerOption associated with the given endpoint.
+func (e Endpoints) GetHttpServerOptions(endpoint string) []httptransport.ServerOption {
+	if options, ok := e.httpServerOptions[endpoint]; ok {
+		return options
+	}
+	return make([]httptransport.ServerOption, 0)
+}
+
+// SetHttpRequestDecoder assigns a httptransport.DecodeRequestFunc to an endpoint.
+func (e Endpoints) SetHttpRequestDecoder(endpoint string, decoder httptransport.DecodeRequestFunc) {
+	e.httpRequestDecoders[endpoint] = decoder
+}
+
+// GetHttpRequestDecoder returns the httptransport.DecodeRequestFunc associated with the given endpoint.
+func (e Endpoints) GetHttpRequestDecoder(endpoint string, fallback httptransport.DecodeRequestFunc) httptransport.DecodeRequestFunc {
+	if decoder, ok := e.httpRequestDecoders[endpoint]; ok {
+		return decoder
+	}
+	return fallback
+}
+
+// SetHttpResponseEncoder assigns a httptransport.EncodeResponseFunc to an endpoint.
+func (e Endpoints) SetHttpResponseEncoder(endpoint string, encoder httptransport.EncodeResponseFunc) {
+	e.httpResponseEncoders[endpoint] = encoder
+}
+
+// GetHttpResponseEncoder returns the httptransport.EncodeResponseFunc associated with the given endpoint.
+func (e Endpoints) GetHttpResponseEncoder(endpoint string, fallback httptransport.EncodeResponseFunc) httptransport.EncodeResponseFunc {
+	if encoder, ok := e.httpResponseEncoders[endpoint]; ok {
+		return encoder
+	}
+	return fallback
 }

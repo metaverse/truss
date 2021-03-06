@@ -121,9 +121,9 @@ func MakeHTTPHandler(endpoints Endpoints, options ...httptransport.ServerOption)
 		{{range $binding := $method.Bindings}}
 			m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").Handler(httptransport.NewServer(
 				endpoints.{{$method.Name}}Endpoint,
-				DecodeHTTP{{$binding.Label}}Request,
-				EncodeHTTPGenericResponse,
-				serverOptions...,
+				endpoints.GetHttpRequestDecoder("{{$method.Name}}", DecodeHTTP{{$binding.Label}}Request),
+				endpoints.GetHttpResponseEncoder("{{$method.Name}}", EncodeHTTPGenericResponse),
+				append(serverOptions, endpoints.GetHttpServerOptions("{{$method.Name}}")...)...,
 			))
 		{{- end}}
 	{{- end}}

@@ -11,7 +11,7 @@ import (
 	pb "github.com/metaverse/truss/cmd/_integration-tests/transport/proto"
 )
 
-// NewService returns a naïve, stateless implementation of Service.
+// NewService returns a naive, stateless implementation of Service.
 func NewService() pb.TransportPermutationsServer {
 	return transportpermutationsService{}
 }

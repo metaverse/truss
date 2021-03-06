@@ -20,7 +20,7 @@ import (
 	pb "{{.PBImportPath -}}"
 )
 
-// NewService returns a naïve, stateless implementation of Service.
+// NewService returns a naive, stateless implementation of Service.
 func NewService() pb.{{GoName .Service.Name}}Server {
 	return {{ToLower .Service.Name}}Service{}
 }
