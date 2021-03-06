@@ -42,6 +42,14 @@ type Endpoints struct {
 {{- end}}
 }
 
+func NewEndpoints() Endpoints {
+	return Endpoints{
+		httpServerOptions:    make(map[string][]httptransport.ServerOption),
+		httpRequestDecoders:  make(map[string]httptransport.DecodeRequestFunc),
+		httpResponseEncoders: make(map[string]httptransport.EncodeResponseFunc),
+	}
+}
+
 // Endpoints
 {{range $i := .Service.Methods}}
 	func (e Endpoints) {{$i.Name}}(ctx context.Context, in *pb.{{GoName $i.RequestType.Name}}) (*pb.{{GoName $i.ResponseType.Name}}, error) {
@@ -148,9 +156,6 @@ func (e *Endpoints) WrapAllWithHttpOptionExcept(serverOption httptransport.Serve
 		delete(included, ex)
 	}
 
-	if e.httpServerOptions == nil {
-		e.httpServerOptions = make(map[string][]httptransport.ServerOption)
-	}
 	for inc := range included {
 		var options []httptransport.ServerOption
 		if o, ok := e.httpServerOptions[inc]; ok {
