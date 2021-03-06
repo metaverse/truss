@@ -431,8 +431,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		}},
 	}},
 	"handlers": {nil, map[string]*bintree{
-		"handlers.gotemplate":    {handlersHandlersGotemplate, map[string]*bintree{}},
-		"hooks.gotemplate":       {handlersHooksGotemplate, map[string]*bintree{}},
+		"handlers.gotemplate": {handlersHandlersGotemplate, map[string]*bintree{}},
+		"hooks.gotemplate": {handlersHooksGotemplate, map[string]*bintree{}},
 		"middlewares.gotemplate": {handlersMiddlewaresGotemplate, map[string]*bintree{}},
 	}},
 	"svc": {nil, map[string]*bintree{

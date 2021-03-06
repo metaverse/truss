@@ -181,7 +181,7 @@ func New(instance string, options ...httptransport.ClientOption) (pb.{{.Service.
 	{{range $method := .HTTPHelper.Methods -}}
 		{{ if $method.Bindings -}}
 			{{ with $binding := index $method.Bindings 0 -}}
-				endpoints{{$method.Name}}Endpoint = {{$binding.Label}}Endpoint
+				endpoints.{{$method.Name}}Endpoint = {{$binding.Label}}Endpoint
 			{{end}}
 		{{- end}}
 	{{- end}}
