@@ -13,6 +13,7 @@ package svc
 import (
 	"fmt"
 	"context"
+	httptransport "github.com/go-kit/kit/transport/http"
 
 	"github.com/go-kit/kit/endpoint"
 
