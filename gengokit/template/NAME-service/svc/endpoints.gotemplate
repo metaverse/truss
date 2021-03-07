@@ -13,6 +13,7 @@ package svc
 import (
 	"fmt"
 	"context"
+	"net/http"
 	httptransport "github.com/go-kit/kit/transport/http"
 
 	"github.com/go-kit/kit/endpoint"
@@ -37,6 +38,7 @@ type Endpoints struct {
 	httpServerOptions    map[string][]httptransport.ServerOption
 	httpRequestDecoders  map[string]httptransport.DecodeRequestFunc
 	httpResponseEncoders map[string]httptransport.EncodeResponseFunc
+	httpHandlerFuncs     map[string]func(http.ResponseWriter, *http.Request)
 {{range $i := .Service.Methods}}
 	{{$i.Name}}Endpoint    endpoint.Endpoint
 {{- end}}
@@ -47,6 +49,7 @@ func NewEndpoints() Endpoints {
 		httpServerOptions:    make(map[string][]httptransport.ServerOption),
 		httpRequestDecoders:  make(map[string]httptransport.DecodeRequestFunc),
 		httpResponseEncoders: make(map[string]httptransport.EncodeResponseFunc),
+		httpHandlerFuncs:     make(map[string]func(http.ResponseWriter, *http.Request)),
 	}
 }
 
@@ -168,6 +171,21 @@ func (e *Endpoints) WrapAllWithHttpOptionExcept(serverOption httptransport.Serve
 	}
 }
 
+// WrapWithHttpOption wraps one Endpoint entry of filed HttpServerOptions of struct Endpoints with a
+// httptransport.ServerOption.
+// WrapWithHttpOption(serverOption, "Status")
+func (e *Endpoints) WrapWithHttpOption(endpoint string, serverOption httptransport.ServerOption) {
+    var options []httptransport.ServerOption
+    if o, ok := e.httpServerOptions[endpoint]; ok {
+        options = append(o, serverOption)
+    } else {
+        options = []httptransport.ServerOption{
+            serverOption,
+        }
+    }
+    e.httpServerOptions[endpoint] = options
+}
+
 // GetHttpServerOptions returns all httptransport.ServerOption associated with the given endpoint.
 func (e Endpoints) GetHttpServerOptions(endpoint string) []httptransport.ServerOption {
 	if options, ok := e.httpServerOptions[endpoint]; ok {
@@ -200,4 +218,23 @@ func (e Endpoints) GetHttpResponseEncoder(endpoint string, fallback httptranspor
 		return encoder
 	}
 	return fallback
+}
+
+// SetHttpHandlerFunc assigns a custom http HandlerFunc to an endpoint instead of using the default one.
+func (e Endpoints) SetHttpHandlerFunc(endpoint string, handler func(http.ResponseWriter, *http.Request)) {
+	e.httpHandlerFuncs[endpoint] = handler
+}
+
+// GetHttpHandlerFunc returns the http HandlerFunc for the given endpoint.
+func (e Endpoints) GetHttpHandlerFunc(endpoint string) func(http.ResponseWriter, *http.Request) {
+	if handler, ok := e.httpHandlerFuncs[endpoint]; ok {
+		return handler
+	}
+	return nil
+}
+
+// HasHttpHandlerFunc checks if a custom http HandlerFunc is associated with the given endpoint.
+func (e Endpoints) HasHttpHandlerFunc(endpoint string) bool {
+	_, ok := e.httpHandlerFuncs[endpoint]
+	return ok
 }

@@ -119,12 +119,16 @@ func MakeHTTPHandler(endpoints Endpoints, options ...httptransport.ServerOption)
 
 	{{range $method := .HTTPHelper.Methods}}
 		{{range $binding := $method.Bindings}}
-			m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").Handler(httptransport.NewServer(
-				endpoints.{{$method.Name}}Endpoint,
-				endpoints.GetHttpRequestDecoder("{{$method.Name}}", DecodeHTTP{{$binding.Label}}Request),
-				endpoints.GetHttpResponseEncoder("{{$method.Name}}", EncodeHTTPGenericResponse),
-				append(serverOptions, endpoints.GetHttpServerOptions("{{$method.Name}}")...)...,
-			))
+			if endpoints.HasHttpHandlerFunc("{{$method.Name}}") {
+				m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").HandlerFunc(endpoints.GetHttpHandlerFunc("{{$method.Name}}"))
+			} else {
+				m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").Handler(httptransport.NewServer(
+					endpoints.{{$method.Name}}Endpoint,
+					endpoints.GetHttpRequestDecoder("{{$method.Name}}", DecodeHTTP{{$binding.Label}}Request),
+					endpoints.GetHttpResponseEncoder("{{$method.Name}}", EncodeHTTPGenericResponse),
+					append(serverOptions, endpoints.GetHttpServerOptions("{{$method.Name}}")...)...,
+				))
+			}
 		{{- end}}
 	{{- end}}
 	return m
