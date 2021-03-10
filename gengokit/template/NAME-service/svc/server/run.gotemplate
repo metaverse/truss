@@ -65,11 +65,10 @@ func NewEndpoints(service pb.{{.Service.Name}}Server) svc.Endpoints {
 	{{end}}
 	)
 
-	endpoints := svc.Endpoints{
+	endpoints := svc.NewEndpoints()
 	{{range $i := .Service.Methods -}}
-		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
+		endpoints.{{$i.Name}}Endpoint = {{ToLower $i.Name}}Endpoint
 	{{end}}
-	}
 
 	// Wrap selected Endpoints with middlewares. See handlers/middlewares.go
 	endpoints = handlers.WrapEndpoints(endpoints)

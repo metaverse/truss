@@ -7,7 +7,7 @@ import (
 	"github.com/metaverse/truss/gengokit/gentesthelper"
 )
 
-// Test that rendering certain templates will ouput the code we expect. The
+// Test that rendering certain templates will output the code we expect. The
 // code we expect is either the source code literal defined in each test, or
 // it's the source code of certain actual functions within this package (see
 // embeddable-funcs.go for more info).

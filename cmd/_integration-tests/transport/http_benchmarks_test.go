@@ -67,9 +67,8 @@ func BenchmarkGetWithQueryClient_NoNetwork(b *testing.B) {
 		service = handlers.WrapService(service)
 	}
 	var getwithqueryEndpoint = svc.MakeGetWithQueryEndpoint(service)
-	endpoints := svc.Endpoints{
-		GetWithQueryEndpoint: getwithqueryEndpoint,
-	}
+	endpoints := svc.NewEndpoints()
+	endpoints.GetWithQueryEndpoint = getwithqueryEndpoint
 	ctx := context.WithValue(context.Background(), "request-url", "/getwithquery")
 	ctx = context.WithValue(ctx, "transport", "HTTPJSON")
 	server := httptransport.NewServer(

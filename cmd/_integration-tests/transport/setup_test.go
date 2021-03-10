@@ -43,27 +43,26 @@ func TestMain(m *testing.M) {
 	StatusCodeAndHeadersE := svc.MakeStatusCodeAndHeadersEndpoint(service)
 	CustomVerbE := svc.MakeCustomVerbEndpoint(service)
 
-	endpoints := svc.Endpoints{
-		GetWithQueryEndpoint:               getWithQueryE,
-		GetWithRepeatedQueryEndpoint:       getWithRepeatedQueryE,
-		GetWithRepeatedStringQueryEndpoint: getWithRepeatedStringQueryE,
-		GetWithEnumQueryEndpoint:           getWithEnumQueryE,
-		PostWithNestedMessageBodyEndpoint:  postWithNestedMessageBodyE,
-		CtxToCtxEndpoint:                   ctxToCtxE,
-		GetWithCapsPathEndpoint:            getWithCapsPathE,
-		GetWithPathParamsEndpoint:          getWithPathParamsE,
-		GetWithEnumPathEndpoint:            getWithEnumPathE,
-		GetWithOneofQueryEndpoint:          getWithOneofQueryE,
-		EchoOddNamesEndpoint:               echoOddNamesE,
-		ErrorRPCEndpoint:                   errorRPCE,
-		ErrorRPCNonJSONEndpoint:            errorRPCNonJSONE,
-		ErrorRPCNonJSONLongEndpoint:        errorRPCNonJSONLongE,
-		X2AOddRPCNameEndpoint:              X2AOddRPCNameE,
-		ContentTypeTestEndpoint:            contentTypeTestE,
-		StatusCodeAndNilHeadersEndpoint:    StatusCodeAndNilHeadersE,
-		StatusCodeAndHeadersEndpoint:       StatusCodeAndHeadersE,
-		CustomVerbEndpoint:                 CustomVerbE,
-	}
+	endpoints := svc.NewEndpoints()
+	endpoints.GetWithQueryEndpoint = getWithQueryE
+	endpoints.GetWithRepeatedQueryEndpoint = getWithRepeatedQueryE
+	endpoints.GetWithRepeatedStringQueryEndpoint = getWithRepeatedStringQueryE
+	endpoints.GetWithEnumQueryEndpoint = getWithEnumQueryE
+	endpoints.PostWithNestedMessageBodyEndpoint = postWithNestedMessageBodyE
+	endpoints.CtxToCtxEndpoint = ctxToCtxE
+	endpoints.GetWithCapsPathEndpoint = getWithCapsPathE
+	endpoints.GetWithPathParamsEndpoint = getWithPathParamsE
+	endpoints.GetWithEnumPathEndpoint = getWithEnumPathE
+	endpoints.GetWithOneofQueryEndpoint = getWithOneofQueryE
+	endpoints.EchoOddNamesEndpoint = echoOddNamesE
+	endpoints.ErrorRPCEndpoint = errorRPCE
+	endpoints.ErrorRPCNonJSONEndpoint = errorRPCNonJSONE
+	endpoints.ErrorRPCNonJSONLongEndpoint = errorRPCNonJSONLongE
+	endpoints.X2AOddRPCNameEndpoint = X2AOddRPCNameE
+	endpoints.ContentTypeTestEndpoint = contentTypeTestE
+	endpoints.StatusCodeAndNilHeadersEndpoint = StatusCodeAndNilHeadersE
+	endpoints.StatusCodeAndHeadersEndpoint = StatusCodeAndHeadersE
+	endpoints.CustomVerbEndpoint = CustomVerbE
 
 	// http test server
 	h := svc.MakeHTTPHandler(endpoints)

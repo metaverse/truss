@@ -177,15 +177,15 @@ func New(instance string, options ...httptransport.ClientOption) (pb.{{.Service.
 		{{- end}}
 	{{- end}}
 
-	return svc.Endpoints{
+	endpoints := svc.NewEndpoints()
 	{{range $method := .HTTPHelper.Methods -}}
 		{{ if $method.Bindings -}}
 			{{ with $binding := index $method.Bindings 0 -}}
-				{{$method.Name}}Endpoint:    {{$binding.Label}}Endpoint,
+				endpoints.{{$method.Name}}Endpoint = {{$binding.Label}}Endpoint
 			{{end}}
 		{{- end}}
 	{{- end}}
-	}, nil
+	return endpoints, nil
 }
 
 func copyURL(base *url.URL, path string) *url.URL {

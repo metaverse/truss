@@ -23,11 +23,10 @@ func TestMain(m *testing.M) {
 	sometimesWrapped := svc.MakeSometimesWrappedEndpoint(service)
 	labeledTestHandler := svc.MakeLabeledTestHandlerEndpoint(service)
 
-	middlewareEndpoints = svc.Endpoints{
-		AlwaysWrappedEndpoint:      alwaysWrapped,
-		SometimesWrappedEndpoint:   sometimesWrapped,
-		LabeledTestHandlerEndpoint: labeledTestHandler,
-	}
+	middlewareEndpoints = svc.NewEndpoints()
+	middlewareEndpoints.AlwaysWrappedEndpoint = alwaysWrapped
+	middlewareEndpoints.SometimesWrappedEndpoint = sometimesWrapped
+	middlewareEndpoints.LabeledTestHandlerEndpoint = labeledTestHandler
 
 	middlewareEndpoints = handlers.WrapEndpoints(middlewareEndpoints)
 

@@ -55,11 +55,11 @@ func New(conn *grpc.ClientConn, options ...ClientOption) (pb.{{.Service.Name}}Se
 		{{end}}
 	{{end}}
 
-	return svc.Endpoints{
+	endpoints := svc.NewEndpoints()
 	{{range $i := .Service.Methods -}}
-		{{$i.Name}}Endpoint:    {{ToLower $i.Name}}Endpoint,
+		endpoints.{{$i.Name}}Endpoint = {{ToLower $i.Name}}Endpoint
 	{{end}}
-	}, nil
+	return endpoints, nil
 }
 
 // GRPC Client Decode
