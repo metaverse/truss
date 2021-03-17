@@ -252,6 +252,7 @@ func (b *Binding) PathSections() []string {
 	for _, part := range parts {
 		if len(part) > 2 && part[0] == '{' && part[len(part)-1] == '}' {
 			name := RemoveBraces(part)
+			name = strings.Split(name, ":")[0]
 			if _, ok := isEnum[gogen.CamelCase(name)]; ok {
 				convert := fmt.Sprintf("fmt.Sprintf(\"%%d\", req.%v)", gogen.CamelCase(name))
 				rv = append(rv, convert)

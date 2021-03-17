@@ -139,7 +139,8 @@ func paramLocation(field *Field, binding *svcparse.HTTPBinding) string {
 	for _, param := range pathParams {
 		// Have to CamelCase the data from the parser since it may be lowercase
 		// while the name from the Go file will be CamelCased
-		if gogen.CamelCase(strings.Split(param, ".")[0]) == field.Name {
+		if gogen.CamelCase(strings.Split(param, ".")[0]) == field.Name ||
+			gogen.CamelCase(strings.Split(param, ":")[0]) == field.Name {
 			return "path"
 		}
 	}
