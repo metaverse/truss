@@ -1,5 +1,7 @@
-// Package handlers manages the exported methods in the service handler code
-// adding/removing exported methods to match the service definition.
+// Package handlers renders the Go source files found in <svcname>/handlers/.
+// Most importantly, it handles rendering and modifying the
+// <svcname>/handlers/handlers.go file, while making sure that existing code in
+// that handlers.go file is not deleted.
 package handlers
 
 import (
@@ -11,8 +13,8 @@ import (
 	"io"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/metaverse/truss/gengokit"
 	"github.com/metaverse/truss/gengokit/handlers/templates"
@@ -47,8 +49,11 @@ func New(svc *svcdef.Service, prev io.Reader) (gengokit.Renderable, error) {
 	return &h, nil
 }
 
-// methodMap stores all defined service methods by name and is updated to
-// remove service methods already in the handler file.
+// methodMap stores all the service methods defined in the service.proto. It
+// stores these methods by their string name. In order to not overwrite
+// existing methods in the 'handlers/handlers.go' file, methods which already
+// exist in the 'handlers/handlers.go' file will be removed from this
+// methodMap.
 type methodMap map[string]*svcdef.ServiceMethod
 
 func newMethodMap(meths []*svcdef.ServiceMethod) methodMap {
@@ -63,7 +68,10 @@ type handler struct {
 	fset    *token.FileSet
 	service *svcdef.Service
 	mMap    methodMap
-	ast     *ast.File
+	// The Abstract Syntax Tree (AST) of the existing go code found in
+	// 'handlers/handlers.go'. If the 'handlers/handlers.go' file does not
+	// exist, then ast will be nil.
+	ast *ast.File
 }
 
 type handlerData struct {
@@ -71,12 +79,15 @@ type handlerData struct {
 	Methods     []*svcdef.ServiceMethod
 }
 
-// Render returns a go code server handler that has functions for all
-// ServiceMethods in the service definition.
+// Render returns an io.Reader with the go code of the server handler. That
+// server handler ('handlers.go') has functions for all ServiceMethods in the
+// service definition.
 func (h *handler) Render(alias string, data *gengokit.Data) (io.Reader, error) {
 	if alias != ServerHandlerPath {
 		return nil, errors.Errorf("cannot render unknown file: %q", alias)
 	}
+	// implies that there is not an existing 'handlers/handlers.go' file and we
+	// can safely render the default template without worry.
 	if h.ast == nil {
 		return applyServerTempl(data)
 	}
@@ -90,7 +101,7 @@ func (h *handler) Render(alias string, data *gengokit.Data) (io.Reader, error) {
 	h.ast.Decls = h.mMap.pruneDecls(h.ast.Decls, strings.ToLower(data.Service.Name))
 	log.WithField("Service Methods", len(h.mMap)).Debug("After prune")
 
-	// create a new handlerData, and add all methods not defined in the previous file
+	// create a new handlerData, and add all methods not defined in the existing 'handlers/handlers.go' file
 	ex := handlerData{
 		ServiceName: data.Service.Name,
 	}
@@ -175,8 +186,15 @@ func (m methodMap) pruneDecls(decls []ast.Decl, svcName string) []ast.Decl {
 	return newDecls
 }
 
-// updateParams updates the second param of f to be `X`.(m.RequestType.Name).
-// func ProtoMethod(ctx context.Context, *pb.Old) ...-> func ProtoMethod(ctx context.Context, *pb.(m.RequestType.Name))...
+// updateParams updates the second param of f to be `X`.{m.RequestType.Name}.
+// For example, this function signature:
+//
+//     func ProtoMethod(ctx context.Context, *pb.Old)
+//
+// will become the following kind of function signature, where the old input type is
+// replaced by the new input type defined in m.RequestType.Name:
+//
+//     func ProtoMethod(ctx context.Context, *pb.{m.RequestType.Name})...
 func updateParams(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
 	if f.Type.Params.NumFields() != 2 {
 		log.WithField("Function", f.Name.Name).
@@ -186,8 +204,15 @@ func updateParams(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
 	updatePBFieldType(f.Type.Params.List[1].Type, m.RequestType.Name)
 }
 
-// updateResults updates the first result of f to be `X`.(m.ResponseType.Name).
-// func ProtoMethod(...) (*pb.Old, error) ->  func ProtoMethod(...) (*pb.(m.ResponseType.Name), error)
+// updateResults updates the first result of f to be `X`.{m.ResponseType.Name}.
+// For example, this function signature:
+//
+//     func ProtoMethod(...) (*pb.Old, error)
+//
+// will become the following function signature, where the prior return type is
+// replaced with the return type defined in m.ResponseType.Name:
+//
+//     func ProtoMethod(...) (*pb.{m.ResponseType.Name}, error)
 func updateResults(f *ast.FuncDecl, m *svcdef.ServiceMethod) {
 	if f.Type.Results.NumFields() != 2 {
 		log.WithField("Function", f.Name.Name).
@@ -210,8 +235,22 @@ func updatePBFieldType(t ast.Expr, newType string) {
 	}
 }
 
-// isVaidFunc returns false if f is exported and does no exist in m with
-// reciever svcName + "Service".
+// isValidFunc indicates whether the function declaration here is a function
+// declaration which is allowed to exist in handlers/handlers.go. The criteria
+// for functions which are allowed in 'handlers/handlers.go' are any of the
+// following:
+//
+//     1. The function is private
+//     2. The function is a method of our server struct (e.g. fooStruct) AND
+//        it's also a method defined in the generated .pb.go server interface.
+//
+// These criteria are pretty strict, making many things invalid and thus will
+// be removed. Some of the things which are invalid include:
+//
+//     - Any public function which is not a method of the truss-created server
+//       struct is not valid and will be removed.
+//     - Any public method of the truss-created server which doesn't exist on
+//       the .pb.go server interface is not valid and will be removed.
 func isValidFunc(f *ast.FuncDecl, m methodMap, svcName string) bool {
 	name := f.Name.String()
 	if !ast.IsExported(name) {
