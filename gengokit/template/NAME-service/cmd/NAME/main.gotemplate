@@ -10,11 +10,15 @@ import (
 
 	// This Service
 	"{{.ImportPath -}} /svc/server"
+	"{{.ImportPath -}} /handlers"
 )
 
 func main() {
 	// Update addresses if they have been overwritten by flags
 	flag.Parse()
 
-	server.Run(server.DefaultConfig)
+	cfg := server.DefaultConfig
+	cfg = handlers.SetConfig(cfg)
+
+	server.Run(cfg)
 }

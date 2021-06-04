@@ -106,7 +106,10 @@ var (
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
-func MakeHTTPHandler(endpoints Endpoints, options ...httptransport.ServerOption) http.Handler {
+func MakeHTTPHandler(endpoints Endpoints, responseEncoder httptransport.EncodeResponseFunc, options ...httptransport.ServerOption) http.Handler {
+	if responseEncoder == nil {
+		responseEncoder = EncodeHTTPGenericResponse
+	}
 	{{- if .HTTPHelper.Methods}}
 		serverOptions := []httptransport.ServerOption{
 			httptransport.ServerBefore(headersToContext),
@@ -122,7 +125,7 @@ func MakeHTTPHandler(endpoints Endpoints, options ...httptransport.ServerOption)
 			m.Methods("{{$binding.Verb | ToUpper}}").Path("{{$binding.PathTemplate}}").Handler(httptransport.NewServer(
 				endpoints.{{$method.Name}}Endpoint,
 				DecodeHTTP{{$binding.Label}}Request,
-				EncodeHTTPGenericResponse,
+				responseEncoder,
 				serverOptions...,
 			))
 		{{- end}}

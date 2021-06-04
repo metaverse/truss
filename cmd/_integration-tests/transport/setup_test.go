@@ -66,7 +66,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// http test server
-	h := svc.MakeHTTPHandler(endpoints)
+	h := svc.MakeHTTPHandler(endpoints, svc.EncodeHTTPGenericResponse)
 	httpTestServer := httptest.NewServer(h)
 
 	// grpc test server
