@@ -23,7 +23,7 @@ import (
 	"{{.ImportPath -}} /handlers"
 )
 
-var DefaultConfig Config
+var DefaultConfig svc.Config
 
 func init() {
 	flag.StringVar(&DefaultConfig.DebugAddr, "debug.addr", ":5060", "Debug and metrics listen address")
@@ -43,13 +43,6 @@ func init() {
 	if addr := os.Getenv("GRPC_ADDR"); addr != "" {
 		DefaultConfig.GRPCAddr = addr
 	}
-}
-
-// Config contains the required fields for running a server
-type Config struct {
-	HTTPAddr string
-	DebugAddr string
-	GRPCAddr string
 }
 
 func NewEndpoints(service pb.{{.Service.Name}}Server) svc.Endpoints {
@@ -79,9 +72,13 @@ func NewEndpoints(service pb.{{.Service.Name}}Server) svc.Endpoints {
 
 // Run starts a new http server, gRPC server, and a debug server with the
 // passed config and logger
-func Run(cfg Config) {
+func Run(cfg svc.Config) {
 	service := handlers.NewService()
 	endpoints := NewEndpoints(service)
+
+	if cfg.GenericHTTPResponseEncoder == nil {
+		cfg.GenericHTTPResponseEncoder = svc.EncodeHTTPGenericResponse
+	}
 
 	// Mechanical domain.
 	errc := make(chan error)
@@ -106,7 +103,7 @@ func Run(cfg Config) {
 	// HTTP transport.
 	go func() {
 		log.Println("transport", "HTTP", "addr", cfg.HTTPAddr)
-		h := svc.MakeHTTPHandler(endpoints)
+		h := svc.MakeHTTPHandler(endpoints, cfg.GenericHTTPResponseEncoder)
 		errc <- http.ListenAndServe(cfg.HTTPAddr, h)
 	}()
 

@@ -1,1 +1,1 @@
-{{/* See go-truss/gengokit/handler/templates.go for code */}}
+{{/* See truss/gengokit/handlers/templates/hook.go for template code, gengokit/handlers/hooks.go for codegen */}}
