@@ -140,6 +140,7 @@ var (
 	_ = fmt.Sprint
 	_ = bytes.Compare
 	_ = ioutil.NopCloser
+	_ = io.EOF
 )
 
 // New returns a service backed by an HTTP server living at the remote
