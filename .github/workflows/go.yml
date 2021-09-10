@@ -29,7 +29,7 @@ jobs:
 
       - name: Deps
         env:
-          GOPATH: /home/runner/work/truss/truss/go
+          GOPATH: $GOPATH
           PROTOC_VER: ${{ matrix.protoc }}
         run: |
           sudo apt update && sudo apt install -y git unzip build-essential
@@ -43,7 +43,7 @@ jobs:
 
       - name: Build
         env:
-          GOPATH: /home/runner/work/truss/truss/go
+          GOPATH: $GOPATH
         run: |
           cd go/src/github.com/metaverse/truss
           export PATH=$HOME/bin/:$GOPATH/bin/:$PATH
@@ -51,7 +51,7 @@ jobs:
 
       - name: Test
         env:
-          GOPATH: /home/runner/work/truss/truss/go
+          GOPATH: $GOPATH
         run: |
           export PATH=$HOME/bin/:$GOPATH/bin/:$PATH
           cd go/src/github.com/metaverse/truss
