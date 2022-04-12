@@ -109,6 +109,9 @@ func protoc(protoPaths, gopath []string, plugin string) error {
 		cmdArgs = append(cmdArgs, "-I"+filepath.Join(gp, "src"))
 	}
 
+	// 作業path追加
+	cmdArgs = append(cmdArgs, "-I/src/go")
+
 	cmdArgs = append(cmdArgs, plugin)
 	// Append each definition file path to the end of that command args
 	cmdArgs = append(cmdArgs, protoPaths...)
