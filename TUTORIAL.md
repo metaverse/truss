@@ -10,7 +10,7 @@ We will build a simple service based on [echo.proto](./_example/echo.proto)
   If everything passes you’re good to go.
   If you see any complaints about packages not installed, `go get` those packages
   If you encounter any other issues - ask the developers
-3. To update to newer version of truss, do `git pull`, or `go get -u github.com/metaverse/truss/...` truss again.
+3. To update to newer version of truss, do `git pull`, or `go get -u github.com/gochipon/truss/...` truss again.
 
 # Writing your first service
 
@@ -36,7 +36,7 @@ message LouderRequest {
 The RPC calls can be annotated with HTTP transport option (endpoint name and type of request). For this we must import the google annotations library.
 
 ```
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 service Echo {
 ...

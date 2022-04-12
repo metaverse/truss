@@ -18,8 +18,8 @@ syntax = "proto3";
 
 package google.api;
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/http.proto"; // from google/api/http.proto // modified
-import "github.com/metaverse/truss/deftree/googlethirdparty/descriptor.proto"; // from google/protobuf/descriptor.proto // modified
+import "github.com/gochipon/truss/deftree/googlethirdparty/http.proto"; // from google/api/http.proto // modified
+import "github.com/gochipon/truss/deftree/googlethirdparty/descriptor.proto"; // from google/protobuf/descriptor.proto // modified
 
 option java_multiple_files = true;
 option java_outer_classname = "AnnotationsProto";

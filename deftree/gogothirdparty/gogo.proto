@@ -29,7 +29,7 @@
 syntax = "proto2";
 package gogoproto;
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/descriptor.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/descriptor.proto";
 
 option java_package = "com.google.protobuf";
 option java_outer_classname = "GoGoProtos";

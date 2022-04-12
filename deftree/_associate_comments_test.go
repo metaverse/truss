@@ -10,7 +10,7 @@ func TestCommentedEnum(t *testing.T) {
 	defStr := `
 		syntax = "proto3";
 		package general;
-		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 		enum FooBarBaz {
 			// This is my comment, this is my note
@@ -60,7 +60,7 @@ func TestCommentedImport(t *testing.T) {
 		package general;
 
 		// This comment should not cause any problems
-		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 		// This comment should not cause any problems
 		message SumRequest {

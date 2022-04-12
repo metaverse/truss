@@ -27,7 +27,7 @@ brews:
     # Default is empty.
     caveats: "To leverage truss's annotations you'll need to clone truss into your $(go env GOPATH)"
 
-    homepage: "https://github.com/metaverse/truss"
+    homepage: "https://github.com/gochipon/truss"
 
     description: "Truss helps you build go-kit microservices without having to worry about writing or maintaining boilerplate code"
 

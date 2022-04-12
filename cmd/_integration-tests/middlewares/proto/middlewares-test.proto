@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package middlewares;
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 service MiddlewaresTest {
   // Test endpoints.WrapAllExcept(middleware, exclude ...)

@@ -5,7 +5,7 @@ syntax = "proto3";
 
 package {{.PackageName}};
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 service {{.ServiceName}} {
   rpc Status(StatusRequest) returns (StatusResponse) {

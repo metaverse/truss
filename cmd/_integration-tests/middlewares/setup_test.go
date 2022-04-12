@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/metaverse/truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
-	svc "github.com/metaverse/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
-	pb "github.com/metaverse/truss/cmd/_integration-tests/middlewares/proto"
+	"github.com/gochipon/truss/cmd/_integration-tests/middlewares/middlewarestest-service/handlers"
+	svc "github.com/gochipon/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
+	pb "github.com/gochipon/truss/cmd/_integration-tests/middlewares/proto"
 )
 
 var middlewareEndpoints svc.Endpoints

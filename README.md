@@ -1,4 +1,4 @@
-# Truss ![Build Status](https://github.com/metaverse/truss/workflows/Go/badge.svg?branch=master)
+# Truss ![Build Status](https://github.com/gochipon/truss/workflows/Go/badge.svg?branch=master)
 
 Truss handles the painful parts of services, freeing you to focus on the
 business logic.
@@ -19,15 +19,15 @@ Otherwise [install from source.](https://github.com/google/protobuf)
 1. Install Truss with
 
 	```
-	go get -u -d github.com/metaverse/truss
-	cd $GOPATH/src/github.com/metaverse/truss
+	go get -u -d github.com/gochipon/truss
+	cd $GOPATH/src/github.com/gochipon/truss
 	make dependencies
 	make
 	```
 	On Windows, do the following instead:
 	```
-	go get -u -d github.com/metaverse/truss
-	cd %GOPATH%/src/github.com/metaverse/truss
+	go get -u -d github.com/gochipon/truss
+	cd %GOPATH%/src/github.com/gochipon/truss
 	wininstall.bat
 	```
 

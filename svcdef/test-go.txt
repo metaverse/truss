@@ -27,7 +27,7 @@ package TEST
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import _ "github.com/metaverse/truss/pbinfo/scrap/third_party/googleapis/google/api"
+import _ "github.com/gochipon/truss/pbinfo/scrap/third_party/googleapis/google/api"
 
 import (
 	context "golang.org/x/net/context"

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/metaverse/truss/svcdef/svcparse"
+	"github.com/gochipon/truss/svcdef/svcparse"
 )
 
 func TestGetPathParams(t *testing.T) {
@@ -71,7 +71,7 @@ type MapServer interface {
 	protoCode := `
 syntax = "proto3";
 package TEST;
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 enum EnumType {
   A = 0;

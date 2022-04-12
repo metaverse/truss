@@ -8,7 +8,7 @@ syntax = "proto3";
 // for `package echo;` truss will create the directory "echo-service".
 package echo;
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 service Echo {
   // Echo "echos" the incoming string

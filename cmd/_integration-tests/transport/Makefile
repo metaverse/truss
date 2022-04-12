@@ -21,7 +21,7 @@ all: test
 setup:
 	@echo -e '$(TRUSS_MSG)'
 	mkdir -p transportpermutations-service
-	truss -v --svcout github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
+	truss -v --svcout github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r handlers transportpermutations-service
 
 test: setup
@@ -29,7 +29,7 @@ test: setup
 	go test -run=$(match) -v
 	@echo -e '$(TRUSS_AGAIN_MSG)'
 	mkdir -p transportpermutations-service
-	truss -v --svcout github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
+	truss -v --svcout github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	@echo -e '$(TEST_RUNNING_MSG)'
 	go test -run=$(match) -v
 	$(MAKE) clean
@@ -43,9 +43,9 @@ bench: setup
 # handlers/handlers.go
 newrpc:
 	mkdir -p transportpermutations-service
-	truss --svcout github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
+	truss --svcout github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r handlers transportpermutations-service
-	truss --svcout github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
+	truss --svcout github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service proto/transport-test.proto
 	cp -r transportpermutations-service/handlers/handlers.go handlers
 
 clean:

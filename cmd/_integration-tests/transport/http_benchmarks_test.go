@@ -16,11 +16,11 @@ import (
 	// 3d Party
 	"context"
 
-	pb "github.com/metaverse/truss/cmd/_integration-tests/transport/proto"
-	httpclient "github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
+	pb "github.com/gochipon/truss/cmd/_integration-tests/transport/proto"
+	httpclient "github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service/svc/client/http"
 
-	"github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service/handlers"
-	"github.com/metaverse/truss/cmd/_integration-tests/transport/transportpermutations-service/svc"
+	"github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service/handlers"
+	"github.com/gochipon/truss/cmd/_integration-tests/transport/transportpermutations-service/svc"
 
 	httptransport "github.com/go-kit/kit/transport/http"
 )

@@ -9,7 +9,7 @@ import (
 	// This has to be imported because it modifies the state of `proto` by
 	// registering the `google.api.http` extension, allowing us to specify it
 	// in the sources below.
-	_ "github.com/metaverse/truss/deftree/googlethirdparty"
+	_ "github.com/gochipon/truss/deftree/googlethirdparty"
 
 	"github.com/gogo/protobuf/proto"
 	descriptor "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
@@ -28,7 +28,7 @@ func TestNewFromString(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {

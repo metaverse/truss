@@ -11,11 +11,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/metaverse/truss/gengokit"
-	templateFileAssets "github.com/metaverse/truss/gengokit/template"
-	"github.com/metaverse/truss/svcdef"
+	"github.com/gochipon/truss/gengokit"
+	templateFileAssets "github.com/gochipon/truss/gengokit/template"
+	"github.com/gochipon/truss/svcdef"
 
-	"github.com/metaverse/truss/gengokit/gentesthelper"
+	"github.com/gochipon/truss/gengokit/gentesthelper"
 )
 
 var gopath []string
@@ -49,7 +49,7 @@ func TestApplyTemplateFromPath(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -78,8 +78,8 @@ func TestApplyTemplateFromPath(t *testing.T) {
 	}
 
 	conf := gengokit.Config{
-		GoPackage: "github.com/metaverse/truss",
-		PBPackage: "github.com/metaverse/truss/gengokit/general-service",
+		GoPackage: "github.com/gochipon/truss",
+		PBPackage: "github.com/gochipon/truss/gengokit/general-service",
 	}
 
 	te, err := gengokit.NewData(sd, conf)
@@ -132,8 +132,8 @@ func stringToTemplateExector(def, importPath string) (*gengokit.Data, error) {
 }
 
 func TestAllTemplates(t *testing.T) {
-	const goPackage = "github.com/metaverse/truss/gengokit"
-	const goPBPackage = "github.com/metaverse/truss/gengokit/general-service"
+	const goPackage = "github.com/gochipon/truss/gengokit"
+	const goPBPackage = "github.com/gochipon/truss/gengokit/general-service"
 
 	const def = `
 		syntax = "proto3";
@@ -141,7 +141,7 @@ func TestAllTemplates(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -171,7 +171,7 @@ func TestAllTemplates(t *testing.T) {
 		// General package
 		package general;
 
-		import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+		import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 		// RequestMessage is so foo
 		message RequestMessage {
@@ -213,8 +213,8 @@ func TestAllTemplates(t *testing.T) {
 	}
 
 	conf := gengokit.Config{
-		GoPackage: "github.com/metaverse/truss/gengokit",
-		PBPackage: "github.com/metaverse/truss/gengokit/general-service",
+		GoPackage: "github.com/gochipon/truss/gengokit",
+		PBPackage: "github.com/gochipon/truss/gengokit/general-service",
 	}
 
 	data1, err := gengokit.NewData(sd1, conf)

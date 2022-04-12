@@ -25,7 +25,7 @@ func WrapEndpoints(in svc.Endpoints) svc.Endpoints {
 	// These middlewares get passed the endpoints name as their first argument when applied.
 	// This can be used to write generic metric gathering middlewares that can
 	// report the endpoint name for free.
-	// github.com/metaverse/truss/_example/middlewares/labeledmiddlewares.go for examples.
+	// github.com/gochipon/truss/_example/middlewares/labeledmiddlewares.go for examples.
 	// in.WrapAllLabeledExcept(errorCounter(statsdCounter), "Status", "Ping")
 
 	// How to apply a middleware to a single endpoint.

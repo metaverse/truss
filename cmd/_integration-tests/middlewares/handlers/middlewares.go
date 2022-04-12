@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/go-kit/kit/endpoint"
 
-	svc "github.com/metaverse/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
-	pb "github.com/metaverse/truss/cmd/_integration-tests/middlewares/proto"
+	svc "github.com/gochipon/truss/cmd/_integration-tests/middlewares/middlewarestest-service/svc"
+	pb "github.com/gochipon/truss/cmd/_integration-tests/middlewares/proto"
 )
 
 // WrapEndpoints accepts the service's entire collection of endpoints, so that a

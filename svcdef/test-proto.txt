@@ -3,7 +3,7 @@ syntax = "proto3";
 
 package TEST;
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 service Map {
   rpc GetMap (MapTypeRequest) returns (MapTypeResponse) {

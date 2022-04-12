@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package basic;
 
-import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 service TEST {
   rpc GetBasic (BasicTypeRequest) returns (BasicTypeResponse) {

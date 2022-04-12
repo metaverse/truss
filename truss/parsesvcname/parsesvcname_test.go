@@ -15,7 +15,7 @@ func TestFromPaths(t *testing.T) {
 	syntax = "proto3";
 	package echo;
 
-	import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+	import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 	service BounceEcho {
 	  rpc Echo (EchoRequest) returns (EchoResponse) {
@@ -61,7 +61,7 @@ func TestFromReader(t *testing.T) {
 	syntax = "proto3";
 	package echo;
 
-	import "github.com/metaverse/truss/deftree/googlethirdparty/annotations.proto";
+	import "github.com/gochipon/truss/deftree/googlethirdparty/annotations.proto";
 
 	service BounceEcho {
 	  rpc Echo (EchoRequest) returns (EchoResponse) {
