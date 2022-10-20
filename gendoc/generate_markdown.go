@@ -107,7 +107,6 @@ func MdFile(f *deftree.ProtoFile, depth int) string {
 		}
 	}
 	return rv
-	return ""
 }
 
 func MdMessage(m *deftree.ProtoMessage, depth int) string {
@@ -136,8 +135,6 @@ func MdMessage(m *deftree.ProtoMessage, depth int) string {
 	}
 	rv += "\n"
 	return rv
-
-	return ""
 }
 
 func MdEnum(e *deftree.ProtoEnum, depth int) string {
