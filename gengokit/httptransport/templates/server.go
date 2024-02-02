@@ -141,9 +141,9 @@ func (m *MuxRouter) Methods(methods ...string) *mux.Route {
 func (m *MuxRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if m.instrumentedRouter != nil {
 		m.instrumentedRouter.ServeHTTP(w, req)
+	} else {
+		m.defaultRouter.ServeHTTP(w, req)
 	}
-
-	m.defaultRouter.ServeHTTP(w, req)
 }
 
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
