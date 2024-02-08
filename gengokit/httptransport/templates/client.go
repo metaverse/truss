@@ -121,6 +121,8 @@ import (
 	"strings"
 	"context"
 
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+
 	{{ if len .HTTPHelper.Methods -}}
 		"github.com/gogo/protobuf/jsonpb"
 	{{- end }}
@@ -156,6 +158,7 @@ func New(instance string, options ...httptransport.ClientOption) (pb.{{.Service.
 		return nil, err
 	}
 	_ = u
+	options = append(options, CtxValuesToSend())
 
 	{{if not .HTTPHelper.Methods -}}
 		panic("No HTTP Endpoints, this client will not work, define bindings in your proto definition")
@@ -201,6 +204,18 @@ func copyURL(base *url.URL, path string) *url.URL {
 // the wire and that is the form they will be available in the server context.
 func CtxValuesToSend(keys ...string) httptransport.ClientOption {
 	return httptransport.ClientBefore(func(ctx context.Context, r *http.Request) context.Context {
+		// if DD_APM_ENABLED inject into request headers the span context
+		if os.Getenv("DD_APM_ENABLED") == "true" {
+			span, found := tracer.SpanFromContext(ctx)
+			if found {
+				err := tracer.Inject(span.Context(), tracer.HTTPHeadersCarrier(r.Header))
+				if err != nil {
+					//at least print out the error
+					fmt.Printf("error injecting datadog span headers %v", err)
+				}
+			}
+		}
+
 		for _, k := range keys {
 			if v, ok := ctx.Value(k).(string); ok {
 				r.Header.Set(k, v)
