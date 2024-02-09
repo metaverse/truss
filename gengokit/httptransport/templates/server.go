@@ -72,20 +72,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
-	"io"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 
 	"context"
 
+	httptransport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-	httptransport "github.com/go-kit/kit/transport/http"
+	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
 
 	// This service
 	pb "{{.PBImportPath -}}"
@@ -104,6 +106,46 @@ var (
 	_ = errors.Wrap
 )
 
+type MuxRouter struct {
+	defaultRouter      *mux.Router
+	instrumentedRouter *muxtrace.Router
+}
+
+func NewMuxRouter() *MuxRouter {
+	var instrumentedRouter *muxtrace.Router
+
+	// Wrap mux router with DataDog Tracing if DataDog APM is enabled
+	if os.Getenv("DD_APM_ENABLED") == "true" {
+		//Get the service name from env variable
+		instrumentedRouter = muxtrace.NewRouter(muxtrace.WithServiceName(os.Getenv("DD_SERVICE")))
+	}
+
+	return &MuxRouter{
+		instrumentedRouter: instrumentedRouter,
+		defaultRouter:      mux.NewRouter(),
+	}
+}
+
+// Methods registers a new route with a matcher for HTTP methods.
+// overriding mux.Methods once we can pick which router to use: instrumented or default
+func (m *MuxRouter) Methods(methods ...string) *mux.Route {
+	if m.instrumentedRouter != nil {
+		return m.instrumentedRouter.Methods(methods...)
+	}
+
+	return m.defaultRouter.Methods(methods...)
+}
+
+// ServeHTTP dispatches the request to the handler
+// we dispatch the call to the router of choice: instrumented of default
+func (m *MuxRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if m.instrumentedRouter != nil {
+		m.instrumentedRouter.ServeHTTP(w, req)
+	} else {
+		m.defaultRouter.ServeHTTP(w, req)
+	}
+}
+
 // MakeHTTPHandler returns a handler that makes a set of endpoints available
 // on predefined paths.
 func MakeHTTPHandler(endpoints Endpoints, responseEncoder httptransport.EncodeResponseFunc, options ...httptransport.ServerOption) http.Handler {
@@ -118,7 +160,7 @@ func MakeHTTPHandler(endpoints Endpoints, responseEncoder httptransport.EncodeRe
 		}
 		serverOptions = append(serverOptions, options...)
 	{{- end }}
-	m := mux.NewRouter()
+	m := NewMuxRouter()
 
 	{{range $method := .HTTPHelper.Methods}}
 		{{range $binding := $method.Bindings}}
