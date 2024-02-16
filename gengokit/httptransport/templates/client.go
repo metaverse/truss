@@ -112,15 +112,18 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
-	"context"
+
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/ext"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 
@@ -209,6 +212,19 @@ func CtxValuesToSend(keys ...string) httptransport.ClientOption {
 		if os.Getenv("DD_APM_ENABLED") == "true" {
 			span, found := tracer.SpanFromContext(ctx)
 			if found {
+				span.SetTag(ext.HTTPURL, r.URL.Path)
+				span.SetTag(ext.HTTPMethod, r.Method)
+				span.SetTag(ext.ResourceName, r.Method+" "+r.URL.Path)
+				span.SetTag(ext.SpanType, ext.SpanTypeHTTP)
+
+				if strings.Contains(r.Host, ":") {
+					if host, _, err := net.SplitHostPort(r.Host); err == nil {
+						span.SetTag(ext.NetworkDestinationName, host)
+					}
+				} else {
+					span.SetTag(ext.NetworkDestinationName, r.Host)
+				}
+
 				err := tracer.Inject(span.Context(), tracer.HTTPHeadersCarrier(r.Header))
 				if err != nil {
 					//at least print out the error
