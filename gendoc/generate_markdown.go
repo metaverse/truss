@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/metaverse/truss/deftree"
+	"github.com/julkhong/truss/deftree"
 )
 
 // prindent is a utility function for creating a formatted string with a given
@@ -52,19 +52,19 @@ func nameLink(in string) string {
 // by the description of the describable. As an example, suppose a describable
 // and depth such as the following is provided:
 //
-//     exmplDescrb = {
-//         Name: "Foo",
-//         Description: "Whizbangboom",
-//     }
-//     depth = 2
+//	exmplDescrb = {
+//	    Name: "Foo",
+//	    Description: "Whizbangboom",
+//	}
+//	depth = 2
 //
 // In this case, the returned string would be:
 //
-//     `## Foo
+//	`## Foo
 //
-//     Whizbangboom
+//	Whizbangboom
 //
-//     `
+//	`
 func defaultDescribeMarkdown(d deftree.Describable, depth int) string {
 	rv := prindent(0, "%v %v\n\n", strRepeat("#", depth), d.GetName())
 	if len(d.GetDescription()) > 1 {

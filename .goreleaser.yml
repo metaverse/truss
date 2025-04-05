@@ -2,7 +2,7 @@ project_name: truss
 
 release:
   github:
-    owner: metaverse
+    owner: julkhong
     name: truss
   name_template: '{{.Tag}}'
 
@@ -16,7 +16,7 @@ brews:
     # GitHub/GitLab repository to push the formula to
     # Gitea is not supported yet, but the support coming
     tap:
-      owner: metaverse
+      owner: julkhong
       name: homebrew-tap
 
     commit_author:
@@ -27,7 +27,7 @@ brews:
     # Default is empty.
     caveats: "To leverage truss's annotations you'll need to clone truss into your $(go env GOPATH)"
 
-    homepage: "https://github.com/metaverse/truss"
+    homepage: "https://github.com/julkhong/truss"
 
     description: "Truss helps you build go-kit microservices without having to worry about writing or maintaining boilerplate code"
 
